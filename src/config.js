@@ -1,17 +1,44 @@
-export default {
-  MAX_ATTACHMENT_SIZE: 5000000,
+const dev = {
   s3: {
-    REGION: "us-east-1",
-    BUCKET: "notes-app-uploads"
+    REGION: "ap-southeast-2",
+    BUCKET: "lydia-api-dev-attachmentsbucket-1b4cv85suxgsg"
   },
   apiGateway: {
-    REGION: "us-east-1",
-    URL: "https://5by75p4gn3.execute-api.us-east-1.amazonaws.com/prod"
+    REGION: "ap-southeast-2",
+    URL: "https://lydia-api.willpilgrim.me/dev"
   },
   cognito: {
-    REGION: "us-east-1",
-    USER_POOL_ID: "us-east-1_udmFFSb92",
-    APP_CLIENT_ID: "4hmari2sqvskrup67crkqa4rmo",
-    IDENTITY_POOL_ID: "us-east-1:ceef8ccc-0a19-4616-9067-854dc69c2d82"
+    REGION: "ap-southeast-2",
+    USER_POOL_ID: "ap-southeast-2_QZ0juoOZl",
+    APP_CLIENT_ID: "2utqgml62c2htgvrtn3ncba08h",
+    IDENTITY_POOL_ID: "ap-southeast-2:db922c2c-d1f0-4ddb-88fc-9ac374c82829"
   }
+};
+
+const prod = {
+  s3: {
+    REGION: "ap-southeast-2",
+    BUCKET: "lydia-api-prod-attachmentsbucket-1r6hbexp2vyzg"
+  },
+  apiGateway: {
+    REGION: "ap-southeast-2",
+    URL: "https://lydia-api.willpilgrim.me/prod"
+  },
+  cognito: {
+    REGION: "ap-southeast-2",
+    USER_POOL_ID: "ap-southeast-2_Ka1Aszx48",
+    APP_CLIENT_ID: "2ekk3h2bl6he29gprkh5nf1ifo",
+    IDENTITY_POOL_ID: "ap-southeast-2:fb04d10a-793c-416d-afe3-2a1af308302d"
+  }
+};
+
+// Default to dev if not set
+const config = process.env.REACT_APP_STAGE === 'prod'
+  ? prod
+  : dev;
+
+export default {
+  // Add common config values here
+  MAX_ATTACHMENT_SIZE: 5000000,
+  ...config
 };
