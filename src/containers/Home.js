@@ -66,7 +66,7 @@ export default class Home extends Component {
     return (
       <div className="lander">
         <h1>Lydia</h1>
-        <p>We steal your money(Take control of your money)</p>
+        <p>Take control of your money</p>
         <div>
           <Link to="/login" className="btn btn-info btn-lg">
             Login
