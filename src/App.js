@@ -48,21 +48,26 @@ class App extends Component {
       isAuthenticated: this.state.isAuthenticated,
       userHasAuthenticated: this.userHasAuthenticated
     };
-
+  
     return (
       !this.state.isAuthenticating &&
       <div className="App container">
         <Navbar fluid collapseOnSelect>
           <Navbar.Header>
             <Navbar.Brand>
-              <Link to="/">Scratch</Link>
+              <Link to="/">Lydia</Link>
             </Navbar.Brand>
             <Navbar.Toggle />
           </Navbar.Header>
           <Navbar.Collapse>
             <Nav pullRight>
               {this.state.isAuthenticated
-                ? <NavItem onClick={this.handleLogout}>Logout</NavItem>
+                ? <Fragment>
+                    <LinkContainer to="/settings">
+                      <NavItem>Settings</NavItem>
+                    </LinkContainer>
+                    <NavItem onClick={this.handleLogout}>Logout</NavItem>
+                  </Fragment>
                 : <Fragment>
                     <LinkContainer to="/signup">
                       <NavItem>Signup</NavItem>
