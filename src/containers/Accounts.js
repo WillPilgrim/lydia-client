@@ -4,9 +4,9 @@ import { FormGroup, FormControl, ControlLabel } from "react-bootstrap";
 import LoaderButton from "../components/LoaderButton";
 import { s3Upload } from "../libs/awsLib";
 import config from "../config";
-import "./Notes.css";
+import "./Accounts.css";
 
-export default class Notes extends Component {
+export default class Accounts extends Component {
   constructor(props) {
     super(props);
 
@@ -15,7 +15,7 @@ export default class Notes extends Component {
     this.state = {
       isLoading: null,
       isDeleting: null,
-      note: null,
+      account: null,
       content: "",
       attachmentURL: null
     };
@@ -24,15 +24,15 @@ export default class Notes extends Component {
   async componentDidMount() {
     try {
       let attachmentURL;
-      const note = await this.getNote();
-      const { content, attachment } = note;
+      const account = await this.getAccount();
+      const { content, attachment } = account;
 
       if (attachment) {
         attachmentURL = await Storage.vault.get(attachment);
       }
 
       this.setState({
-        note,
+        account,
         content,
         attachmentURL
       });
@@ -41,18 +41,18 @@ export default class Notes extends Component {
     }
   }
 
-  getNote() {
-    return API.get("notes", `/notes/${this.props.match.params.id}`);
+  getAccount() {
+    return API.get("accounts", `/accounts/${this.props.match.params.id}`);
   }
 
-  saveNote(note) {
-    return API.put("notes", `/notes/${this.props.match.params.id}`, {
-      body: note
+  saveAccount(account) {
+    return API.put("accounts", `/accounts/${this.props.match.params.id}`, {
+      body: account
     });
   }
 
-  deleteNote() {
-    return API.del("notes", `/notes/${this.props.match.params.id}`);
+  deleteAccount() {
+    return API.del("accounts", `/accounts/${this.props.match.params.id}`);
   }
 
   validateForm() {
@@ -90,9 +90,9 @@ export default class Notes extends Component {
         attachment = await s3Upload(this.file);
       }
 
-      await this.saveNote({
+      await this.saveAccount({
         content: this.state.content,
-        attachment: attachment || this.state.note.attachment
+        attachment: attachment || this.state.account.attachment
       });
       this.props.history.push("/");
     } catch (e) {
@@ -105,7 +105,7 @@ export default class Notes extends Component {
     event.preventDefault();
 
     const confirmed = window.confirm(
-      "Are you sure you want to delete this note?"
+      "Are you sure you want to delete this account?"
     );
 
     if (!confirmed) {
@@ -115,7 +115,7 @@ export default class Notes extends Component {
     this.setState({ isDeleting: true });
 
     try {
-      await this.deleteNote();
+      await this.deleteAccount();
       this.props.history.push("/");
     } catch (e) {
       alert(e);
@@ -125,8 +125,8 @@ export default class Notes extends Component {
 
   render() {
     return (
-      <div className="Notes">
-        {this.state.note &&
+      <div className="Accounts">
+        {this.state.account &&
           <form onSubmit={this.handleSubmit}>
             <FormGroup controlId="content">
               <FormControl
@@ -135,7 +135,7 @@ export default class Notes extends Component {
                 componentClass="textarea"
               />
             </FormGroup>
-            {this.state.note.attachment &&
+            {this.state.account.attachment &&
               <FormGroup>
                 <ControlLabel>Attachment</ControlLabel>
                 <FormControl.Static>
@@ -144,12 +144,12 @@ export default class Notes extends Component {
                     rel="noopener noreferrer"
                     href={this.state.attachmentURL}
                   >
-                    {this.formatFilename(this.state.note.attachment)}
+                    {this.formatFilename(this.state.account.attachment)}
                   </a>
                 </FormControl.Static>
               </FormGroup>}
             <FormGroup controlId="file">
-              {!this.state.note.attachment &&
+              {!this.state.account.attachment &&
                 <ControlLabel>Attachment</ControlLabel>}
               <FormControl onChange={this.handleFileChange} type="file" />
             </FormGroup>

@@ -10,7 +10,7 @@ export default class Home extends Component {
 
     this.state = {
       isLoading: true,
-      notes: []
+      accounts: []
     };
   }
 
@@ -20,8 +20,8 @@ export default class Home extends Component {
     }
 
     try {
-      const notes = await this.notes();
-      this.setState({ notes });
+      const accounts = await this.accounts();
+      this.setState({ accounts });
     } catch (e) {
       alert(e);
     }
@@ -29,34 +29,34 @@ export default class Home extends Component {
     this.setState({ isLoading: false });
   }
 
-  notes() {
-    return API.get("notes", "/notes");
+  accounts() {
+    return API.get("accounts", "/accounts");
   }
 
-  handleNoteClick = event => {
+  handleAccountClick = event => {
     event.preventDefault();
     this.props.history.push(event.currentTarget.getAttribute("href"));
   }
 
-  renderNotesList(notes) {
-    return [{}].concat(notes).map(
-      (note, i) =>
+  renderAccountsList(accounts) {
+    return [{}].concat(accounts).map(
+      (account, i) =>
         i !== 0
           ? <ListGroupItem
-              key={note.noteId}
-              href={`/notes/${note.noteId}`}
-              onClick={this.handleNoteClick}
-              header={note.content.trim().split("\n")[0]}
+              key={account.accountId}
+              href={`/accounts/${account.accountId}`}
+              onClick={this.handleAccountClick}
+              header={account.content.trim().split("\n")[0]}
             >
-              {"Created: " + new Date(note.createdAt).toLocaleString()}
+              {"Created: " + new Date(account.createdAt).toLocaleString()}
             </ListGroupItem>
           : <ListGroupItem
               key="new"
-              href="/notes/new"
-              onClick={this.handleNoteClick}
+              href="/accounts/new"
+              onClick={this.handleAccountClick}
             >
               <h4>
-                <b>{"\uFF0B"}</b> Create a new note
+                <b>{"\uFF0B"}</b> Create a new account
               </h4>
             </ListGroupItem>
     );
@@ -65,8 +65,8 @@ export default class Home extends Component {
   renderLander() {
     return (
       <div className="lander">
-        <h1>Scratch</h1>
-        <p>A simple note taking app</p>
+        <h1>Lydia</h1>
+        <p>Take control of your money</p>
         <div>
           <Link to="/login" className="btn btn-info btn-lg">
             Login
@@ -79,12 +79,12 @@ export default class Home extends Component {
     );
   }
 
-  renderNotes() {
+  renderAccounts() {
     return (
-      <div className="notes">
-        <PageHeader>Your Notes</PageHeader>
+      <div className="accounts">
+        <PageHeader>Your Accounts</PageHeader>
         <ListGroup>
-          {!this.state.isLoading && this.renderNotesList(this.state.notes)}
+          {!this.state.isLoading && this.renderAccountsList(this.state.accounts)}
         </ListGroup>
       </div>
     );
@@ -93,7 +93,7 @@ export default class Home extends Component {
   render() {
     return (
       <div className="Home">
-        {this.props.isAuthenticated ? this.renderNotes() : this.renderLander()}
+        {this.props.isAuthenticated ? this.renderAccounts() : this.renderLander()}
       </div>
     );
   }

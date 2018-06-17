@@ -55,7 +55,7 @@ class BillingForm extends Component {
 
     return (
       <form className="BillingForm" onSubmit={this.handleSubmitClick}>
-        <FormGroup bsSize="large" controlId="storage">
+        <FormGroup bsSize="large" controlId="accounts">
           <ControlLabel>Accounts</ControlLabel>
           <FormControl
             min="0"

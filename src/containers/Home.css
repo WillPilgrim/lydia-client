@@ -19,7 +19,7 @@
   margin-right: 20px;
 }
 
-.Home .notes h4 {
+.Home .accounts h4 {
   font-family: "Open Sans", sans-serif;
   font-weight: 600;
   overflow: hidden;
@@ -27,6 +27,6 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.Home .notes p {
+.Home .accounts p {
   color: #666;
 }
