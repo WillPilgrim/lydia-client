@@ -1,4 +1,5 @@
 const dev = {
+  STRIPE_KEY: "pk_test_XeDS7xVuwV9cQPhx2OGLN1uA",
   s3: {
     REGION: "ap-southeast-2",
     BUCKET: "lydia-api-dev-attachmentsbucket-1b4cv85suxgsg"
@@ -16,6 +17,7 @@ const dev = {
 };
 
 const prod = {
+  STRIPE_KEY: "pk_test_XeDS7xVuwV9cQPhx2OGLN1uA",
   s3: {
     REGION: "ap-southeast-2",
     BUCKET: "lydia-api-prod-attachmentsbucket-1r6hbexp2vyzg"
