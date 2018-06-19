@@ -12,33 +12,35 @@ class App extends Component {
 
     this.state = {
       isAuthenticated: false,
-      isAuthenticating: true
+      isAuthenticating: true,
+      currentUser: ""
     };
   }
 
   async componentDidMount() {
     try {
       if (await Auth.currentSession()) {
-        this.userHasAuthenticated(true);
+        const { attributes } = await Auth.currentUserInfo();
+        this.userHasAuthenticated(true,attributes.email);
       }
     }
-    catch(e) {
+    catch (e) {
       if (e !== 'No current user') {
         alert(e);
       }
     }
-
     this.setState({ isAuthenticating: false });
   }
 
-  userHasAuthenticated = authenticated => {
+  userHasAuthenticated = (authenticated,user) => {
     this.setState({ isAuthenticated: authenticated });
+    this.setState({ currentUser: user });
   }
 
   handleLogout = async event => {
     await Auth.signOut();
 
-    this.userHasAuthenticated(false);
+    this.userHasAuthenticated(false,"");
 
     this.props.history.push("/login");
   }
@@ -48,7 +50,7 @@ class App extends Component {
       isAuthenticated: this.state.isAuthenticated,
       userHasAuthenticated: this.userHasAuthenticated
     };
-  
+
     return (
       !this.state.isAuthenticating &&
       <div className="App container">
@@ -63,19 +65,22 @@ class App extends Component {
             <Nav pullRight>
               {this.state.isAuthenticated
                 ? <Fragment>
-                    <LinkContainer to="/settings">
-                      <NavItem>Settings</NavItem>
-                    </LinkContainer>
-                    <NavItem onClick={this.handleLogout}>Logout</NavItem>
-                  </Fragment>
+                  <LinkContainer to="/templates">
+                    <NavItem>Templates</NavItem>
+                  </LinkContainer>
+                  <LinkContainer to="/settings">
+                    <NavItem>{this.state.currentUser}</NavItem>
+                  </LinkContainer>
+                  <NavItem onClick={this.handleLogout}>Logout</NavItem>
+                </Fragment>
                 : <Fragment>
-                    <LinkContainer to="/signup">
-                      <NavItem>Signup</NavItem>
-                    </LinkContainer>
-                    <LinkContainer to="/login">
-                      <NavItem>Login</NavItem>
-                    </LinkContainer>
-                  </Fragment>
+                  <LinkContainer to="/signup">
+                    <NavItem>Signup</NavItem>
+                  </LinkContainer>
+                  <LinkContainer to="/login">
+                    <NavItem>Login</NavItem>
+                  </LinkContainer>
+                </Fragment>
               }
             </Nav>
           </Navbar.Collapse>
