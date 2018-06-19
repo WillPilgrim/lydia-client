@@ -2,17 +2,17 @@ const dev = {
   STRIPE_KEY: "pk_test_XeDS7xVuwV9cQPhx2OGLN1uA",
   s3: {
     REGION: "ap-southeast-2",
-    BUCKET: "lydia-api-dev-attachmentsbucket-1b4cv85suxgsg"
+    BUCKET: "lydia-api-dev-attachmentsbucket-12ip4a2786aff"
   },
   apiGateway: {
     REGION: "ap-southeast-2",
-    URL: "https://lydia-api.willpilgrim.me/dev"
+    URL: "https://api.willpilgrim.me/dev"
   },
   cognito: {
     REGION: "ap-southeast-2",
-    USER_POOL_ID: "ap-southeast-2_QZ0juoOZl",
-    APP_CLIENT_ID: "2utqgml62c2htgvrtn3ncba08h",
-    IDENTITY_POOL_ID: "ap-southeast-2:db922c2c-d1f0-4ddb-88fc-9ac374c82829"
+    USER_POOL_ID: "ap-southeast-2_cL1CykOzj",
+    APP_CLIENT_ID: "4tmkqnpffo1erm45mejtoc18ne",
+    IDENTITY_POOL_ID: "ap-southeast-2:251d3a9a-d477-443d-a735-4deb0d861192"
   }
 };
 
@@ -20,17 +20,17 @@ const prod = {
   STRIPE_KEY: "pk_test_XeDS7xVuwV9cQPhx2OGLN1uA",
   s3: {
     REGION: "ap-southeast-2",
-    BUCKET: "lydia-api-prod-attachmentsbucket-1r6hbexp2vyzg"
+    BUCKET: "lydia-api-prod-attachmentsbucket-6gnrf4333w1n"
   },
   apiGateway: {
     REGION: "ap-southeast-2",
-    URL: "https://lydia-api.willpilgrim.me/prod"
+    URL: "https://api.willpilgrim.me/prod"
   },
   cognito: {
     REGION: "ap-southeast-2",
-    USER_POOL_ID: "ap-southeast-2_Ka1Aszx48",
-    APP_CLIENT_ID: "2ekk3h2bl6he29gprkh5nf1ifo",
-    IDENTITY_POOL_ID: "ap-southeast-2:fb04d10a-793c-416d-afe3-2a1af308302d"
+    USER_POOL_ID: "ap-southeast-2_DHTs9VCqV",
+    APP_CLIENT_ID: "6f55gc0rqq4154o0drgo2tfoqb",
+    IDENTITY_POOL_ID: "ap-southeast-2:7946f29b-198e-43b1-8c92-46870e21015f"
   }
 };
 
