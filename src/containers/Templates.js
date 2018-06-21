@@ -5,7 +5,6 @@ import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
 import BootstrapTable from "react-bootstrap-table-next";
 import { API } from "aws-amplify";
 
-
 export default class Templates extends Component {
   constructor(props) {
     super(props);
@@ -21,7 +20,12 @@ export default class Templates extends Component {
       return;
     }
     try {
-      const templates = await this.templates();
+      const accs = await this.accounts();
+      const t1 = await this.templates();
+      const templates = t1.map(({ accountFromId: afid, ...rest }) => ({
+        accountName: accs.find(x => x.accountId === afid).content,
+        ...rest
+      }));
       this.setState({ templates });
     } catch (e) {
       alert(e);
@@ -30,30 +34,51 @@ export default class Templates extends Component {
     this.setState({ isLoading: false });
   }
 
+  accounts() {
+    return API.get("accounts", "/accounts");
+  }
+
   templates() {
     return API.get("accounts", "/templates");
-    // return [
-    //   { id: "1", name: "Tomato", price: "3.50" },
-    //   { id: "2", name: "Carrot", price: "0.12" },
-    //   { id: "3", name: "Celery", price: "1.80" }
-    // ];
   }
 
   columns = () => [
-      {
-        dataField: "accountFromId",
-        text: "Account"
-      },
-      {
-        dataField: "description",
-        text: "Description"
-      },
-      {
-        dataField: "amount",
-        text: "Amount"
-      }
-    ];
-  
+    {
+      dataField: "accountName",
+      text: "Account"
+    },
+    {
+      dataField: "description",
+      text: "Description"
+    },
+    {
+      dataField: "amount",
+      text: "Amount"
+    },
+    {
+      dataField: "startDate",
+      text: "Start Date"
+    },
+    {
+      dataField: "endDate",
+      text: "End Date"
+    },
+    {
+      dataField: "periodType",
+      text: "Frequency"
+    },
+    {
+      dataField: "templateType",
+      text: "Type"
+    }
+  ];
+
+  rowEvents = {
+    onClick: (e, row, rowIndex) => {
+      e.preventDefault();
+      this.props.history.push(`/templates/${row.templateId}`);
+  }
+};
 
   render() {
     return (
@@ -67,9 +92,10 @@ export default class Templates extends Component {
           </ListGroupItem>
         </ListGroup>
         <BootstrapTable
-          keyField="id"
+          keyField="templateId"
           data={this.state.templates}
           columns={this.columns()}
+          rowEvents={this.rowEvents}
         />
       </div>
     );
