@@ -39,9 +39,7 @@ class App extends Component {
   }
 
   setAccounts = (setacc) => {
-    console.log('Inside APP..before setting state to set accounts==>',this.state.accounts)
     this.setState({accounts:setacc})
-    console.log('Inside APP..AFTER setting state to set accounts==>',this.state.accounts)
   }
 
   handleLogout = async event => {
@@ -74,6 +72,9 @@ class App extends Component {
             <Nav pullRight>
               {this.state.isAuthenticated
                 ? <Fragment>
+                  <LinkContainer to="/transactions">
+                    <NavItem>Transactions</NavItem>
+                  </LinkContainer>
                   <LinkContainer to="/templates">
                     <NavItem>Templates</NavItem>
                   </LinkContainer>

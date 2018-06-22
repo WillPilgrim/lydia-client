@@ -1,18 +1,20 @@
 import React, { Component } from "react";
-import { PageHeader, ListGroup, ListGroupItem } from "react-bootstrap";
-import "./Templates.css";
+import { PageHeader, ListGroup, ListGroupItem, Button, ButtonToolbar, ButtonGroup } from "react-bootstrap";
+import { Pagination, NavItem } from "react-bootstrap";
+import "./Transactions.css";
 import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
 import BootstrapTable from "react-bootstrap-table-next";
 import { API } from "aws-amplify";
 import Moment from 'moment';
 
-export default class Templates extends Component {
+export default class Transactions extends Component {
     constructor(props) {
         super(props);
 
         this.state = {
             isLoading: true,
-            templates: []
+            templates: [],
+            transactions: []
         };
     }
 
@@ -84,7 +86,7 @@ export default class Templates extends Component {
     rowEvents = {
         onClick: (e, row, rowIndex) => {
             e.preventDefault();
-            this.props.history.push(`/templates/${row.templateId}`);
+            this.props.history.push(`/transactions/${row.templateId}`);
         }
     };
 
@@ -94,26 +96,32 @@ export default class Templates extends Component {
     }
 
     render() {
+        const pages=['hat','glove','sock','shoes','tie','pants','belt','shirt','jacket','thongs','sandals',
+        'hat','glove','sock','shoes','tie','pants','belt','shirt','jacket','thongs','sandals']
         return (
-            <div className="templates">
-                <PageHeader>Transaction Templates</PageHeader>
-                <ListGroup>
-                    <ListGroupItem
-                        key="new"
-                        href="/templates/new"
-                        onClick={this.handleNewTemplateClick}
-                    >
-                        <h4>
-                            <b>{"\uFF0B"}</b> Create a new template
-            </h4>
-                    </ListGroupItem>
-                </ListGroup>
+            <div className="transactions">
+                <PageHeader>Transactions</PageHeader>
+                <ButtonToolbar>
+                    <ButtonGroup>
+  <Button>Load</Button>
+  <Button>Save</Button>
+  </ButtonGroup>
+  <Button bsStyle="primary">Recalculate</Button>
+</ButtonToolbar>
+
                 <BootstrapTable
-                    keyField="templateId"
-                    data={this.state.templates}
+                    keyField="transactionId"
+                    data={this.state.transactions}
                     columns={this.columns()}
                     rowEvents={this.rowEvents}
                 />
+                <Pagination>
+  <Pagination.First />
+  <Pagination.Prev />
+  {pages.map(x=><Pagination.Item>{x}</Pagination.Item>)}
+  <Pagination.Next />
+  <Pagination.Last />
+</Pagination>
             </div>
         );
     }

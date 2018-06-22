@@ -54,9 +54,7 @@ export default class Accounts extends Component {
   }
 
   deleteAccount() {
-    console.log('inside del accs before clearing cache==>',this.props.accounts)
     this.props.setAccounts(null);  //invalid the cache
-    console.log('inside del accs after clearing cache==>',this.props.accounts)
     return API.del("accounts", `/accounts/${this.props.match.params.id}`);
   }
 

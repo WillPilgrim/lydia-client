@@ -21,7 +21,6 @@ export default class Home extends Component {
 
     try {
       let accounts = this.props.accounts;
-      console.log('Getting the accounts from props...',accounts)
       if (accounts == null) {
         accounts = await this.accounts();
         this.props.setAccounts(accounts);

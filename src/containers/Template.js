@@ -24,15 +24,25 @@ export default class Template extends Component {
       amount: "",
       startDate: null,
       endDate: null,
+      accountFromId: "",
       templateType: "",
-      periodType: ""
+      periodType: "",
+      new: ""
     };
   }
 
   async componentDidMount() {
     try {
-      const template = await this.getTemplate();
+      const accs = await this.getAccounts();
+      let template;
+      if (this.props.match.params.id === 'new') {
+        template = this.state;
+        template.accountFromId = accs[0];
+      } else {
+        template = await this.getTemplate();
+      }
       const {
+        accountFromId,
         description,
         amount,
         startDate,
@@ -42,6 +52,8 @@ export default class Template extends Component {
       } = template;
 
       this.setState({
+        accs,
+        accountFromId,
         template,
         description,
         amount,
@@ -55,6 +67,10 @@ export default class Template extends Component {
     }
   }
 
+  getAccounts() {
+    return API.get("accounts", "/accounts");
+  }
+
   getTemplate() {
     return API.get("accounts", `/templates/${this.props.match.params.id}`);
   }
@@ -64,6 +80,13 @@ export default class Template extends Component {
       body: template
     });
   }
+
+  createTemplate(template) {
+    return API.post("accounts", "/templates", {
+      body: template
+    });
+  }
+
 
   deleteTemplate() {
     return API.del("accounts", `/templates/${this.props.match.params.id}`);
@@ -102,8 +125,7 @@ export default class Template extends Component {
     this.setState({ isLoading: true });
 
     try {
-      await this.saveTemplate({
-        accountFromId: this.state.template.accountFromId,
+      const templ = {
         accountToId: this.state.template.accountToId,
         numPeriods: this.state.template.numPeriods,
         noEnd: this.state.template.noEnd,
@@ -116,8 +138,14 @@ export default class Template extends Component {
         startDate: this.state.startDate,
         endDate: this.state.endDate,
         templateType: this.state.templateType,
-        periodType: this.state.periodType
-      });
+        periodType: this.state.periodType,
+        accountFromId: this.state.accountFromId
+      };
+      if (this.props.match.params.id === 'new') {
+        await this.createTemplate(templ);
+      } else {
+        await this.saveTemplate(templ);
+      }
       this.setState({ isLoading: false });
       this.props.history.push("/templates");
     } catch (e) {
@@ -260,6 +288,19 @@ export default class Template extends Component {
                 <option value="Week">Week</option>
                 <option value="Year">Year</option>
                 <option value="Day">Day</option>
+              </FormControl>
+            </FormGroup>
+            <FormGroup controlId="accountFromId" validationState="success">
+              <ControlLabel>Source Account</ControlLabel>
+              <FormControl
+                componentClass="select"
+                type="text"
+                value={this.state.accountFromId}
+                placeholder="Select source account"
+                onChange={this.handleChange}
+              >{this.state.accs.map(x =>
+                <option key={x.accountId} value={x.accountId}>{x.content}</option>
+              )}
               </FormControl>
             </FormGroup>
             <LoaderButton
