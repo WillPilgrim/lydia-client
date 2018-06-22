@@ -4,6 +4,7 @@ import "./Templates.css";
 import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
 import BootstrapTable from "react-bootstrap-table-next";
 import { API } from "aws-amplify";
+import Moment from 'moment';
 
 export default class Templates extends Component {
   constructor(props) {
@@ -42,6 +43,11 @@ export default class Templates extends Component {
     return API.get("accounts", "/templates");
   }
 
+  dateFormatter = (cell,row) => {
+    if (cell != null)
+      return Moment(cell).format("Do MMM YY");
+}
+
   columns = () => [
     {
       dataField: "accountName",
@@ -57,15 +63,17 @@ export default class Templates extends Component {
     },
     {
       dataField: "startDate",
-      text: "Start Date"
+      text: "Start Date",
+      formatter: this.dateFormatter
     },
     {
       dataField: "endDate",
-      text: "End Date"
+      text: "End Date",
+      formatter: this.dateFormatter
     },
     {
       dataField: "periodType",
-      text: "Frequency"
+      text: "Repeat Period"
     },
     {
       dataField: "templateType",

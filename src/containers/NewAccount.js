@@ -19,6 +19,7 @@ export default class NewAccount extends Component {
   }
 
   createAccount(account) {
+    this.props.setAccounts(null);  //invalid the cache
     return API.post("accounts", "/accounts", {
       body: account
     });

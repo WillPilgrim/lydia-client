@@ -9,6 +9,8 @@ import {
 } from "react-bootstrap";
 import LoaderButton from "../components/LoaderButton";
 import "./Template.css";
+import DatePicker from "react-16-bootstrap-date-picker";
+import Moment from "moment";
 
 export default class Template extends Component {
   constructor(props) {
@@ -19,19 +21,34 @@ export default class Template extends Component {
       isDeleting: null,
       template: null,
       description: "",
-      amount: ""
+      amount: "",
+      startDate: null,
+      endDate: null,
+      templateType: "",
+      periodType: ""
     };
   }
 
   async componentDidMount() {
     try {
       const template = await this.getTemplate();
-      const { description, amount } = template;
+      const {
+        description,
+        amount,
+        startDate,
+        endDate,
+        templateType,
+        periodType
+      } = template;
 
       this.setState({
         template,
         description,
-        amount
+        amount,
+        startDate,
+        endDate,
+        templateType,
+        periodType
       });
     } catch (e) {
       alert(e);
@@ -55,13 +72,27 @@ export default class Template extends Component {
   validateForm() {
     return (
       this.getDescriptionValidationState() === "success" &&
-      this.getAmountValidationState() === "success"
+      this.getAmountValidationState() === "success" &&
+      this.getStartDateValidationState() === "success" &&
+      this.getEndDateValidationState() !== "error"
     );
   }
 
   handleChange = event => {
     this.setState({
       [event.target.id]: event.target.value
+    });
+  };
+
+  handleStartDateChange = value => {
+    this.setState({
+      startDate: value
+    });
+  };
+
+  handleEndDateChange = value => {
+    this.setState({
+      endDate: value
     });
   };
 
@@ -74,21 +105,20 @@ export default class Template extends Component {
       await this.saveTemplate({
         accountFromId: this.state.template.accountFromId,
         accountToId: this.state.template.accountToId,
-        templateType: this.state.template.templateType,
-        startDate: this.state.template.startDate,
-        endDate: this.state.template.endDate,
         numPeriods: this.state.template.numPeriods,
         noEnd: this.state.template.noEnd,
-        periodType: this.state.template.periodType,
         periodCnt: this.state.template.periodCnt,
         inflation: this.state.template.inflation,
         ccRelDate: this.state.template.ccRelDate,
 
         description: this.state.description,
-        amount: parseFloat(this.state.amount).toFixed(2)
+        amount: parseFloat(this.state.amount).toFixed(2),
+        startDate: this.state.startDate,
+        endDate: this.state.endDate,
+        templateType: this.state.templateType,
+        periodType: this.state.periodType
       });
       this.setState({ isLoading: false });
-      //      this.props.history.push("/");
       this.props.history.push("/templates");
     } catch (e) {
       alert(e);
@@ -129,6 +159,20 @@ export default class Template extends Component {
     if (regex.test(this.state.amount)) return "success";
     return "error";
   }
+
+  getStartDateValidationState() {
+    if (this.state.startDate === null) return "error";
+    return "success";
+  }
+
+  getEndDateValidationState() {
+    if (this.state.endDate === null) return "warning";
+    if (this.state.startDate === null) return "warning";
+    if (Moment(this.state.endDate).isBefore(Moment(this.state.startDate)))
+      return "error";
+    return "success";
+  }
+
   render() {
     return (
       <div className="Template">
@@ -146,7 +190,6 @@ export default class Template extends Component {
                 placeholder="Enter a description"
               />
               <FormControl.Feedback />
-              <HelpBlock>A description is required</HelpBlock>
             </FormGroup>
             <FormGroup
               controlId="amount"
@@ -154,19 +197,70 @@ export default class Template extends Component {
             >
               <ControlLabel>Amount</ControlLabel>
               <InputGroup>
-      <InputGroup.Addon>$</InputGroup.Addon>
-              <FormControl
-                type="text"
-                value={this.state.amount}
-                placeholder="Enter transaction amount"
-                onChange={this.handleChange}
-              />
-
-            </InputGroup>
-
+                <InputGroup.Addon>$</InputGroup.Addon>
+                <FormControl
+                  type="text"
+                  value={this.state.amount}
+                  placeholder="Enter transaction amount"
+                  onChange={this.handleChange}
+                />
+              </InputGroup>
 
               <FormControl.Feedback />
-                        <HelpBlock>Amount must be a valid decimal value</HelpBlock>
+            </FormGroup>
+            <FormGroup
+              controlId="startDate"
+              validationState={this.getStartDateValidationState()}
+            >
+              <ControlLabel>Start Date</ControlLabel>
+              <DatePicker
+                id="startDate"
+                value={this.state.startDate}
+                placeholder="Start date"
+                onChange={this.handleStartDateChange}
+                autoComplete="off"
+              />
+            </FormGroup>
+            <FormGroup
+              controlId="endDate"
+              validationState={this.getEndDateValidationState()}
+            >
+              <ControlLabel>End Date</ControlLabel>
+              <DatePicker
+                id="endDate"
+                value={this.state.endDate}
+                placeholder="End date"
+                onChange={this.handleEndDateChange}
+                autoComplete="off"
+              />
+            </FormGroup>
+            <FormGroup controlId="templateType" validationState="success">
+              <ControlLabel>Transaction Type</ControlLabel>
+              <FormControl
+                componentClass="select"
+                type="text"
+                value={this.state.templateType}
+                placeholder="Select transaction type"
+                onChange={this.handleChange}
+              >
+                <option value="Debit">Debit</option>
+                <option value="Credit">Credit</option>
+              </FormControl>
+            </FormGroup>
+            <FormGroup controlId="periodType" validationState="success">
+              <ControlLabel>Period Type</ControlLabel>
+              <FormControl
+                componentClass="select"
+                type="text"
+                value={this.state.periodType}
+                placeholder="Select period type"
+                onChange={this.handleChange}
+              >
+                <option value="Month">Month</option>
+                <option value="Week">Week</option>
+                <option value="Year">Year</option>
+                <option value="Day">Day</option>
+              </FormControl>
             </FormGroup>
             <LoaderButton
               block
