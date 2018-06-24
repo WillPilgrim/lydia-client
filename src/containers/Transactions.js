@@ -5,13 +5,14 @@ import {
   ButtonToolbar,
   ButtonGroup
 } from "react-bootstrap";
-import { Navbar, Nav, NavItem, NavDropdown, MenuItem } from "react-bootstrap";
+import { Navbar, NavItem, Nav } from "react-bootstrap";
 import "./Transactions.css";
 import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
 import BootstrapTable from "react-bootstrap-table-next";
 import { API } from "aws-amplify";
 import Moment from "moment";
-import {testTransactions} from "../TestData/TestTrans"
+import { testTransactions } from "../TestData/TestTrans";
+import Calculate from "../libs/calculate";
 
 export default class Transactions extends Component {
   constructor(props) {
@@ -22,7 +23,6 @@ export default class Transactions extends Component {
       templates: [],
       transactions: [],
       accs: [],
-      data: [],
       currentAcc: null
     };
   }
@@ -41,9 +41,8 @@ export default class Transactions extends Component {
       this.setState({
         templates,
         accs,
-        transactions:testTransactions,
-        currentAcc: accs[1].accountId,
-        data: testTransactions.find(x => x.accountId === accs[1].accountId).trans
+        transactions: testTransactions,
+        currentAcc: accs[1].accountId
       });
     } catch (e) {
       alert(e);
@@ -100,48 +99,64 @@ export default class Transactions extends Component {
   };
 
   recalculate = () => {
-    alert("hello");
+    this.setState({transactions: Calculate(this.state.transactions,this.state.templates)});
   };
 
-  handleNavSelect = (eventKey) => {
-    console.log(eventKey)
-  }
+  handleAccountSelection = eventKey => {
+    this.setState({ currentAcc: eventKey });
+  };
 
   render() {
     return (
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
 
-<Navbar>
-<Navbar.Header>
-            <Navbar.Toggle />
-          </Navbar.Header>
-  <Nav onSelect={this.handleNavSelect}>
-    <NavItem eventKey={1}>
-      Cheque
-    </NavItem>
-    <NavItem eventKey={2}>
-      Savings
-    </NavItem>
-  </Nav>
-</Navbar>
+        <div className="row">
+          <div className="col-sm-8">
+            <Navbar onSelect={this.handleAccountSelection}>
+              <Nav>
+                {this.state.accs.map((x, index) => (
+                  <NavItem
+                    key={x.accountId}
+                    eventKey={x.accountId}
+                    active={x.accountId === this.state.currentAcc}
+                  >
+                    {x.content}
+                  </NavItem>
+                ))}
+              </Nav>
+            </Navbar>
+          </div>
+          <div className="col-sm-4">
+            <ButtonToolbar className="pull-right">
+              <ButtonGroup>
+                <Button bsSize="large">Load</Button>
+                <Button bsSize="large">Save</Button>
+              </ButtonGroup>
+              <Button
+                bsStyle="success"
+                bsSize="large"
+                onClick={this.recalculate}
+              >
+                Recalculate
+              </Button>
+            </ButtonToolbar>
+          </div>
+        </div>
 
         <BootstrapTable
           keyField="transactionId"
-          data={this.state.data}
+          data={
+            this.state.currentAcc === null
+              ? []
+              : this.state.transactions.find(
+                  x => x.accountId === this.state.currentAcc
+                ).trans
+          }
           columns={this.columns()}
           rowEvents={this.rowEvents}
         />
-        <ButtonToolbar className="pull-right">
-          <ButtonGroup>
-            <Button>Load</Button>
-            <Button>Save</Button>
-          </ButtonGroup>
-          <Button bsStyle="success" onClick={this.recalculate}>
-            Recalculate
-          </Button>
-        </ButtonToolbar>
-       </div>
+      </div>
     );
   }
 }
