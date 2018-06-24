@@ -134,12 +134,13 @@ export default class Template extends Component {
 
         description: this.state.description,
         amount: parseFloat(this.state.amount).toFixed(2),
-        startDate: this.state.startDate,
+        startDate: this.state.endDate,
         endDate: this.state.endDate,
         templateType: this.state.templateType,
         periodType: this.state.periodType,
         accountFromId: this.state.accountFromId
       };
+      console.log(templ.startDate, Moment())
       if (this.props.match.params.id === 'new') {
         await this.createTemplate(templ);
       } else {

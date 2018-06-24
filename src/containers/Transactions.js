@@ -38,6 +38,7 @@ export default class Transactions extends Component {
         accountName: accs.find(x => x.accountId === afid).content,
         ...rest
       }));
+      console.log(testTransactions)
       this.setState({
         templates,
         accs,

@@ -1,6 +1,7 @@
-tomato = { id: "1", ratingId: "1", name: "Tomato", price: "3.50" };
+var moment = require('moment');
+
 templates = [
-  tomato,
+
   { id: "2", ratingId: "3", name: "Carrot", price: "0.12" },
   { id: "3", ratingId: "2", name: "Celery", price: "1.80" }
 ];
@@ -31,4 +32,6 @@ accountId:'Savings',trans:[{ transactionId:1,date:"2018-06-01",description:"Petr
 }];
 //console.log(data[0]);
 //console.log(data[1]);
-console.log(data.find(x=>x.accountId==='Cheque').trans)
+//console.log(data.find(x=>x.accountId==='Cheque').trans)
+
+console.log('==>',moment("2018-06-24").add(1,"d"))

@@ -6,48 +6,48 @@ export const testTransactions = [
       trans: [
         {
           transactionId: 1,
-          date: "2018-06-01",
+          date: Moment("2018-06-01").format("YYYY-MM-DD"),
           description: "Salary",
           crAmount: "1000.00",
           dbAmount: "",
           balance: "1000.00",
-          autogen: "2018-06-01"
+          autogen: Moment("2018-06-01").format("YYYY-MM-DD")
         },
         {
           transactionId: 2,
-          date: "2018-06-02",
+          date: Moment("2018-06-02").format("YYYY-MM-DD"),
           description: "Petrol",
           crAmount: "",
           dbAmount: "35.00",
           balance: "965.00",
-          autogen: "2018-06-01"
+          autogen: Moment("2018-06-01").format("YYYY-MM-DD")
         },
         {
           transactionId: 3,
-          date: "2018-06-03",
+          date: Moment("2018-06-03").format("YYYY-MM-DD"),
           description: "Groceries",
           crAmount: "",
           dbAmount: "150.00",
           balance: "815.00",
-          autogen: "2018-06-01"
+          autogen: Moment("2018-06-01").format("YYYY-MM-DD")
         },
         {
             transactionId: 4,
-            date: "2010-06-03",
+            date: Moment("2010-06-03").format("YYYY-MM-DD"),
             description: "First transaction",
             crAmount: "1.00",
             dbAmount: "",
             balance: "815.00",
-            autogen: "2010-06-01"
+            autogen: Moment("2010-06-01").format("YYYY-MM-DD")
           },
           {
             transactionId: 5,
-            date: "2029-06-03",
+            date: Moment("2029-06-03").format("YYYY-MM-DD"),
             description: "Future trans",
             crAmount: "",
             dbAmount: "150.00",
             balance: "815.00",
-            autogen: "2029-06-01"
+            autogen: Moment("2029-06-03").format("YYYY-MM-DD")
           },
           {
             transactionId: 6,
@@ -82,7 +82,7 @@ export const testTransactions = [
             description: "Manual one year hence",
             crAmount: "",
             dbAmount: "150.00",
-            balance: "815.00", autogen: Moment("0001-01-01")
+            balance: "815.00", autogen: Moment("0001-01-01").format("YYYY-MM-DD")
           }
         ]
     },
@@ -91,21 +91,21 @@ export const testTransactions = [
       trans: [
         {
           transactionId: 12,
-          date: "2020-06-15",
+          date: Moment("2020-06-15").format("YYYY-MM-DD"),
           description: "Future trans",
           crAmount: "",
           dbAmount: "150.00",
           balance: "850.00",
-          autogen: "2020-06-01"
+          autogen: Moment("2020-06-15").format("YYYY-MM-DD")
         },
         {
             transactionId: 11,
-            date: "2018-06-15",
+            date: Moment("2018-06-15").format("YYYY-MM-DD"),
             description: "Night out",
             crAmount: "",
             dbAmount: "150.00",
             balance: "850.00",
-            autogen: "2018-06-01"
+            autogen: Moment("2018-06-15").format("YYYY-MM-DD")
           }
         ]
     }
