@@ -42,16 +42,19 @@ export default class Accounts extends Component {
   }
 
   getAccount() {
-    return API.get("accounts", `/accounts/${this.props.match.params.id}`);
+ //   return API.get("accounts", `/accounts/${this.props.match.params.id}`);
+    return this.props.accounts.find(x => x.accountId === this.props.match.params.id)
   }
 
   saveAccount(account) {
+    this.props.setAccounts(null);  //invalid the cache
     return API.put("accounts", `/accounts/${this.props.match.params.id}`, {
       body: account
     });
   }
 
   deleteAccount() {
+    this.props.setAccounts(null);  //invalid the cache
     return API.del("accounts", `/accounts/${this.props.match.params.id}`);
   }
 

@@ -11,6 +11,8 @@ import AuthenticatedRoute from "./components/AuthenticatedRoute";
 import UnauthenticatedRoute from "./components/UnauthenticatedRoute";
 import Settings from "./containers/Settings";
 import Templates from "./containers/Templates";
+import Template from "./containers/Template";
+import Transactions from "./containers/Transactions";
 
 export default ({ childProps }) =>
   <Switch>
@@ -20,7 +22,9 @@ export default ({ childProps }) =>
     <AuthenticatedRoute path="/settings" exact component={Settings} props={childProps} />
     <AuthenticatedRoute path="/accounts/new" exact component={NewAccount} props={childProps} />
     <AuthenticatedRoute path="/accounts/:id" exact component={Accounts} props={childProps} />
+    <AuthenticatedRoute path="/templates/:id" exact component={Template} props={childProps} />
     <AuthenticatedRoute path="/templates" exact component={Templates} props={childProps} />
+    <AuthenticatedRoute path="/transactions" exact component={Transactions} props={childProps} />
     { /* Finally, catch all unmatched routes */ }
     <Route component={NotFound} />
   </Switch>;

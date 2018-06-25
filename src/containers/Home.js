@@ -20,7 +20,11 @@ export default class Home extends Component {
     }
 
     try {
-      const accounts = await this.accounts();
+      let accounts = this.props.accounts;
+      if (accounts == null) {
+        accounts = await this.accounts();
+        this.props.setAccounts(accounts);
+      }
       this.setState({ accounts });
     } catch (e) {
       alert(e);
