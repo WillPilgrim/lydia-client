@@ -1,11 +1,17 @@
 import Moment from "moment";
+import { uuid } from './utilities';
 
-export default (transactions, template) => {
+export default (transactions, templates) => {
   // 1. Remove future transactions
   delfuture(transactions);
   // 2. Process normal template transactions
-  let currTrans = processNormal(transactions, template);
-  return currTrans;
+  processNormal(transactions, templates);
+  // 3. Calculate special template transactions
+  processSpecials(transactions, templates);
+  // 4. Update transaction balances
+  updateBalances(transactions);
+
+  return transactions;
 };
 
 let delfuture = transactions => {
@@ -19,15 +25,26 @@ let delfuture = transactions => {
 };
 
 let processNormal = (transactions, templates) => {
+  // Hardcode inflation rate for now
+
+  const inflation = 0.03;
+
   templates.forEach(tr => {
-    let sd = Moment(tr.startDate);
+    let inflate = true;   // hardcode for now...use tr.inflate eventually
+    let startDate = Moment(tr.startDate);
+    let sd = Moment(startDate);
     let ed = Moment(tr.endDate);
     while (sd.isSameOrBefore(ed)) {
       let amount = tr.amount;
-      let newTrans = { date: sd.format(), description: tr.description, autogen: sd.format(), transactionId: uuid()};
+      let newTrans = { date: sd.format(), description: tr.description, autogen: sd.format(), transactionId: uuid() };
       let account = transactions.find(x => x.accountId === tr.accountFromId);
       if (sd > Moment()) {
-        // handle inflation here....
+        if (inflate) {
+          let numYears = sd.diff(startDate, 'years');
+          if (numYears < 0)
+            numYears = 0;
+          amount = Math.round(100 * amount * Math.pow((1 + inflation), numYears)) / 100;
+        }
         if (tr.templateType === "Debit") {
           newTrans.dbAmount = amount;
           newTrans.crAmount = "";
@@ -36,6 +53,7 @@ let processNormal = (transactions, templates) => {
           newTrans.dbAmount = "";
         }
         account.trans.push(newTrans);
+        account.dirty = true;
       }
       sd = sd.add(tr.periodCnt, tr.periodType);
     }
@@ -102,15 +120,240 @@ let processNormal = (transactions, templates) => {
   // 		startDate = DateAdd(period_type,period_count,startDate);
   // 	}
   // }
-  return transactions;
 };
 
-let uuid = () => {
-  let dt = new Date().getTime();
-  let uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      let r = (dt + Math.random()*16)%16 | 0;
-      dt = Math.floor(dt/16);
-      return (c=='x' ? r :(r&0x3|0x8)).toString(16);
-  });
-  return uuid;
-}
+let processSpecials = (transactions, templates) => {
+};
+
+let updateBalances = (transactions) => {
+//	Sort each account and update balances
+  transactions.forEach(account => updateBalance(account));
+};
+
+let updateBalance = (account) => {
+  //	Sort given account and update balances
+  
+    if (account.dirty) {
+      account.trans.sort( (a,b) => Moment(a.date).valueOf() - Moment(b.date).valueOf() );
+      let bal = account.openingBal;
+      let rate = account.openingRate;
+      let interestStartDate = account.interestStartDate;
+      let totalInterest = account.openingInterest;
+      let prevDate = interestStartDate;
+      let numRows = account.trans.length;
+      let inc;
+      let exp;
+      let description;
+      let currentBal = bal;
+      if (Moment(account.openingDate).isAfter(Moment())) currentBal = 0;
+
+
+      var pay_date;
+      var ccindex = -1;
+      var ccbal = bal;
+      var prev = -1;
+      var savebal;
+      var saverate;
+      var savetotalint;
+      var lowestbal;
+      var current_balance = bal;
+      var line = {};
+    	
+      if (accounts[accno].opening_date > toDay) {
+        current_balance = 0;
+      }
+      // if cc account, look for pay dates to calculate pay off amounts
+      if (ccdates.length > 0) {
+        pay_date = ccdates[0];
+        ccindex = 0;
+      }
+    	
+      for (var i = 1; i < numrows; i++)
+      {
+        var line_date = data[accno][i].date;
+        var trans_type = data[accno][i].type;
+
+        /*
+  
+        // Credit card payment calculation
+        if (ccindex > -1) {
+          if (line_date > pay_date) {
+            ccbal = bal;
+            ccindex = ccindex + 1;
+            pay_date = ccdates[ccindex];
+          }
+        	
+          // Check if this line is a credit card line
+          if (trans_type == "cc") {
+            if (line_date > toDay)
+            {
+              data[accno][i].income = -ccbal;
+            	
+              line = {date: line_date, autogen: line_date,expense: -ccbal,item:"To " + accounts[accno].desc + " for credit card pay off"};
+              data[partner].push(line);
+              accounts[partner].dirty = true;
+            }
+          }
+        }
+
+        */
+
+        /*
+  
+        // Zero account to/from partner (if provided)
+        if (line_date > toDay) {
+          if (trans_type == "zero") {
+            line_date = data[accno][i].date;
+            line = {date: line_date, autogen: line_date};
+            if (bal >= 0) {
+              data[accno][i].expense = bal;
+              description = "Withdrawal to clear balance";
+            } else {
+              data[accno][i].income = -transferamt;
+              description = "Deposit to clear balance";
+            }
+            if (partner > -1) {
+              if (bal < 0) {
+                description = "From " +accounts[partner].desc + " to clear balance";
+                line.expense = -bal;
+                line.item = "To " + accounts[accno].desc;
+              } else {
+                description = "To " +accounts[partner].desc + " to clear balance";
+                line.income = bal;
+                line.item = "From " + accounts[accno].desc;
+              }
+              data[partner].push(line);
+              accounts[partner].dirty = true;
+            }
+            data[accno][i].item = description;
+          }
+        }
+  
+        */
+
+        /*
+
+        // minimise types calculation process
+        if (line_date > toDay) {
+          if  (trans_type == "minimise" || trans_type == "period_end_marker") {
+            if (prev == -1) {
+              prev = i;
+              lowestbal = bal;	// initial lowest balance of period
+              savebal = bal;  	// remember balance at this point
+              saverate = rate;	// remember rate at this point
+              savetotalint = total_interest; // remember total interest at this point
+            } else {
+              if (trans_type == "period_end_marker") {
+                var temparr = data[accno];
+                data[accno].splice(i,1);
+                numrows = data[accno].length;	// set reduced length for loop
+              }
+              i = prev;  // set loop back to previous minimise line
+              line_date = data[accno][i].date;
+              var transferamt = -Math.floor((lowestbal - minbal) / 10) * 10;
+              // partner line
+              line = {date: line_date, autogen: line_date};
+              if (transferamt >= 0) {
+                data[accno][i].income = transferamt;
+                description = "Deposit to ensure minimum balance";
+              } else {
+                data[accno][i].expense = -transferamt;
+                description = "Withdrawal to ensure minimum balance";
+              }
+              if (partner > -1) {
+                if (transferamt >= 0) {
+                  description = "From " +accounts[partner].desc + " to ensure minimum balance";
+                  line.income = transferamt;
+                  line.item = "To " + accounts[accno].desc;
+                } else {
+                  description = "To " +accounts[partner].desc + " to ensure minimum balance";
+                  line.income = -transferamt;
+                  line.item = "From " + accounts[accno].desc;
+                }
+                data[partner].push(line);
+                accounts[partner].dirty = true;
+              }
+              data[accno][i].item = description;
+  
+              bal = savebal;  // restore balance to this point
+              rate = saverate; // restore rate at this point
+              total_interest = savetotalint; // restore total interest at this point
+              prev = -1; // reset start of minimise entry
+            }
+          }
+        }
+
+        */
+
+        /*
+      	
+        if (rate != undefined)  // interest rate calculations
+        {
+          if (line_date >= interest_start_date)
+          {
+            // calculate 'line interest' which is the interest calculated since the last line entry
+            var days_diff = dateDiffInDays(prev_date,line_date);
+            prev_date = line_date;
+            var line_interest = bal * Math.pow((1 + rate/365.25),days_diff) - bal;
+            total_interest = total_interest + line_interest;
+            data[accno][i].interest = line_interest;
+          	
+            // Add accumulated interest between interest debit/credit entries
+            if (trans_type == "interest")
+            {
+              if (line_date > toDay)
+              {
+                if (total_interest >= 0) {
+                  data[accno][i].income = total_interest;
+                  description = "Interest Credit";
+                } else {
+                  data[accno][i].expense = -total_interest;
+                  description = "Interest Debit";
+                }
+                data[accno][i].item = description;
+              }
+              total_interest = 0;
+            }
+          }
+        	
+          //  get current rate from rate change entry
+          if (data[accno][i].new_rate != undefined)
+          {
+            rate = data[accno][i].new_rate;
+            if (line_date <= toDay) {
+              accounts[accno].current_rate = rate;
+            }
+          }
+        	
+        }
+        
+        */
+
+        // update line running balance
+        inc = data[accno][i].income;
+        exp = data[accno][i].expense;
+        if (inc != undefined) {
+          bal = bal + inc;
+        }
+        if (exp	!= undefined) {
+          bal = bal - exp;
+        }
+        data[accno][i].balance = bal;
+      	
+        // check lowest balance of period
+        if (bal < lowestbal) {
+          lowestbal = bal;
+        }
+      	
+        // Update today's running balance
+        if (line_date <= toDay) {
+          current_balance = bal;
+        }
+      }
+    	
+
+      account.currentBal = currentBal;
+      account.dirty = false;
+    }
+  
+};

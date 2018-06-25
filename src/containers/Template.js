@@ -27,6 +27,7 @@ export default class Template extends Component {
       accountFromId: "",
       templateType: "",
       periodType: "",
+      periodCnt:"",
       new: ""
     };
   }
@@ -48,7 +49,8 @@ export default class Template extends Component {
         startDate,
         endDate,
         templateType,
-        periodType
+        periodType,
+        periodCnt 
       } = template;
       this.setState({
         accs,
@@ -59,7 +61,8 @@ export default class Template extends Component {
         startDate,
         endDate,
         templateType,
-        periodType
+        periodType,
+        periodCnt
       });
     } catch (e) {
       alert(e);
@@ -93,6 +96,7 @@ export default class Template extends Component {
   validateForm() {
     return (
       this.getDescriptionValidationState() === "success" &&
+      this.getFreqValidationState() === "success" &&
       this.getAmountValidationState() === "success" &&
       this.getStartDateValidationState() === "success" &&
       this.getEndDateValidationState() !== "error"
@@ -136,7 +140,7 @@ export default class Template extends Component {
         endDate: Moment(this.state.endDate).format(),
         templateType: this.state.templateType,
         periodType: this.state.periodType,
-        periodCnt: parseInt(this.state.periodType),
+        periodCnt: parseInt(this.state.periodCnt,10),
         accountFromId: this.state.accountFromId
       };
       if (this.props.match.params.id === "new") {
@@ -187,8 +191,11 @@ export default class Template extends Component {
   }
 
   getFreqValidationState() {
-    if (this.state.periodCnt <= 0) return "error";
-    return "success";
+    if (this.state.periodCnt.length <= 0) return "error";
+    if (isNaN(parseInt(this.state.periodCnt,10)))
+      return "error"
+    else
+      return "success";
   }
 
   getStartDateValidationState() {
@@ -288,10 +295,11 @@ export default class Template extends Component {
                   placeholder="Select period type"
                   onChange={this.handleChange}
                 >
-                  <option value="Month">Month</option>
-                  <option value="Week">Week</option>
-                  <option value="Year">Year</option>
-                  <option value="Day">Day</option>
+                  <option value="M">Month</option>
+                  <option value="w">Week</option>
+                  <option value="y">Year</option>
+                  <option value="Q">Quarter</option>
+                  <option value="d">Day</option>
                 </FormControl>
               </FormGroup>
             </Col>

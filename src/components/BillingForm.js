@@ -62,7 +62,7 @@ class BillingForm extends Component {
             type="number"
             value={this.state.accounts}
             onChange={this.handleFieldChange}
-            placeholder="Maxium number of accounts"
+            placeholder="Maximum number of accounts"
           />
         </FormGroup>
         <hr />

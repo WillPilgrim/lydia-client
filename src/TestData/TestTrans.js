@@ -3,6 +3,13 @@ import Moment from "moment";
 export const testTransactions = [
     {
       accountId: "ae29b1c0-73d0-11e8-8ec0-3fce1802dff7",
+      dirty:false,
+      openingDate: Moment("2010-01-01").format(),
+      openingBal: 0.00,
+      openingRate: 0.05,
+      interestStartDate: Moment("2018-06-01").format(),
+      openingInterest: 58.35,
+      currentBal: 0.00,
       trans: [
         {
           transactionId: 1,
@@ -88,6 +95,13 @@ export const testTransactions = [
     },
     {
       accountId: "a9ca4f40-73d0-11e8-8ec0-3fce1802dff7",
+      dirty:false,
+      openingDate: Moment("2018-06-01").format(),
+      openingBal:100.00,
+      openingRate: 0.00,
+      interestStartDate: Moment("2018-06-01").format(),
+      openingInterest: 0.00,
+      currentBal: 0.00,
       trans: [
         {
           transactionId: 12,
