@@ -1,0 +1,29 @@
+- modify Templates.js to list basic template fields in a list
+    - may use a basic react list component for this
+    - fields needed: start date, end date, account, description, type, recuring type, recuring amount, amount
+    - eg. 2018-06-20, 2020-06-20, savings, Groceries, debit, week, 1, $250
+
+- add create/edit template from Templates list
+    - could be part of basic list control above
+
+- add an edit button to accounts list (replaces link on actual account list item)
+
+- create Transactions.js - list of transactions for given account
+    - almost certainly implemented as some sort of spreadsheet control
+    - must allow for in table editing
+    - gets data from state
+
+- add a transactions button to main menu bar - takes to default account
+
+- modify account list item click to go to list of transactions for account
+
+- add a recalculate button to main menu
+    - main business logic
+    - implements the recalculation of all the account transactions
+
+- add Save Transactions button 
+    - implements saving of all data to S3
+
+- add Load transactions button
+    - reads from S3 and populates data structures for transaction displays per account
+    - what happens if accounts in transaction data doesn't match account list?
