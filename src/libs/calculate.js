@@ -20,12 +20,11 @@ let delfuture = transactions => {
 
 let processNormal = (transactions, templates) => {
   templates.forEach(tr => {
-    console.log(tr);
     let sd = Moment(tr.startDate);
     let ed = Moment(tr.endDate);
     while (sd.isSameOrBefore(ed)) {
       let amount = tr.amount;
-      let newTrans = { date: sd, description: tr.description, autogen: sd };
+      let newTrans = { date: sd.format(), description: tr.description, autogen: sd.format(), transactionId: uuid()};
       let account = transactions.find(x => x.accountId === tr.accountFromId);
       if (sd > Moment()) {
         // handle inflation here....
@@ -38,20 +37,13 @@ let processNormal = (transactions, templates) => {
         }
         account.trans.push(newTrans);
       }
-
       sd = sd.add(tr.periodCnt, tr.periodType);
     }
   });
-  // 	var startDate = trans_templates[i].start_date;
-  // 	var endDate = trans_templates[i].end_date;
-  // 	var period_type = trans_templates[i].period_type;
-  // 	var period_count = trans_templates[i].period_count;
-  // 	var acc = trans_templates[i].account;
   // 	var partner = trans_templates[i].partner;
   // 	var basedate = trans_templates[i].basedate;
   // 	var baseamt = trans_templates[i].amount;
   // 	var dayOffs = trans_templates[i].dayOffs;
-  // 	var description = trans_templates[i].description;
   // 	var partnerdesc = trans_templates[i].part_desc;
 
   // 	var amount=0;
@@ -60,7 +52,7 @@ let processNormal = (transactions, templates) => {
   // 		var line;
   // 		if (startDate > toDay)
   // 		{
-  // 			if (basedate == undefined)
+  // 			if (basedate === undefined)
   // 			{
   // 				amount = baseamt;
   // 			}
@@ -85,7 +77,7 @@ let processNormal = (transactions, templates) => {
   // 			if (partner != undefined)
   // 			{
   // 				var partnerdate;
-  // 				if (dayOffs == undefined)
+  // 				if (dayOffs === undefined)
   // 				{
   // 						partnerdate = startDate;
   // 				} else {
@@ -112,3 +104,13 @@ let processNormal = (transactions, templates) => {
   // }
   return transactions;
 };
+
+let uuid = () => {
+  let dt = new Date().getTime();
+  let uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      let r = (dt + Math.random()*16)%16 | 0;
+      dt = Math.floor(dt/16);
+      return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+  });
+  return uuid;
+}

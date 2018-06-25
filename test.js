@@ -11,10 +11,10 @@ ratings = [
   { id: "3", name: "Awful" }
 ];
 
-//mf = (template) => ({ratingName:ratings.find(rating => rating.id == template.id).name,...template});
-mf = ({ratingId,...remaining}) => ({ratingName:ratings.find(rating => rating.id == ratingId).name,...remaining});
-//console.log(templates.map(({ratingId,...remaining}) => ({ratingName:ratings.find(rating => rating.id == ratingId).name,...remaining})));
-//console.log(templates.map(({ratingId:rid,...rest}) => ({rating:ratings.find(x => x.id == rid).name,...rest})));
+//mf = (template) => ({ratingName:ratings.find(rating => rating.id === template.id).name,...template});
+mf = ({ratingId,...remaining}) => ({ratingName:ratings.find(rating => rating.id === ratingId).name,...remaining});
+//console.log(templates.map(({ratingId,...remaining}) => ({ratingName:ratings.find(rating => rating.id === ratingId).name,...remaining})));
+//console.log(templates.map(({ratingId:rid,...rest}) => ({rating:ratings.find(x => x.id === rid).name,...rest})));
 
 let accounts=[]
 accounts['a9ca4f40-73d0-11e8-8ec0-3fce1802dff7'] = {userId:'ap-southeast-2:5363cdf1-ed41-42fa-90c1-3a19c18769bc',accountId:'a9ca4f40-73d0-11e8-8ec0-3fce1802dff7',content:'Savings'};
@@ -33,5 +33,5 @@ accountId:'Savings',trans:[{ transactionId:1,date:"2018-06-01",description:"Petr
 //console.log(data[0]);
 //console.log(data[1]);
 //console.log(data.find(x=>x.accountId==='Cheque').trans)
-
-console.log('==>',moment("2018-06-24").add(1,"d"))
+let x = moment("2018-06-24").valueOf
+console.log('==>',x);

@@ -4,7 +4,8 @@ import {
   FormGroup,
   FormControl,
   ControlLabel,
-  InputGroup
+  InputGroup,
+  Col
 } from "react-bootstrap";
 import LoaderButton from "../components/LoaderButton";
 import "./Template.css";
@@ -34,7 +35,7 @@ export default class Template extends Component {
     try {
       const accs = await this.getAccounts();
       let template;
-      if (this.props.match.params.id === 'new') {
+      if (this.props.match.params.id === "new") {
         template = this.state;
         template.accountFromId = accs[0];
       } else {
@@ -49,7 +50,6 @@ export default class Template extends Component {
         templateType,
         periodType
       } = template;
-
       this.setState({
         accs,
         accountFromId,
@@ -85,7 +85,6 @@ export default class Template extends Component {
       body: template
     });
   }
-
 
   deleteTemplate() {
     return API.del("accounts", `/templates/${this.props.match.params.id}`);
@@ -128,20 +127,19 @@ export default class Template extends Component {
         accountToId: this.state.template.accountToId,
         numPeriods: this.state.template.numPeriods,
         noEnd: this.state.template.noEnd,
-        periodCnt: this.state.template.periodCnt,
         inflation: this.state.template.inflation,
         ccRelDate: this.state.template.ccRelDate,
 
         description: this.state.description,
         amount: parseFloat(this.state.amount).toFixed(2),
-        startDate: this.state.endDate,
-        endDate: this.state.endDate,
+        startDate: Moment(this.state.startDate).format(),
+        endDate: Moment(this.state.endDate).format(),
         templateType: this.state.templateType,
         periodType: this.state.periodType,
+        periodCnt: parseInt(this.state.periodType),
         accountFromId: this.state.accountFromId
       };
-      console.log(templ.startDate, Moment())
-      if (this.props.match.params.id === 'new') {
+      if (this.props.match.params.id === "new") {
         await this.createTemplate(templ);
       } else {
         await this.saveTemplate(templ);
@@ -186,6 +184,11 @@ export default class Template extends Component {
     const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
     if (regex.test(this.state.amount)) return "success";
     return "error";
+  }
+
+  getFreqValidationState() {
+    if (this.state.periodCnt <= 0) return "error";
+    return "success";
   }
 
   getStartDateValidationState() {
@@ -275,21 +278,34 @@ export default class Template extends Component {
                 <option value="Credit">Credit</option>
               </FormControl>
             </FormGroup>
-            <FormGroup controlId="periodType" validationState="success">
-              <ControlLabel>Period Type</ControlLabel>
-              <FormControl
-                componentClass="select"
-                type="text"
-                value={this.state.periodType}
-                placeholder="Select period type"
-                onChange={this.handleChange}
-              >
-                <option value="Month">Month</option>
-                <option value="Week">Week</option>
-                <option value="Year">Year</option>
-                <option value="Day">Day</option>
-              </FormControl>
-            </FormGroup>
+            <Col sm={6}>
+              <FormGroup controlId="periodType" validationState="success">
+                <ControlLabel>Period Type</ControlLabel>
+                <FormControl
+                  componentClass="select"
+                  type="text"
+                  value={this.state.periodType}
+                  placeholder="Select period type"
+                  onChange={this.handleChange}
+                >
+                  <option value="Month">Month</option>
+                  <option value="Week">Week</option>
+                  <option value="Year">Year</option>
+                  <option value="Day">Day</option>
+                </FormControl>
+              </FormGroup>
+            </Col>
+            <Col sm={6}>
+              <FormGroup controlId="periodCnt" validationState={this.getFreqValidationState()}>
+                <ControlLabel>Frequency</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.periodCnt}
+                  placeholder="Number of periods"
+                  onChange={this.handleChange}
+                />
+              </FormGroup>
+            </Col>
             <FormGroup controlId="accountFromId" validationState="success">
               <ControlLabel>Source Account</ControlLabel>
               <FormControl
@@ -298,9 +314,12 @@ export default class Template extends Component {
                 value={this.state.accountFromId}
                 placeholder="Select source account"
                 onChange={this.handleChange}
-              >{this.state.accs.map(x =>
-                <option key={x.accountId} value={x.accountId}>{x.content}</option>
-              )}
+              >
+                {this.state.accs.map(x => (
+                  <option key={x.accountId} value={x.accountId}>
+                    {x.content}
+                  </option>
+                ))}
               </FormControl>
             </FormGroup>
             <LoaderButton

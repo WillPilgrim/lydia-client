@@ -33,12 +33,7 @@ export default class Transactions extends Component {
     }
     try {
       const accs = await this.accounts();
-      const t1 = await this.templates();
-      const templates = t1.map(({ accountFromId: afid, ...rest }) => ({
-        accountName: accs.find(x => x.accountId === afid).content,
-        ...rest
-      }));
-      console.log(testTransactions)
+      const templates = await this.templates();
       this.setState({
         templates,
         accs,
@@ -67,7 +62,9 @@ export default class Transactions extends Component {
   columns = () => [
     {
       dataField: "date",
-      text: "Date"
+      text: "Date",
+      formatter: this.dateFormatter
+
     },
     {
       dataField: "description",
