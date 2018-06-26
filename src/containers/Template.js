@@ -21,7 +21,7 @@ export default class Template extends Component {
       isDeleting: null,
       template: null,
       description: "",
-      amount: "",
+      amount: 0,
       startDate: null,
       endDate: null,
       accountFromId: "",
@@ -58,6 +58,7 @@ export default class Template extends Component {
         template,
         description,
         amount,
+        amount100: (amount/100).toFixed(2),
         startDate,
         endDate,
         templateType,
@@ -135,7 +136,7 @@ export default class Template extends Component {
         ccRelDate: this.state.template.ccRelDate,
 
         description: this.state.description,
-        amount: parseFloat(this.state.amount).toFixed(2),
+        amount: parseFloat(this.state.amount100).toFixed(2) * 100,
         startDate: Moment(this.state.startDate).format(),
         endDate: Moment(this.state.endDate).format(),
         templateType: this.state.templateType,
@@ -184,9 +185,9 @@ export default class Template extends Component {
   }
 
   getAmountValidationState() {
-    if (this.state.amount.length === 0) return "error";
+    if (this.state.amount100.length === 0) return "error";
     const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
-    if (regex.test(this.state.amount)) return "success";
+    if (regex.test(this.state.amount100)) return "success";
     return "error";
   }
 
@@ -230,7 +231,7 @@ export default class Template extends Component {
               <FormControl.Feedback />
             </FormGroup>
             <FormGroup
-              controlId="amount"
+              controlId="amount100"
               validationState={this.getAmountValidationState()}
             >
               <ControlLabel>Amount</ControlLabel>
@@ -238,7 +239,7 @@ export default class Template extends Component {
                 <InputGroup.Addon>$</InputGroup.Addon>
                 <FormControl
                   type="text"
-                  value={this.state.amount}
+                  value={this.state.amount100}
                   placeholder="Enter transaction amount"
                   onChange={this.handleChange}
                 />

@@ -64,25 +64,42 @@ export default class Transactions extends Component {
       dataField: "date",
       text: "Date",
       formatter: this.dateFormatter
-
     },
     {
       dataField: "description",
-      text: "Description"
+      text: "Description",
+      headerStyle: (c,i) => { return { width: '50%', textAlign: 'center'};}
     },
     {
       dataField: "crAmount",
-      text: "Credit"
+      text: "Credit",
+      align: "right",
+      formatter: this.amountFormatter
     },
     {
       dataField: "dbAmount",
-      text: "Debit"
+      text: "Debit",
+      align: "right",
+      formatter: this.amountFormatter
     },
     {
       dataField: "balance",
-      text: "Balance"
+      text: "Balance",
+      formatter: this.amountFormatter,
+      style: this.amountStyle
     }
   ];
+
+  amountFormatter = (cell, row) => {
+    let val = parseInt(cell,10) / 100;
+    if (val) return val.toFixed(2);
+  };
+
+  amountStyle = (cell, row) => {
+    let val = parseInt(cell,10) / 100;
+    if (val < 0) return { color: "red", textAlign: "right" };
+    else return { textAlign: "right" };
+  };
 
   rowEvents = {
     onClick: (e, row, rowIndex) => {
@@ -97,7 +114,9 @@ export default class Transactions extends Component {
   };
 
   recalculate = () => {
-    this.setState({transactions: Calculate(this.state.transactions,this.state.templates)});
+    this.setState({
+      transactions: Calculate(this.state.transactions, this.state.templates)
+    });
   };
 
   handleAccountSelection = eventKey => {

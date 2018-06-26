@@ -47,6 +47,10 @@ export default class Templates extends Component {
     if (cell != null) return Moment(cell).format("Do MMM YY");
   };
 
+  amountFormatter = (cell, row) => {
+    if (cell != null) return (parseInt(cell,10)/100).toFixed(2);
+  };
+
   periodFormatter = (cell, row) => {
     let period;
 
@@ -109,7 +113,8 @@ export default class Templates extends Component {
     },
     {
       dataField: "amount",
-      text: "Amount"
+      text: "Amount",
+      formatter: this.amountFormatter
     },
     {
       dataField: "startDate",

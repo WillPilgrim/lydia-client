@@ -43,14 +43,14 @@ let processNormal = (transactions, templates) => {
           let numYears = sd.diff(startDate, 'years');
           if (numYears < 0)
             numYears = 0;
-          amount = Math.round(100 * amount * Math.pow((1 + inflation), numYears)) / 100;
+          amount = Math.floor(amount * Math.pow((1 + inflation), numYears));
         }
         if (tr.templateType === "Debit") {
           newTrans.dbAmount = amount;
-          newTrans.crAmount = "";
+          newTrans.crAmount = 0;
         } else {
           newTrans.crAmount = amount;
-          newTrans.dbAmount = "";
+          newTrans.dbAmount = 0;
         }
         account.trans.push(newTrans);
         account.dirty = true;
@@ -145,7 +145,9 @@ let updateBalance = (account) => {
       let exp;
       let description;
       let currentBal = bal;
-      if (Moment(account.openingDate).isAfter(Moment())) currentBal = 0;
+      let lowestBal = 0;
+      if (Moment(account.openingDate).isAfter(Moment())) 
+        currentBal = 0;
 
 
       var pay_date;
@@ -155,23 +157,20 @@ let updateBalance = (account) => {
       var savebal;
       var saverate;
       var savetotalint;
-      var lowestbal;
       var current_balance = bal;
       var line = {};
     	
-      if (accounts[accno].opening_date > toDay) {
-        current_balance = 0;
-      }
-      // if cc account, look for pay dates to calculate pay off amounts
-      if (ccdates.length > 0) {
-        pay_date = ccdates[0];
-        ccindex = 0;
-      }
-    	
-      for (var i = 1; i < numrows; i++)
-      {
-        var line_date = data[accno][i].date;
-        var trans_type = data[accno][i].type;
+        // if cc account, look for pay dates to calculate pay off amounts
+      // if (ccdates.length > 0) {
+      //   pay_date = ccdates[0];
+      //   ccindex = 0;
+      // }
+//      account.trans.forEach(tr => {
+        for (let tr of account.trans) {
+
+
+//        var line_date = data[accno][i].date;
+//        var trans_type = data[accno][i].type;
 
         /*
   
@@ -329,27 +328,15 @@ let updateBalance = (account) => {
         
         */
 
-        // update line running balance
-        inc = data[accno][i].income;
-        exp = data[accno][i].expense;
-        if (inc != undefined) {
-          bal = bal + inc;
-        }
-        if (exp	!= undefined) {
-          bal = bal - exp;
-        }
-        data[accno][i].balance = bal;
-      	
-        // check lowest balance of period
-        if (bal < lowestbal) {
-          lowestbal = bal;
-        }
-      	
-        // Update today's running balance
-        if (line_date <= toDay) {
-          current_balance = bal;
-        }
-      }
+        bal += (tr.crAmount - tr.dbAmount);           // update line running balance
+        tr.balance = bal;
+        
+        if (bal < lowestBal)                          // check lowest balance of period
+          lowestBal = tr.balance;
+        
+        if (Moment(tr.date).isSameOrBefore(Moment())) // Update today's running balance
+          currentBal = tr.balance;
+      };
     	
 
       account.currentBal = currentBal;
