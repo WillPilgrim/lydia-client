@@ -98,11 +98,15 @@ export const testTransactions = [
       accountId: "a9ca4f40-73d0-11e8-8ec0-3fce1802dff7",
       dirty:false,
       openingDate: Moment("2018-06-01").format(),
-      openingBal:10000,
-      openingRate: 0,
+      openingBal:100000,
+      openingRate: 0.03,
       interestStartDate: Moment("2018-06-01").format(),
       openingInterest: 0,
       currentBal: 0,
+      type: 'interest',
+      endDate: Moment("2025-01-01").format(),
+      interestPeriodType: 'M',
+      interestPeriodCnt: 1,
       trans: [
         {
           transactionId: 12,

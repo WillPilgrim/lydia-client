@@ -224,7 +224,7 @@ export default class Template extends Component {
   }
 
   getToAccountValidationState() {
-    if (this.state.templateType != "Transfer" && this.state.accountToId != "0") return "error";  // can't have 'to' account with transfer type
+    if (this.state.templateType !== "Transfer" && this.state.accountToId !== "0") return "error";  // can't have 'to' account with transfer type
     if (this.state.templateType === "Transfer" && this.state.accountToId === "0") return "error";  // can't have transfer type without account
     if (this.state.accountFromId === this.state.accountToId) return "error";  // from account equals to account
     return "success";
@@ -358,7 +358,7 @@ export default class Template extends Component {
                 value={this.state.accountToId}
                 placeholder="Select destination account"
                 onChange={this.handleChange}
-                disabled={this.state.templateType != "Transfer"}
+                disabled={this.state.templateType !== "Transfer"}
               >   
               <option key={0} value={0}>
                   -

@@ -20,7 +20,6 @@ export default class Templates extends Component {
     if (!this.props.isAuthenticated) {
       return;
     }
-    console.log('xx',)
     try {
       const accs = await this.accounts();
       const t1 = await this.templates();
