@@ -25,9 +25,10 @@ export default class Template extends Component {
       startDate: null,
       endDate: null,
       accountFromId: "",
+      accountToId: "",
       templateType: "",
       periodType: "",
-      periodCnt:"",
+      periodCnt: "",
       new: ""
     };
   }
@@ -44,21 +45,23 @@ export default class Template extends Component {
       }
       const {
         accountFromId,
+        accountToId,
         description,
         amount,
         startDate,
         endDate,
         templateType,
         periodType,
-        periodCnt 
+        periodCnt
       } = template;
       this.setState({
         accs,
         accountFromId,
+        accountToId,
         template,
         description,
         amount,
-        amount100: (amount/100).toFixed(2),
+        amount100: (amount / 100).toFixed(2),
         startDate,
         endDate,
         templateType,
@@ -100,7 +103,8 @@ export default class Template extends Component {
       this.getFreqValidationState() === "success" &&
       this.getAmountValidationState() === "success" &&
       this.getStartDateValidationState() === "success" &&
-      this.getEndDateValidationState() !== "error"
+      this.getEndDateValidationState() !== "error" &&
+      this.getToAccountValidationState() === "success"
     );
   }
 
@@ -109,6 +113,13 @@ export default class Template extends Component {
       [event.target.id]: event.target.value
     });
   };
+
+  handleTypeChange = event => {
+    this.setState({
+      [event.target.id]: event.target.value,
+      accountToId:"0"
+    });
+  }
 
   handleStartDateChange = value => {
     this.setState({
@@ -129,7 +140,6 @@ export default class Template extends Component {
 
     try {
       const templ = {
-        accountToId: this.state.template.accountToId,
         numPeriods: this.state.template.numPeriods,
         noEnd: this.state.template.noEnd,
         inflation: this.state.template.inflation,
@@ -141,8 +151,9 @@ export default class Template extends Component {
         endDate: Moment(this.state.endDate).format(),
         templateType: this.state.templateType,
         periodType: this.state.periodType,
-        periodCnt: parseInt(this.state.periodCnt,10),
-        accountFromId: this.state.accountFromId
+        periodCnt: parseInt(this.state.periodCnt, 10),
+        accountFromId: this.state.accountFromId,
+        accountToId: this.state.accountToId
       };
       if (this.props.match.params.id === "new") {
         await this.createTemplate(templ);
@@ -193,7 +204,7 @@ export default class Template extends Component {
 
   getFreqValidationState() {
     if (this.state.periodCnt.length <= 0) return "error";
-    if (isNaN(parseInt(this.state.periodCnt,10)))
+    if (isNaN(parseInt(this.state.periodCnt, 10)))
       return "error"
     else
       return "success";
@@ -209,6 +220,13 @@ export default class Template extends Component {
     if (this.state.startDate === null) return "warning";
     if (Moment(this.state.endDate).isBefore(Moment(this.state.startDate)))
       return "error";
+    return "success";
+  }
+
+  getToAccountValidationState() {
+    if (this.state.templateType != "Transfer" && this.state.accountToId != "0") return "error";  // can't have 'to' account with transfer type
+    if (this.state.templateType === "Transfer" && this.state.accountToId === "0") return "error";  // can't have transfer type without account
+    if (this.state.accountFromId === this.state.accountToId) return "error";  // from account equals to account
     return "success";
   }
 
@@ -280,10 +298,11 @@ export default class Template extends Component {
                 type="text"
                 value={this.state.templateType}
                 placeholder="Select transaction type"
-                onChange={this.handleChange}
+                onChange={this.handleTypeChange}
               >
                 <option value="Debit">Debit</option>
                 <option value="Credit">Credit</option>
+                <option value="Transfer">Transfer</option>
               </FormControl>
             </FormGroup>
             <Col sm={6}>
@@ -324,6 +343,26 @@ export default class Template extends Component {
                 placeholder="Select source account"
                 onChange={this.handleChange}
               >
+                {this.state.accs.map(x => (
+                  <option key={x.accountId} value={x.accountId}>
+                    {x.content}
+                  </option>
+                ))}
+              </FormControl>
+            </FormGroup>
+            <FormGroup controlId="accountToId" validationState={this.getToAccountValidationState()}>
+              <ControlLabel>Destination Account</ControlLabel>
+              <FormControl
+                componentClass="select"
+                type="text"
+                value={this.state.accountToId}
+                placeholder="Select destination account"
+                onChange={this.handleChange}
+                disabled={this.state.templateType != "Transfer"}
+              >   
+              <option key={0} value={0}>
+                  -
+              </option>
                 {this.state.accs.map(x => (
                   <option key={x.accountId} value={x.accountId}>
                     {x.content}

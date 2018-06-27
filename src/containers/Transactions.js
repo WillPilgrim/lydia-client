@@ -68,7 +68,8 @@ export default class Transactions extends Component {
     {
       dataField: "description",
       text: "Description",
-      headerStyle: (c,i) => { return { width: '50%', textAlign: 'center'};}
+      headerStyle: (c,i) => { return { width: '50%', textAlign: 'center'};},
+      style: (c,r,i) => { if (i===0) return {color:"blue"};}
     },
     {
       dataField: "crAmount",
@@ -85,17 +86,21 @@ export default class Transactions extends Component {
     {
       dataField: "balance",
       text: "Balance",
-      formatter: this.amountFormatter,
+      formatter: this.balanceFormatter,
       style: this.amountStyle
     }
   ];
 
-  amountFormatter = (cell, row) => {
+  amountFormatter = (cell) => {
     let val = parseInt(cell,10) / 100;
     if (val) return val.toFixed(2);
   };
 
-  amountStyle = (cell, row) => {
+  balanceFormatter = (cell) => {
+    let val = parseInt(cell,10) / 100;
+    return val.toFixed(2);
+  };
+ amountStyle = (cell, row) => {
     let val = parseInt(cell,10) / 100;
     if (val < 0) return { color: "red", textAlign: "right" };
     else return { textAlign: "right" };
@@ -124,6 +129,9 @@ export default class Transactions extends Component {
   };
 
   render() {
+    let currAcc = this.state.transactions.find(
+        x => x.accountId === this.state.currentAcc
+      );
     return (
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
@@ -166,10 +174,8 @@ export default class Transactions extends Component {
           data={
             this.state.currentAcc === null
               ? []
-              : this.state.transactions.find(
-                  x => x.accountId === this.state.currentAcc
-                ).trans
-          }
+                : [{transactionId:0,date:currAcc.openingDate, description:"Opening Balance",balance:currAcc.openingBal},...currAcc.trans]
+            }
           columns={this.columns()}
           rowEvents={this.rowEvents}
         />

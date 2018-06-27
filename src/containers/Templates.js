@@ -20,11 +20,13 @@ export default class Templates extends Component {
     if (!this.props.isAuthenticated) {
       return;
     }
+    console.log('xx',)
     try {
       const accs = await this.accounts();
       const t1 = await this.templates();
-      const templates = t1.map(({ accountFromId: afid, ...rest }) => ({
-        accountName: accs.find(x => x.accountId === afid).content,
+      const templates = t1.map(({ accountFromId: afid, accountToId: atid, ...rest }) => ({
+        accountFrom: accs.find(x => x.accountId === afid).content,
+        accountTo: atid==="0"?"":accs.find(x => x.accountId === atid).content,
         ...rest
       }));
       this.setState({ templates });
@@ -104,7 +106,7 @@ export default class Templates extends Component {
 
   columns = () => [
     {
-      dataField: "accountName",
+      dataField: "accountFrom",
       text: "Account"
     },
     {
@@ -134,6 +136,10 @@ export default class Templates extends Component {
     {
       dataField: "templateType",
       text: "Type"
+    },
+    {
+        dataField: "accountTo",
+        text: "'To' Account"
     }
   ];
 
