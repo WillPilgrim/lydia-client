@@ -22,13 +22,13 @@ export default class Template extends Component {
       template: null,
       description: "",
       amount: 0,
-      startDate: null,
-      endDate: null,
+      startDate: Moment().format(),
+      endDate: Moment().format(),
       accountFromId: "",
-      accountToId: "",
-      templateType: "",
-      periodType: "",
-      periodCnt: "",
+      accountToId: "0",
+      templateType: "Debit",
+      periodType: "M",
+      periodCnt: 1,
       new: ""
     };
   }
@@ -39,7 +39,7 @@ export default class Template extends Component {
       let template;
       if (this.props.match.params.id === "new") {
         template = this.state;
-        template.accountFromId = accs[0];
+        template.accountFromId = accs[0].accountId;
       } else {
         template = await this.getTemplate();
       }
@@ -107,6 +107,12 @@ export default class Template extends Component {
       this.getToAccountValidationState() === "success"
     );
   }
+
+  handleAccChange = event => {
+    this.setState({
+      [event.target.id]: event.target.value.accountId
+    });
+  };
 
   handleChange = event => {
     this.setState({
@@ -341,7 +347,7 @@ export default class Template extends Component {
                 type="text"
                 value={this.state.accountFromId}
                 placeholder="Select source account"
-                onChange={this.handleChange}
+                onChange={this.handleAccChange}
               >
                 {this.state.accs.map(x => (
                   <option key={x.accountId} value={x.accountId}>

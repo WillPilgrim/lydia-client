@@ -88,6 +88,43 @@ let processNormal = (transactions, templates) => {
 
 let processSpecials = (transactions, templates) => {
   // 1. Process all credit card accounts
+  transactions
+    .filter(account => account.type === "cc")
+    .forEach(account => {
+      //Note payDay must be <= 28
+      let payDay = account.payDay;
+      let startDate = Moment(account.openingDate).date(payDay); // set initial date to first period on the payment date
+      let transDate = Moment(startDate);
+      let endDate = Moment(account.endDate);
+      let periodEndDay = account.periodEndDay;
+      let periodType = account.periodType;
+      let periodCnt = account.periodCnt;
+      let payFromAcc = transactions.find(acc => acc.accountId === account.payFromAccId);
+
+      while (transDate.isSameOrBefore(endDate)) {
+        transDate = transDate.add(periodCnt, periodType);
+        if (transDate.isAfter(Moment())) {
+          let newTrans = {
+            date: transDate.format(),
+            autogen: transDate.format(),
+            transactionId: uuid(),
+            crAmount:0,
+            dbAmount:0,
+            description: `Payment from ${payFromAcc.accountId}`,
+            type: "cc"
+          };
+          account.trans.push(newTrans);
+          account.dirty = true;
+
+          // calculate the date the balance of the credit card is finalised
+          let periodEndDate = Moment(transDate).date(periodEndDay); // Set date to trans date with closing balance day
+          if (payDay <= periodEndDay) periodEndDate = periodEndDate.subtract(periodCnt,periodType);  // closing balance date must be in the past
+          account.ccDates.push(periodEndDate);  // save dates for future calculation of closing statement balances
+        }
+      }
+      updateBalance(account, transactions);
+      account.ccDates.length = 0;  // clear credit card dates array
+    });
 
   // 2. Process all interest accounts
   transactions
@@ -96,8 +133,8 @@ let processSpecials = (transactions, templates) => {
       let startDate = Moment(account.interestStartDate);
       let transDate = Moment(startDate);
       let endDate = Moment(account.endDate);
-      let periodType = account.interestPeriodType;
-      let periodCnt = account.interestPeriodCnt;
+      let periodType = account.periodType;
+      let periodCnt = account.periodCnt;
 
       while (transDate.isSameOrBefore(endDate)) {
         transDate = transDate.add(periodCnt, periodType);
@@ -114,7 +151,6 @@ let processSpecials = (transactions, templates) => {
           account.dirty = true;
         }
       }
-
       updateBalance(account);
     });
 
@@ -123,10 +159,10 @@ let processSpecials = (transactions, templates) => {
 
 let updateBalances = transactions => {
   //	Sort each account and update balances
-  transactions.forEach(account => updateBalance(account));
+  transactions.forEach(account => updateBalance(account, transactions));
 };
 
-let updateBalance = account => {
+let updateBalance = (account, transactions) => {
   //	Sort given account and update balances
 
   if (account.dirty) {
@@ -144,10 +180,12 @@ let updateBalance = account => {
     let exp;
     let currentBal = bal;
     let lowestBal = 0;
+    let periodEndDate;
+    let ccIndex = -1;
+    let ccBalance = bal;
+    let payFromAcc;    
 
-    var pay_date;
-    var ccindex = -1;
-    var ccbal = bal;
+
     var prev = -1;
     var savebal;
     var saverate;
@@ -155,14 +193,47 @@ let updateBalance = account => {
 
     if (Moment(account.openingDate).isAfter(Moment())) currentBal = 0;
 
-    // if cc account, look for pay dates to calculate pay off amounts
-    // if (ccdates.length > 0) {
-    //   pay_date = ccdates[0];
-    //   ccindex = 0;
-    // }
+    // Initialise first closing balance date for credit card accounts
+    
+    if (account.ccDates) {
+      payFromAcc = transactions.find(acc => acc.accountId === account.payFromAccId);
+      periodEndDate = Moment(account.ccDates[0]);
+      ccIndex = 0;  
+    }
+
     for (let tr of account.trans) {
 
       let lineDate = Moment(tr.date);
+
+      if (ccIndex > -1) {
+        // Calculate period closing balance
+        if (lineDate.isAfter(periodEndDate)) {
+          ccBalance = bal;
+          ccIndex++;
+          periodEndDate = Moment(account.ccDates[ccIndex]);
+        }
+
+        // Check if this line is a credit card payment line
+        if (tr.type === "cc") {
+          if (lineDate.isAfter(Moment())) {
+            
+            tr.crAmount = -ccBalance; // Insert payment amount 
+
+            let partnerTrans = {
+              date: lineDate.format(),
+              autogen: lineDate.format(),
+              transactionId: uuid(),
+              dbAmount: -ccBalance,
+              crAmount: 0,
+              description: `To ${account.accountId} for credit card payment`,
+            };
+            payFromAcc.trans.push(partnerTrans);
+            payFromAcc.dirty = true;
+
+  
+          }
+        }
+      }
 
       // interest rate calculations
       if (accType === "interest") {

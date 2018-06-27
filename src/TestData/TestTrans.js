@@ -105,8 +105,46 @@ export const testTransactions = [
       currentBal: 0,
       type: 'interest',
       endDate: Moment("2025-01-01").format(),
-      interestPeriodType: 'M',
-      interestPeriodCnt: 1,
+      periodType: 'M',
+      periodCnt: 1,
+      trans: [
+        {
+          transactionId: 12,
+          date: Moment("2020-06-15").format(),
+          description: "Future trans",
+          crAmount: 0,
+          dbAmount: 15000,
+          balance: 85000,
+          autogen: Moment("2020-06-15").format()
+        },
+        {
+            transactionId: 11,
+            date: Moment("2018-06-15").format(),
+            description: "Night out",
+            crAmount: 0,
+            dbAmount: 15000,
+            balance: 85000,
+            autogen: Moment("2018-06-15").format()
+          }
+        ]
+    },
+    {
+      accountId: "3f42a830-79d8-11e8-8888-85e7b8290a9c",
+      dirty:false,
+      openingDate: Moment("2017-06-01").format(),
+      openingBal:100000,
+      openingRate: 0.03,
+      interestStartDate: Moment("2018-06-01").format(),
+      openingInterest: 0,
+      currentBal: 0,
+      type: 'cc',
+      endDate: Moment("2025-01-01").format(),
+      periodType: 'M',
+      periodCnt: 1,
+      ccDates: [],
+      payDay: 9,
+      periodEndDate: 28,
+      payFromAccId: "ae29b1c0-73d0-11e8-8ec0-3fce1802dff7",
       trans: [
         {
           transactionId: 12,

@@ -48,5 +48,7 @@ main
 miscellaneous
 =============
 - handle state better - redux?
+- use const instead of let where appropriate
+- handle many accounts in the nav bar on the Transactions list
 - look at better table processing
     - scrolling within list
