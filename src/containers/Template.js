@@ -218,7 +218,7 @@ export default class Template extends Component {
   getEndDateValidationState() {
     if (this.state.endDate === null) return "warning";
     if (this.state.startDate === null) return "warning";
-    if (Moment(this.state.endDate).isBefore(Moment(this.state.startDate)))
+    if (Moment(this.state.endDate).isBefore(Moment(this.state.startDate),'day'))
       return "error";
     return "success";
   }

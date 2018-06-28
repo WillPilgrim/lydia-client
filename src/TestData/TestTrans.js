@@ -17,7 +17,6 @@ export const testTransactions = [
           description: "Salary",
           crAmount: 100000,
           dbAmount: 0,
-          balance: 100000,
           autogen: Moment("2018-06-01").format()
         },
         {
@@ -26,7 +25,6 @@ export const testTransactions = [
           description: "Petrol",
           crAmount: 0,
           dbAmount: 3500,
-          balance: 96500,
           autogen: Moment("2018-06-01").format()
         },
         {
@@ -35,7 +33,6 @@ export const testTransactions = [
           description: "Groceries",
           crAmount: 0,
           dbAmount: 15000,
-          balance: 81500,
           autogen: Moment("2018-06-01").format()
         },
         {
@@ -44,7 +41,6 @@ export const testTransactions = [
             description: "First transaction",
             crAmount: 100,
             dbAmount: 0,
-            balance: 81500,
             autogen: Moment("2010-06-01").format()
           },
           {
@@ -53,7 +49,6 @@ export const testTransactions = [
             description: "Future trans",
             crAmount: 0,
             dbAmount: 15000,
-            balance: 81500,
             autogen: Moment("2029-06-03").format()
           },
           {
@@ -62,7 +57,6 @@ export const testTransactions = [
             description: "Yesterday",
             crAmount: 0,
             dbAmount: 15000,
-            balance: 81500,
             autogen: Moment().subtract(1, 'd').format()
           },
           {
@@ -71,17 +65,22 @@ export const testTransactions = [
             description: "Today",
             crAmount: 0,
             dbAmount: 15000,
-            balance: 81500,
             autogen: Moment().format()
           },
           {
             transactionId: 8,
             date: Moment().add(1, 'd').format(),
-            description: "Tomorrow",
+            description: "Tomorrow auto",
             crAmount: 0,
             dbAmount: 15000,
-            balance: 81500,
             autogen: Moment().add(1, 'd').format()
+          },
+          {
+            transactionId: 98,
+            date: Moment().add(1, 'd').format(),
+            description: "Tomorrow Manual",
+            crAmount: 0,
+            dbAmount: 9999,
           },
           {
             transactionId: 9,
@@ -89,7 +88,6 @@ export const testTransactions = [
             description: "Manual one year hence",
             crAmount: 0,
             dbAmount: 15000,
-            balance: 81500, 
             autogen: Moment("0001-01-01").format()
           }
         ]
@@ -98,7 +96,7 @@ export const testTransactions = [
       accountId: "a9ca4f40-73d0-11e8-8ec0-3fce1802dff7",
       dirty:false,
       openingDate: Moment("2018-06-01").format(),
-      openingBal:100000,
+      openingBal:50000,
       openingRate: 0.03,
       interestStartDate: Moment("2018-06-01").format(),
       openingInterest: 0,
@@ -111,19 +109,17 @@ export const testTransactions = [
         {
           transactionId: 12,
           date: Moment("2020-06-15").format(),
-          description: "Future trans",
+          description: "Future auto trans",
           crAmount: 0,
           dbAmount: 15000,
-          balance: 85000,
           autogen: Moment("2020-06-15").format()
         },
         {
             transactionId: 11,
             date: Moment("2018-06-15").format(),
-            description: "Night out",
+            description: "Repairs",
             crAmount: 0,
-            dbAmount: 15000,
-            balance: 85000,
+            dbAmount: 10550,
             autogen: Moment("2018-06-15").format()
           }
         ]
@@ -143,27 +139,48 @@ export const testTransactions = [
       periodCnt: 1,
       ccDates: [],
       payDay: 9,
-      periodEndDate: 28,
+      periodEndDay: 28,
       payFromAccId: "ae29b1c0-73d0-11e8-8ec0-3fce1802dff7",
       trans: [
         {
           transactionId: 12,
           date: Moment("2020-06-15").format(),
-          description: "Future trans",
+          description: "Past trans auto",
           crAmount: 0,
           dbAmount: 15000,
-          balance: 85000,
+   //       balance: 85000,
           autogen: Moment("2020-06-15").format()
         },
-        {
+      {
             transactionId: 11,
             date: Moment("2018-06-15").format(),
             description: "Night out",
             crAmount: 0,
             dbAmount: 15000,
-            balance: 85000,
+  //          balance: 85000,
             autogen: Moment("2018-06-15").format()
           }
         ]
+    },
+    {
+      accountId: "58749090-7adf-11e8-a000-cfaf666b12b9",
+      dirty:false,
+      openingDate: Moment("2018-06-01").format(),
+      openingBal:50000,
+      openingRate: 0.03,
+      interestStartDate: Moment("2018-06-01").format(),
+      openingInterest: 0,
+      currentBal: 0,
+      type: 'interest',
+      endDate: Moment("2025-01-01").format(),
+      periodType: 'M',
+      periodCnt: 1,
+      trans: []
+    },
+    {
+      accountId: "c8c74b80-7adf-11e8-a000-cfaf666b12b9",
+      openingDate: Moment("2018-06-01").format(),
+      openingBal:0,
+      trans: []
     }
   ];

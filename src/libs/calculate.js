@@ -19,7 +19,7 @@ let delfuture = transactions => {
   // Not using the sorting and setting array length option. This method is order N which is very quick.
   transactions.forEach(account => {
     account.trans = account.trans.filter(
-      item => !Moment(item.autogen).isAfter(Moment())
+      item => !Moment(item.autogen).isAfter(Moment(),'day')
     );
   });
 };
@@ -37,8 +37,8 @@ let processNormal = (transactions, templates) => {
     let account = transactions.find(acc => acc.accountId === tr.accountFromId);
     let accountTo = transactions.find(acc => acc.accountId === tr.accountToId);
 
-    while (transDate.isSameOrBefore(endDate)) {
-      if (transDate.isAfter(Moment())) {
+    while (transDate.isSameOrBefore(endDate,'day')) {
+      if (transDate.isAfter(Moment(),'day')) {
         let amount = tr.amount;
         if (inflate) {
           let numYears = transDate.diff(startDate, "years");
@@ -102,9 +102,9 @@ let processSpecials = (transactions, templates) => {
       acc => acc.accountId === account.payFromAccId
     );
 
-    while (transDate.isSameOrBefore(endDate)) {
+    while (transDate.isSameOrBefore(endDate,'day')) {
       transDate = transDate.add(periodCnt, periodType);
-      if (transDate.isAfter(Moment())) {
+      if (transDate.isAfter(Moment(),'day')) {
         let newTrans = {
           date: transDate.format(),
           autogen: transDate.format(),
@@ -138,9 +138,9 @@ let processSpecials = (transactions, templates) => {
       let periodType = account.periodType;
       let periodCnt = account.periodCnt;
 
-      while (transDate.isSameOrBefore(endDate)) {
+      while (transDate.isSameOrBefore(endDate,'day')) {
         transDate = transDate.add(periodCnt, periodType);
-        if (transDate.isAfter(Moment())) {
+        if (transDate.isAfter(Moment(),'day')) {
           let newTrans = {
             date: transDate.format(),
             autogen: transDate.format(),
@@ -192,7 +192,7 @@ let updateBalance = (account, transactions) => {
     var saverate;
     var savetotalint;
 
-    if (Moment(account.openingDate).isAfter(Moment())) currentBal = 0;
+    if (Moment(account.openingDate).isAfter(Moment(),'day')) currentBal = 0;
 
     // Initialise first closing balance date for credit card accounts
 
@@ -209,7 +209,7 @@ let updateBalance = (account, transactions) => {
 
       if (ccIndex > -1) {
         // Calculate period closing balance
-        if (lineDate.isAfter(periodEndDate)) {
+        if (lineDate.isAfter(periodEndDate,'day')) {
           ccBalance = bal;
           ccIndex++;
           periodEndDate = Moment(account.ccDates[ccIndex]);
@@ -217,7 +217,7 @@ let updateBalance = (account, transactions) => {
 
         // Check if this line is a credit card payment line
         if (tr.type === "cc") {
-          if (lineDate.isAfter(Moment())) {
+          if (lineDate.isAfter(Moment(),'day')) {
             if (ccBalance >= 0)
               tr.description = "No credit card payment required this period";
             else {
@@ -240,7 +240,7 @@ let updateBalance = (account, transactions) => {
 
       // interest rate calculations
       if (accType === "interest") {
-        if (lineDate.isSameOrAfter(interestStartDate)) {
+        if (lineDate.isSameOrAfter(interestStartDate,'day')) {
           // calculate 'line interest' which is the interest calculated since the last line entry
           let daysDiff = lineDate.diff(prevInterestDate, "days");
           prevInterestDate = Moment(lineDate);
@@ -250,7 +250,7 @@ let updateBalance = (account, transactions) => {
 
           // Add accumulated interest between interest debit/credit entries
           if (tr.type === "interest") {
-            if (lineDate.isAfter(Moment())) {
+            if (lineDate.isAfter(Moment(),'day')) {
               totalInterest = Math.floor(totalInterest);
               if (totalInterest >= 0) {
                 tr.crAmount = totalInterest;
@@ -267,7 +267,7 @@ let updateBalance = (account, transactions) => {
         //  Get current rate from rate change entry
         if (tr.newRate !== undefined) {
           rate = tr.newRate;
-          if (lineDate.isSameOrBefore(Moment())) account.currentRate = rate;
+          if (lineDate.isSameOrBefore(Moment(),'day')) account.currentRate = rate;
         }
       }
       bal += tr.crAmount - tr.dbAmount; // update line running balance
@@ -277,7 +277,7 @@ let updateBalance = (account, transactions) => {
         // check lowest balance of period
         lowestBal = tr.balance;
 
-      if (Moment(tr.date).isSameOrBefore(Moment()))
+      if (Moment(tr.date).isSameOrBefore(Moment(),'day'))
         // Update today's running balance
         currentBal = tr.balance;
     }
