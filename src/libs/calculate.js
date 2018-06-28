@@ -48,7 +48,8 @@ let processNormal = (transactions, templates) => {
 
         let dbAmount = 0;
         let crAmount = 0;
-        if (tr.templateType === "Debit") dbAmount = amount;
+        if (tr.templateType === "Debit" || tr.templateType === "Transfer")
+          dbAmount = amount;
         else crAmount = amount;
 
         let newTrans = {
@@ -88,43 +89,44 @@ let processNormal = (transactions, templates) => {
 
 let processSpecials = (transactions, templates) => {
   // 1. Process all credit card accounts
-  transactions
-    .filter(account => account.type === "cc")
-    .forEach(account => {
-      //Note payDay must be <= 28
-      let payDay = account.payDay;
-      let startDate = Moment(account.openingDate).date(payDay); // set initial date to first period on the payment date
-      let transDate = Moment(startDate);
-      let endDate = Moment(account.endDate);
-      let periodEndDay = account.periodEndDay;
-      let periodType = account.periodType;
-      let periodCnt = account.periodCnt;
-      let payFromAcc = transactions.find(acc => acc.accountId === account.payFromAccId);
+  transactions.filter(account => account.type === "cc").forEach(account => {
+    //Note payDay must be <= 28
+    let payDay = account.payDay;
+    let startDate = Moment(account.openingDate).date(payDay); // set initial date to first period on the payment date
+    let transDate = Moment(startDate);
+    let endDate = Moment(account.endDate);
+    let periodEndDay = account.periodEndDay;
+    let periodType = account.periodType;
+    let periodCnt = account.periodCnt;
+    let payFromAcc = transactions.find(
+      acc => acc.accountId === account.payFromAccId
+    );
 
-      while (transDate.isSameOrBefore(endDate)) {
-        transDate = transDate.add(periodCnt, periodType);
-        if (transDate.isAfter(Moment())) {
-          let newTrans = {
-            date: transDate.format(),
-            autogen: transDate.format(),
-            transactionId: uuid(),
-            crAmount:0,
-            dbAmount:0,
-            description: `Payment from ${payFromAcc.accountId}`,
-            type: "cc"
-          };
-          account.trans.push(newTrans);
-          account.dirty = true;
+    while (transDate.isSameOrBefore(endDate)) {
+      transDate = transDate.add(periodCnt, periodType);
+      if (transDate.isAfter(Moment())) {
+        let newTrans = {
+          date: transDate.format(),
+          autogen: transDate.format(),
+          transactionId: uuid(),
+          crAmount: 0,
+          dbAmount: 0,
+          description: `Payment from ${payFromAcc.accountId}`,
+          type: "cc"
+        };
+        account.trans.push(newTrans);
+        account.dirty = true;
 
-          // calculate the date the balance of the credit card is finalised
-          let periodEndDate = Moment(transDate).date(periodEndDay); // Set date to trans date with closing balance day
-          if (payDay <= periodEndDay) periodEndDate = periodEndDate.subtract(periodCnt,periodType);  // closing balance date must be in the past
-          account.ccDates.push(periodEndDate);  // save dates for future calculation of closing statement balances
-        }
+        // calculate the date the balance of the credit card is finalised
+        let periodEndDate = Moment(transDate).date(periodEndDay); // Set date to trans date with closing balance day
+        if (payDay <= periodEndDay)
+          periodEndDate = periodEndDate.subtract(periodCnt, periodType); // closing balance date must be in the past
+        account.ccDates.push(periodEndDate); // save dates for future calculation of closing statement balances
       }
-      updateBalance(account, transactions);
-      account.ccDates.length = 0;  // clear credit card dates array
-    });
+    }
+    updateBalance(account, transactions);
+    account.ccDates.length = 0; // clear credit card dates array
+  });
 
   // 2. Process all interest accounts
   transactions
@@ -143,8 +145,8 @@ let processSpecials = (transactions, templates) => {
             date: transDate.format(),
             autogen: transDate.format(),
             transactionId: uuid(),
-            crAmount:0,
-            dbAmount:0,
+            crAmount: 0,
+            dbAmount: 0,
             type: "interest"
           };
           account.trans.push(newTrans);
@@ -183,8 +185,7 @@ let updateBalance = (account, transactions) => {
     let periodEndDate;
     let ccIndex = -1;
     let ccBalance = bal;
-    let payFromAcc;    
-
+    let payFromAcc;
 
     var prev = -1;
     var savebal;
@@ -194,15 +195,16 @@ let updateBalance = (account, transactions) => {
     if (Moment(account.openingDate).isAfter(Moment())) currentBal = 0;
 
     // Initialise first closing balance date for credit card accounts
-    
+
     if (account.ccDates) {
-      payFromAcc = transactions.find(acc => acc.accountId === account.payFromAccId);
+      payFromAcc = transactions.find(
+        acc => acc.accountId === account.payFromAccId
+      );
       periodEndDate = Moment(account.ccDates[0]);
-      ccIndex = 0;  
+      ccIndex = 0;
     }
 
     for (let tr of account.trans) {
-
       let lineDate = Moment(tr.date);
 
       if (ccIndex > -1) {
@@ -216,21 +218,22 @@ let updateBalance = (account, transactions) => {
         // Check if this line is a credit card payment line
         if (tr.type === "cc") {
           if (lineDate.isAfter(Moment())) {
-            
-            tr.crAmount = -ccBalance; // Insert payment amount 
+            if (ccBalance >= 0)
+              tr.description = "No credit card payment required this period";
+            else {
+              tr.crAmount = -ccBalance; // Insert payment amount
 
-            let partnerTrans = {
-              date: lineDate.format(),
-              autogen: lineDate.format(),
-              transactionId: uuid(),
-              dbAmount: -ccBalance,
-              crAmount: 0,
-              description: `To ${account.accountId} for credit card payment`,
-            };
-            payFromAcc.trans.push(partnerTrans);
-            payFromAcc.dirty = true;
-
-  
+              let partnerTrans = {
+                date: lineDate.format(),
+                autogen: lineDate.format(),
+                transactionId: uuid(),
+                dbAmount: -ccBalance,
+                crAmount: 0,
+                description: `To ${account.accountId} for credit card payment`
+              };
+              payFromAcc.trans.push(partnerTrans);
+              payFromAcc.dirty = true;
+            }
           }
         }
       }
@@ -238,9 +241,8 @@ let updateBalance = (account, transactions) => {
       // interest rate calculations
       if (accType === "interest") {
         if (lineDate.isSameOrAfter(interestStartDate)) {
-
           // calculate 'line interest' which is the interest calculated since the last line entry
-          let daysDiff = lineDate.diff(prevInterestDate,'days');
+          let daysDiff = lineDate.diff(prevInterestDate, "days");
           prevInterestDate = Moment(lineDate);
           let lineInterest = bal * Math.pow(1 + rate / 365.25, daysDiff) - bal;
           totalInterest += lineInterest;
@@ -265,8 +267,7 @@ let updateBalance = (account, transactions) => {
         //  Get current rate from rate change entry
         if (tr.newRate !== undefined) {
           rate = tr.newRate;
-          if (lineDate.isSameOrBefore(Moment())) 
-            account.currentRate = rate;
+          if (lineDate.isSameOrBefore(Moment())) account.currentRate = rate;
         }
       }
       bal += tr.crAmount - tr.dbAmount; // update line running balance

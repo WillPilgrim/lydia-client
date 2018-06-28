@@ -108,12 +108,6 @@ export default class Template extends Component {
     );
   }
 
-  handleAccChange = event => {
-    this.setState({
-      [event.target.id]: event.target.value.accountId
-    });
-  };
-
   handleChange = event => {
     this.setState({
       [event.target.id]: event.target.value
@@ -347,7 +341,7 @@ export default class Template extends Component {
                 type="text"
                 value={this.state.accountFromId}
                 placeholder="Select source account"
-                onChange={this.handleAccChange}
+                onChange={this.handleChange}
               >
                 {this.state.accs.map(x => (
                   <option key={x.accountId} value={x.accountId}>
