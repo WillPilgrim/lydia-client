@@ -171,80 +171,81 @@ let processSpecials = (transactions, templates) => {
       specials.push({
         type: "close",
         active: true,
-        account: account.id,
+        accountId: account.id,
         partner: account.closePartner,
-        date: account.closeDate
+        startDate: Moment(account.closeDate),
+        account: account
       });
     if (account.minimise)
       specials.push({
         type: "minimise",
         active: true,
-        account: account.id,
+        accountId: account.id,
         partner: account.minimisePartner,
-        date: account.minStartDate,
+        startDate: Moment(account.minStartDate),
+        endDate: Moment(account.minEndDate),
         periodType: account.minPeriodType,
-        periodCnt: account.minPeriodCnt
+        periodCnt: account.minPeriodCnt,
+        targetBal: account.minBalance,
+        account: account
       });
 
     let completed = 0;
 
     while (completed < specials.length) {
       specials.filter(special => special.active).forEach(special => {
-        let dependee = special.dependee; // 'dependee' is not a word! It is meant to be the account that the transfer account is dependent on
+        let accId = special.accountId;
 
-        if (!specials.find(special => (special.dependent = dependee))) {
-          //         processDynamicTransfer(i);
+        // Only process this special if no active account minimises to this one
+        if (!specials.find(special => (special.partner === accId && special.active))) {
 
-          var startDate = specials[index].start_date;
-          var endDate = specials[index].end_date;
-          var accno = specials[index].dependee;
-          partner = specials[index].dependent;
-          var period_type = specials[index].period_type;
-          var period_count = specials[index].period_count;
-          var specialType = specials[index].type;
-          minbal = specials[index].minbal;
-          var insert_end_marker = false;
-          var line = {};
+          let startDate = Moment(special.startDate);
+          let endDate = Moment(special.endDate);
+          let accno = special.account;
+          let partner = special.partner;
+          let periodType = special.periodType;
+          let periodCnt = special.periodCnt;
+          let specialType = special.type;
+          let targetBal = special.targetBal;
+          let insertEndMarker = false;
 
           switch (specialType) {
             case "minimise":
-              while (startDate <= endDate) {
-                if (startDate > toDay) {
-                  line = {
-                    date: startDate,
-                    autogen: startDate,
+              while (startDate.isSameOrBefore(endDate, 'day')) {
+                if (startDate.isAfter(Moment(), 'day')) {
+                  account.push({
+                    date: Moment(startDate),
+                    autogen: Moment(startDate),
                     type: specialType
-                  };
-                  data[accno].push(line);
-                  accounts[accno].dirty = true;
-                  insert_end_marker = true;
+                  });
+                  account.dirty = true;
+                  insertEndMarker = true;
                 }
-                startDate = DateAdd(period_type, period_count, startDate);
+                startDate = startDate.add(periodCnt, periodType);
               }
               break;
             case "zero":
-              if (startDate > toDay) {
-                line = {
-                  date: startDate,
-                  autogen: startDate,
+              if (startDate.isAfter(Moment(), 'day')) {
+                account.push({
+                  date: Moment(startDate),
+                  autogen: Moment(startDate),
                   type: specialType
-                };
-                data[accno].push(line);
-                accounts[accno].dirty = true;
+                });
+                account.dirty = true;
               }
               break;
             default:
               break;
           }
 
-          if (insert_end_marker) {
-            data[accno].push({
-              date: startDate,
-              autogen: startDate,
-              type: "period_end_marker"
+          if (insertEndMarker) {
+            account.push({
+              date: Moment(startDate),
+              autogen: Moment(startDate),
+              type: "periodEndMarker"
             });
           }
-          updatebalance(accno); // ensure account ready to process
+          updateBalance(account); // ensure account ready to process
 
           completed++;
           specials.active = false;
