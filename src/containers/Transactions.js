@@ -68,8 +68,12 @@ export default class Transactions extends Component {
     {
       dataField: "description",
       text: "Description",
-      headerStyle: (c,i) => { return { width: '50%', textAlign: 'center'};},
-      style: (c,r,i) => { if (i===0) return {color:"blue"};}
+      headerStyle: (c, i) => {
+        return { width: "50%", textAlign: "center" };
+      },
+      style: (c, r, i) => {
+        if (i === 0) return { color: "blue" };
+      }
     },
     {
       dataField: "crAmount",
@@ -91,17 +95,17 @@ export default class Transactions extends Component {
     }
   ];
 
-  amountFormatter = (cell) => {
-    let val = parseInt(cell,10) / 100;
+  amountFormatter = cell => {
+    let val = parseInt(cell, 10) / 100;
     if (val) return val.toFixed(2);
   };
 
-  balanceFormatter = (cell) => {
-    let val = parseInt(cell,10) / 100;
+  balanceFormatter = cell => {
+    let val = parseInt(cell, 10) / 100;
     return val.toFixed(2);
   };
- amountStyle = (cell, row) => {
-    let val = parseInt(cell,10) / 100;
+  amountStyle = (cell, row) => {
+    let val = parseInt(cell, 10) / 100;
     if (val < 0) return { color: "red", textAlign: "right" };
     else return { textAlign: "right" };
   };
@@ -111,11 +115,6 @@ export default class Transactions extends Component {
       e.preventDefault();
       this.props.history.push(`/transactions/${row.templateId}`);
     }
-  };
-
-  handleNewTemplateClick = event => {
-    event.preventDefault();
-    this.props.history.push(event.currentTarget.getAttribute("href"));
   };
 
   recalculate = () => {
@@ -130,8 +129,8 @@ export default class Transactions extends Component {
 
   render() {
     let currAcc = this.state.transactions.find(
-        x => x.accountId === this.state.currentAcc
-      );
+      x => x.accountId === this.state.currentAcc
+    );
     return (
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
@@ -174,8 +173,16 @@ export default class Transactions extends Component {
           data={
             this.state.currentAcc === null
               ? []
-                : [{transactionId:0,date:currAcc.openingDate, description:"Opening Balance",balance:currAcc.openingBal},...currAcc.trans]
-            }
+              : [
+                  {
+                    transactionId: 0,
+                    date: currAcc.openingDate,
+                    description: "Opening Balance",
+                    balance: currAcc.openingBal
+                  },
+                  ...currAcc.trans
+                ]
+          }
           columns={this.columns()}
           rowEvents={this.rowEvents}
         />
