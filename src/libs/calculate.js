@@ -193,8 +193,8 @@ let processSpecials = (transactions, templates) => {
         active: true,
         accountId: account.accountId,
         partner: account.minimisePartner,
-        startDate: Moment(account.minStartDate),
-        endDate: Moment(account.minEndDate),
+        startDate: account.minStartDate,
+        endDate: account.minEndDate,
         periodType: account.minPeriodType,
         periodCnt: account.minPeriodCnt
       });
@@ -225,9 +225,9 @@ let processSpecials = (transactions, templates) => {
                 account.trans.push({
                   date: startDate.format(),
                   autogen: startDate.format(),
-									transactionId: uuid(),
-									dbAmount:0,
-									crAmount:0,
+                  transactionId: uuid(),
+                  dbAmount: 0,
+                  crAmount: 0,
                   type: specialType
                 });
                 account.dirty = true;
@@ -239,11 +239,11 @@ let processSpecials = (transactions, templates) => {
           case "close":
             if (startDate.isAfter(Moment(), "day")) {
               account.trans.push({
-                date: Moment(startDate),
-                autogen: Moment(startDate),
-								transactionId: uuid(),
-								dbAmount:0,
-								crAmount:0,
+                date: startDate.format(),
+                autogen: startDate.format(),
+                transactionId: uuid(),
+                dbAmount: 0,
+                crAmount: 0,
                 type: specialType
               });
               account.dirty = true;
@@ -255,11 +255,11 @@ let processSpecials = (transactions, templates) => {
 
         if (insertEndMarker) {
           account.trans.push({
-            date: Moment(startDate),
-            autogen: Moment(startDate),
-						transactionId: uuid(),
-						dbAmount:0,
-						crAmount:0,
+            date: startDate.format(),
+            autogen: startDate.format(),
+            transactionId: uuid(),
+            dbAmount: 0,
+            crAmount: 0,
             type: "periodEndMarker"
           });
         }
@@ -363,7 +363,7 @@ let updateBalance = (account, transactions) => {
                   transactionId: uuid(),
                   dbAmount: -ccBalance,
                   crAmount: 0,
-                  description: `To ${account.accountId} for credit card payment`
+                  description: `To ${account.tempName} for credit card payment`
                 });
                 ccPartnerAcc.dirty = true;
               }
@@ -396,22 +396,22 @@ let updateBalance = (account, transactions) => {
             if (bal < 0) {
               tr.description = `From ${
                 closePartnerAcc.accountId
-              } to clear balance`;
+                } to clear balance`;
               newTrans.dbAmount = -bal;
-              newTrans.description = `To ${account.accountId}`;
+              newTrans.description = `To ${account.tempName}`;
             } else {
               tr.description = `To ${
                 closePartnerAcc.accountId
-              } to clear balance`;
+                } to clear balance`;
               newTrans.crAmount = bal;
-              newTrans.description = `From ${account.accountId}`;
+              newTrans.description = `From ${account.tempName}`;
             }
             closePartnerAcc.trans.push(newTrans);
             closePartnerAcc.dirty = true;
           }
         }
 
-				// minimise types calculation process
+        // minimise types calculation process
         if (tr.type === "minimise" || tr.type === "periodEndMarker") {
           if (minPeriodStartIndex === -1) {
             // starting a new min period
@@ -450,13 +450,13 @@ let updateBalance = (account, transactions) => {
               if (transferAmt < 0) {
                 tr.description = `From ${
                   minPartnerAcc.tempName
-                } to ensure minimum balance`;
+                  } to ensure minimum balance`;
                 newTrans.dbAmount = -transferAmt;
                 newTrans.description = `To ${account.tempName}`;
               } else {
                 tr.description = `Excess funds above minimum to ${
                   minPartnerAcc.tempName
-                }`;
+                  }`;
                 newTrans.crAmount = transferAmt;
                 newTrans.description = `From ${account.tempName}`;
               }
@@ -511,10 +511,10 @@ let updateBalance = (account, transactions) => {
       // check lowest balance of 'minimise' period
       if (bal < lowestBal) lowestBal = tr.balance;
 
-// if (account.minimise)
-// {
-// 	console.log(tr.date,trIndex,bal,lowestBal,tr.crAmount,tr.dbAmount,tr.balance)
-// }
+      // if (account.minimise)
+      // {
+      // 	console.log(tr.date,trIndex,bal,lowestBal,tr.crAmount,tr.dbAmount,tr.balance)
+      // }
 
       if (Moment(tr.date).isSameOrBefore(Moment(), "day"))
         // Update today's running balance
