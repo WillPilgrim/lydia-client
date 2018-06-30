@@ -3,6 +3,7 @@ import Moment from "moment";
 export const testTransactions = [
     {
       accountId: "ae29b1c0-73d0-11e8-8ec0-3fce1802dff7",
+      tempName: "Cheque",
       dirty:false,
       openingDate: Moment("2010-01-01").format(),
       openingBal: 0,
@@ -10,6 +11,13 @@ export const testTransactions = [
       interestStartDate: Moment("2018-06-01").format(),
       openingInterest: 5835,
       currentBal: 0,
+      minimise: 'Y',
+      minBalance:10000,
+      minimisePartner: "58749090-7adf-11e8-a000-cfaf666b12b9",
+      minStartDate: Moment("2018-08-15").format(),
+      minEndDate: Moment("2018-09-15").format(),
+      minPeriodType: 'M',
+      minPeriodCnt: 1,
       trans: [
         {
           transactionId: 1,
@@ -94,6 +102,7 @@ export const testTransactions = [
     },
     {
       accountId: "a9ca4f40-73d0-11e8-8ec0-3fce1802dff7",
+      tempName: "Savings",
       dirty:false,
       openingDate: Moment("2018-06-01").format(),
       openingBal:50000,
@@ -103,8 +112,11 @@ export const testTransactions = [
       currentBal: 0,
       type: 'interest',
       endDate: Moment("2025-01-01").format(),
-      periodType: 'M',
-      periodCnt: 1,
+      intPeriodType: 'M',
+      intPeriodCnt: 1,
+      close: 'Y',
+      closePartner: 'c8c74b80-7adf-11e8-a000-cfaf666b12b9',
+      closeDate: Moment("2025-12-31").format(),
       trans: [
         {
           transactionId: 12,
@@ -126,6 +138,7 @@ export const testTransactions = [
     },
     {
       accountId: "3f42a830-79d8-11e8-8888-85e7b8290a9c",
+      tempName: "Credit Card",
       dirty:false,
       openingDate: Moment("2017-06-01").format(),
       openingBal:100000,
@@ -135,8 +148,8 @@ export const testTransactions = [
       currentBal: 0,
       type: 'cc',
       endDate: Moment("2025-01-01").format(),
-      periodType: 'M',
-      periodCnt: 1,
+      ccPeriodType: 'M',
+      ccPeriodCnt: 1,
       ccDates: [],
       payDay: 9,
       periodEndDay: 28,
@@ -164,6 +177,7 @@ export const testTransactions = [
     },
     {
       accountId: "58749090-7adf-11e8-a000-cfaf666b12b9",
+      tempName: "Long Term Savings",
       dirty:false,
       openingDate: Moment("2018-06-01").format(),
       openingBal:50000,
@@ -173,12 +187,13 @@ export const testTransactions = [
       currentBal: 0,
       type: 'interest',
       endDate: Moment("2025-01-01").format(),
-      periodType: 'M',
-      periodCnt: 1,
+      intPeriodType: 'M',
+      intPeriodCnt: 1,
       trans: []
     },
     {
       accountId: "c8c74b80-7adf-11e8-a000-cfaf666b12b9",
+      tempName: "Simple",
       openingDate: Moment("2018-06-01").format(),
       openingBal:0,
       trans: []
