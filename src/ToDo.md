@@ -1,32 +1,23 @@
 Backlog in priority order
 =========================
-1. Add the following to account
-    - shortName - 12 character short name of the account
-    - description - modification of 'content'. 100 char max.
-    - openingDate - beginning of the account - > now -20 years, < now + 20 years
-    - closeDate   - date transactions can no longer be applied. Must be > openingDate. < now + 30 years.
-    - openingBal  - Default to 0. Initial balance. > -$1m, < +$1m
-    - interest    - whether interest is applied to this account (t/f)
-    - crRate      - opening credit interest rate (2 decimal places, less than 100%, >= 0)
-    - dbRate      - opening debit interest rate
-2. Allow for recurring transaction of 'interest' debit/credit in templates
-3. Apply new types to calculator
+1. Allow for recurring transaction of 'interest' debit/credit in templates
+2. Apply new types to calculator
     - pass account details into 'calculation' routine so it can use account in 'transactions' as well as accounts in dynamo
     - update testTransactions to remove new fields used in dynamo
     - modify calculate to work out efficient starting point (see template notes below)
-4. Wire up Save button to saving transactions somewhere
+3. Wire up Save button to saving transactions somewhere
     - loop through all accounts in 'transactions'
     - get trans for account
     - update dynamo with trans = trans[acc]
     - alternatively, store transactions as a blob in S3
-5. Wire up Load button to do the opposite
-6. Work out what to do at startup
+4. Wire up Load button to do the opposite
+5. Work out what to do at startup
     - do we load transactions automatically like accounts or is a 'load' required?
-7. Go onto 'credit card' handling
+6. Go onto 'credit card' handling
     - details to be added re. templates etc
-8. Do close and minimise
+7. Do close and minimise
     - details to be added re. templates etc
-9. Deprecate old 'transactions' format entirely.
+8. Deprecate old 'transactions' format entirely.
 
 
 accounts
@@ -35,15 +26,10 @@ accounts
 - add an edit button to accounts list (replaces link on actual account list item)
 - modify account list item click to go to list of transactions for account
 - add extra detail
-    - opening balance
-    - opening date
-    - opening interest amount
-    - opening interest rate
     - 'stop' date
     - account type
         - 'interest'
         - 'cc'
-- replace 'content' with name'
 - remove S3 attachment code
 - add concept of a debit and a credit interest rate so that credits and debits can attract different rates.
 

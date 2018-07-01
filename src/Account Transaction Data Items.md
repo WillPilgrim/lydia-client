@@ -1,20 +1,19 @@
     Static Items For account
     ========================
-    Field       Example                                                 Notes
-    -----       -------                                                 -----
-    userId      "ap-southeast-2:5363cdf1-ed41-42fa-90c1-3a19c18769bc"   Cognito logged in user id
-    accountId   "ae29b1c0-73d0-11e8-8ec0-3fce1802dff7"                  UUID. Used to uniquely identify account
-    attachment  true                                                    No current meaning
-    content     "Long term savings"                                     Description of the account. Should be 'description'
-    createdAt   1530083031603                                           Time Lambda created account
-    tempName    "Savings"                                               Should be shortName. Max 12 characters. Short display name of account.
-    openingDate 2015-06-28T12:00:00+08:00                               Date the account was created. This is immutable.
-    openingBal  0                                                       Opening balance of the account
-    closeDate   2025-06-28T12:00:00+08:00                               Date after which there are no more transactions
+    Field               Example                                         Notes
+    -----               -------                                         -----
+    userId              "ap-southeast-2:5363cdf1-ed41-42fa-90c1-3a19c18769bc"   Cognito logged in user id
+    accountId           "ae29b1c0-73d0-11e8-8ec0-3fce1802dff7"          UUID. Used to uniquely identify account
+    description         "Long term savings"                             Description of the account. Should be 'description'
+    createdAt           1530083031603                                   Time Lambda created account
+    accName             "Savings"                                       Should be shortName. Max 12 characters. Short display name of account.
+    openingDate         2015-06-28T12:00:00+08:00                       Date the account was created. This is immutable.
+    openingBal          0                                               Opening balance of the account
+    closingDate         2025-06-28T12:00:00+08:00                       Date after which there are no more transactions
     
     interest            true                                            Does interest calculations apply to this account
-    intCalcDbRate       0.0325 (3.25%)                                  Initial debit interest rate (can be manually adjusted)
-    intCalcCrRate       0                                               Initial credit interest rate (can be manually adjusted)
+    dbRate              3.25 (3.25%)                                    Initial debit interest rate (can be manually adjusted)
+    crRate              0                                               Initial credit interest rate (can be manually adjusted)
 
     target              true                                            Does this account target a particular value on a regular basis
     targetBal           10000                                           Value the account tries to achieve
