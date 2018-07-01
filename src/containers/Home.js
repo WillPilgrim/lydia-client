@@ -20,11 +20,7 @@ export default class Home extends Component {
     }
 
     try {
-      let accounts = this.props.accounts;
-      if (accounts === null) {
-        accounts = await this.accounts();
-        this.props.setAccounts(accounts);
-      }
+      let accounts = await this.accounts();
       this.setState({ accounts });
     } catch (e) {
       alert(e);
@@ -50,7 +46,7 @@ export default class Home extends Component {
               key={account.accountId}
               href={`/accounts/${account.accountId}`}
               onClick={this.handleAccountClick}
-              header={account.content.trim().split("\n")[0]}
+              header={account.description.trim().split("\n")[0]}
             >
               {"Created: " + new Date(account.createdAt).toLocaleString()}
             </ListGroupItem>

@@ -1,40 +1,60 @@
 import React, { Component } from "react";
-import { API, Storage } from "aws-amplify";
-import { FormGroup, FormControl, ControlLabel } from "react-bootstrap";
+import { API } from "aws-amplify";
+import {
+  FormGroup, FormControl, ControlLabel, InputGroup,
+  Checkbox
+} from "react-bootstrap";
 import LoaderButton from "../components/LoaderButton";
-import { s3Upload } from "../libs/awsLib";
-import config from "../config";
 import "./Accounts.css";
+import Moment from "moment";
+import DatePicker from "react-16-bootstrap-date-picker";
 
 export default class Accounts extends Component {
   constructor(props) {
     super(props);
 
-    this.file = null;
-
     this.state = {
+      account: null,
       isLoading: null,
       isDeleting: null,
-      account: null,
-      content: "",
-      attachmentURL: null
+      description: "",
+      openingDate: Moment().format(),
+      closingDate: Moment()
+        .add(10, "y")
+        .format(), // default closing date to 10 years from now
+      name: "",
+      amount100: "0.00",
+      crRate: "",
+      dbRate: "",
+      interest: false
     };
   }
 
   async componentDidMount() {
     try {
-      let attachmentURL;
       const account = await this.getAccount();
-      const { content, attachment } = account;
-
-      if (attachment) {
-        attachmentURL = await Storage.vault.get(attachment);
-      }
+      const {
+        description,
+        openingDate,
+        closingDate,
+        name,
+        amount,
+        crRate,
+        dbRate,
+        interest
+      } = account;
 
       this.setState({
         account,
-        content,
-        attachmentURL
+        description,
+        openingDate,
+        closingDate,
+        name,
+        amount,
+        amount100: (amount / 100).toFixed(2),
+        crRate,
+        dbRate,
+        interest
       });
     } catch (e) {
       alert(e);
@@ -42,60 +62,131 @@ export default class Accounts extends Component {
   }
 
   getAccount() {
- //   return API.get("accounts", `/accounts/${this.props.match.params.id}`);
-    return this.props.accounts.find(x => x.accountId === this.props.match.params.id)
+    return API.get("accounts", `/accounts/${this.props.match.params.id}`);
   }
 
   saveAccount(account) {
-    this.props.setAccounts(null);  //invalid the cache
     return API.put("accounts", `/accounts/${this.props.match.params.id}`, {
       body: account
     });
   }
 
   deleteAccount() {
-    this.props.setAccounts(null);  //invalid the cache
     return API.del("accounts", `/accounts/${this.props.match.params.id}`);
   }
 
   validateForm() {
-    return this.state.content.length > 0;
+    return (
+      this.getCrRateValidationState() !== "error" &&
+      this.getDbRateValidationState() !== "error" &&
+      this.getAmountValidationState() === "success" &&
+      this.getDescriptionValidationState() === "success" &&
+      this.getNameValidationState() === "success" &&
+      this.getOpeningDateValidationState() === "success" &&
+      this.getClosingDateValidationState() !== "error"
+    );
   }
 
-  formatFilename(str) {
-    return str.replace(/^\w+-/, "");
+  getDescriptionValidationState() {
+    if (this.state.description.length > 0) return "success";
+    return "error";
+  }
+
+  getNameValidationState() {
+    if (this.state.name.length > 0) return "success";
+    return "error";
+  }
+
+  getOpeningDateValidationState() {
+    if (this.state.openingDate === null) return "error";
+    return "success";
+  }
+
+  getClosingDateValidationState() {
+    if (this.state.closingDate === null) return "warning";
+    if (this.state.openingDate === null) return "warning";
+    if (
+      Moment(this.state.closingDate).isBefore(
+        Moment(this.state.openingDate),
+        "day"
+      )
+    )
+      return "error";
+    if (Moment(this.state.closingDate).isAfter(Moment().add(30, "y")))
+      return "error";
+    return "success";
+  }
+
+  getAmountValidationState() {
+    if (this.state.amount100.length === 0) return "error";
+    const regex = /^(-|\+)?[0-9]+(\.[0-9]{1,2})?$/;
+    if (!regex.test(this.state.amount100)) return "error";
+    let amount = parseFloat(this.state.amount100).toFixed(2) * 100;
+    if (isNaN(amount)) return "error";
+    if (amount > 99999999 || amount < -99999999) return "error";
+    return "success";
+  }
+
+  getCrRateValidationState() {
+    if (!this.state.interest) return "warning";
+    const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
+    if (!regex.test(this.state.crRate)) return "error";
+    let amount = parseFloat(this.state.crRate).toFixed(2);
+    if (isNaN(amount)) return "error";
+    if (amount > 99.99) return "error";
+    return "success";
+  }
+
+  getDbRateValidationState() {
+    if (!this.state.interest) return "warning";
+    const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
+    if (!regex.test(this.state.dbRate)) return "error";
+    let amount = parseFloat(this.state.dbRate).toFixed(2);
+    if (isNaN(amount)) return "error";
+    if (amount > 99.99) return "error";
+    return "success";
   }
 
   handleChange = event => {
     this.setState({
       [event.target.id]: event.target.value
     });
-  }
+  };
 
-  handleFileChange = event => {
-    this.file = event.target.files[0];
-  }
+  handleInterestChange = event => {
+    this.setState({
+      interest: event.target.checked
+    });
+  };
+
+  handleOpeningDateChange = value => {
+    this.setState({
+      openingDate: value
+    });
+  };
+
+  handleClosingDateChange = value => {
+    this.setState({
+      closingDate: value
+    });
+  };
+
 
   handleSubmit = async event => {
-    let attachment;
-
     event.preventDefault();
-
-    if (this.file && this.file.size > config.MAX_ATTACHMENT_SIZE) {
-      alert("Please pick a file smaller than 5MB");
-      return;
-    }
 
     this.setState({ isLoading: true });
 
     try {
-      if (this.file) {
-        attachment = await s3Upload(this.file);
-      }
-
       await this.saveAccount({
-        content: this.state.content,
-        attachment: attachment || this.state.account.attachment
+        name: this.state.name,
+        description: this.state.description,
+        openingDate: Moment(this.state.openingDate).format(),
+        closingDate: Moment(this.state.closingDate).format(),
+        amount: parseFloat(this.state.amount100).toFixed(2) * 100,
+        crRate: this.state.interest ? parseFloat(this.state.crRate).toFixed(2) : 0,
+        dbRate: this.state.interest ? parseFloat(this.state.dbRate).toFixed(2) : 0,
+        interest: this.state.interest
       });
       this.props.history.push("/");
     } catch (e) {
@@ -131,31 +222,117 @@ export default class Accounts extends Component {
       <div className="Accounts">
         {this.state.account &&
           <form onSubmit={this.handleSubmit}>
-            <FormGroup controlId="content">
+            <FormGroup
+              controlId="name"
+              validationState={this.getNameValidationState()}
+            >
+              <ControlLabel>Name</ControlLabel>
+              <FormControl
+                value={this.state.name}
+                placeholder="Enter an account Name"
+                onChange={this.handleChange}
+              />
+              <FormControl.Feedback />
+            </FormGroup>
+            <FormGroup
+              controlId="description"
+              validationState={this.getDescriptionValidationState()}
+            >
+              <ControlLabel>Description</ControlLabel>
               <FormControl
                 onChange={this.handleChange}
-                value={this.state.content}
+                value={this.state.description}
                 componentClass="textarea"
+                placeholder="Enter a description"
+              />
+              <FormControl.Feedback />
+            </FormGroup>
+            <FormGroup
+              controlId="openingDate"
+              validationState={this.getOpeningDateValidationState()}
+            >
+              <ControlLabel>Opening Date</ControlLabel>
+              <DatePicker
+                id="openingDate"
+                value={this.state.openingDate}
+                placeholder="Opening date"
+                onChange={this.handleOpeningDateChange}
+                autoComplete="off"
               />
             </FormGroup>
-            {this.state.account.attachment &&
-              <FormGroup>
-                <ControlLabel>Attachment</ControlLabel>
-                <FormControl.Static>
-                  <a
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    href={this.state.attachmentURL}
-                  >
-                    {this.formatFilename(this.state.account.attachment)}
-                  </a>
-                </FormControl.Static>
-              </FormGroup>}
-            <FormGroup controlId="file">
-              {!this.state.account.attachment &&
-                <ControlLabel>Attachment</ControlLabel>}
-              <FormControl onChange={this.handleFileChange} type="file" />
+            <FormGroup
+              controlId="closingDate"
+              validationState={this.getClosingDateValidationState()}
+            >
+              <ControlLabel>Closing Date</ControlLabel>
+              <DatePicker
+                id="closingDate"
+                value={this.state.closingDate}
+                placeholder="Closing date"
+                onChange={this.handleClosingDateChange}
+                autoComplete="off"
+              />
             </FormGroup>
+            <FormGroup
+              controlId="amount100"
+              validationState={this.getAmountValidationState()}
+            >
+              <ControlLabel>Opening Balance</ControlLabel>
+              <InputGroup>
+                <InputGroup.Addon>$</InputGroup.Addon>
+                <FormControl
+                  type="text"
+                  value={this.state.amount100}
+                  placeholder="Enter an opening balance"
+                  onChange={this.handleChange}
+                />
+              </InputGroup>
+              <FormControl.Feedback />
+            </FormGroup>
+            <FormGroup controlId="interest" validationState="success">
+              <ControlLabel>Interest</ControlLabel>
+              <Checkbox
+                checked={this.state.interest}
+                onChange={this.handleInterestChange}
+              >
+                Calculate Interest For This Account
+            </Checkbox>
+            </FormGroup>
+            <FormGroup
+              controlId="crRate"
+              validationState={this.getCrRateValidationState()}
+            >
+              <ControlLabel>Credit Rate</ControlLabel>
+              <InputGroup>
+                <InputGroup.Addon>%</InputGroup.Addon>
+                <FormControl
+                  type="text"
+                  value={this.state.crRate}
+                  placeholder="Credit interest rate"
+                  onChange={this.handleChange}
+                  disabled={!this.state.interest}
+                />
+              </InputGroup>
+              <FormControl.Feedback />
+            </FormGroup>
+            <FormGroup
+              controlId="dbRate"
+              validationState={this.getDbRateValidationState()}
+            >
+              <ControlLabel>Debit Rate</ControlLabel>
+              <InputGroup>
+                <InputGroup.Addon>%</InputGroup.Addon>
+                <FormControl
+                  type="text"
+                  value={this.state.dbRate}
+                  placeholder="Debit interest rate"
+                  onChange={this.handleChange}
+                  disabled={!this.state.interest}
+                />
+              </InputGroup>
+              <FormControl.Feedback />
+            </FormGroup>
+
             <LoaderButton
               block
               bsStyle="primary"

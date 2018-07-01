@@ -8,8 +8,6 @@ import {
   Checkbox
 } from "react-bootstrap";
 import LoaderButton from "../components/LoaderButton";
-import { s3Upload } from "../libs/awsLib";
-import config from "../config";
 import "./NewAccount.css";
 import DatePicker from "react-16-bootstrap-date-picker";
 import Moment from "moment";
@@ -17,8 +15,6 @@ import Moment from "moment";
 export default class NewAccount extends Component {
   constructor(props) {
     super(props);
-
-    this.file = null;
 
     this.state = {
       isLoading: null,
@@ -140,19 +136,18 @@ export default class NewAccount extends Component {
   handleSubmit = async event => {
     event.preventDefault();
 
-    if (this.file && this.file.size > config.MAX_ATTACHMENT_SIZE) {
-      alert("Please pick a file smaller than 5MB");
-      return;
-    }
-
     this.setState({ isLoading: true });
 
     try {
-      const attachment = this.file ? await s3Upload(this.file) : null;
-
       await this.createAccount({
-        attachment,
-        content: this.state.content
+        name: this.state.name,
+        description: this.state.description,
+        openingDate: Moment(this.state.openingDate).format(),
+        closingDate: Moment(this.state.closingDate).format(),
+        amount: parseFloat(this.state.amount100).toFixed(2) * 100,
+        crRate: this.state.interest?parseFloat(this.state.crRate).toFixed(2):0,
+        dbRate: this.state.interest?parseFloat(this.state.dbRate).toFixed(2):0,
+        interest: this.state.interest
       });
       this.props.history.push("/");
     } catch (e) {
