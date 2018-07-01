@@ -487,9 +487,11 @@ let updateBalance = (account, transactions) => {
             if (lineDate.isAfter(Moment(), "day")) {
               totalInterest = Math.floor(totalInterest);
               if (totalInterest >= 0) {
+								tr.dbAmount = 0;
                 tr.crAmount = totalInterest;
                 tr.description = "Interest Credit";
               } else {
+								tr.crAmount = 0;
                 tr.dbAmount = -totalInterest;
                 tr.description = "Interest Debit";
               }
