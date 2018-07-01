@@ -169,7 +169,7 @@ export default class Transactions extends Component {
         </div>
 
         <BootstrapTable
-          keyField="transactionId"
+          keyField="transactionId" maxHeight='120px'
           data={
             this.state.currentAcc === null
               ? []

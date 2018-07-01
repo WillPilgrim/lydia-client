@@ -1,0 +1,84 @@
+Backlog in priority order
+=========================
+1. Add the following to account
+    - shortName - 12 character short name of the account
+    - description - modification of 'content'. 100 char max.
+    - openingDate - beginning of the account - > now -20 years, < now + 20 years
+    - closeDate   - date transactions can no longer be applied. Must be > openingDate. < now + 30 years.
+    - openingBal  - Default to 0. Initial balance. > -$1m, < +$1m
+    - interest    - whether interest is applied to this account (t/f)
+    - crRate      - opening credit interest rate (2 decimal places, less than 100%, >= 0)
+    - dbRate      - opening debit interest rate
+2. Allow for recurring transaction of 'interest' debit/credit in templates
+3. Apply new types to calculator
+    - pass account details into 'calculation' routine so it can use account in 'transactions' as well as accounts in dynamo
+    - update testTransactions to remove new fields used in dynamo
+    - modify calculate to work out efficient starting point (see template notes below)
+4. Wire up Save button to saving transactions somewhere
+    - loop through all accounts in 'transactions'
+    - get trans for account
+    - update dynamo with trans = trans[acc]
+    - alternatively, store transactions as a blob in S3
+5. Wire up Load button to do the opposite
+6. Work out what to do at startup
+    - do we load transactions automatically like accounts or is a 'load' required?
+7. Go onto 'credit card' handling
+    - details to be added re. templates etc
+8. Do close and minimise
+    - details to be added re. templates etc
+9. Deprecate old 'transactions' format entirely.
+
+
+accounts
+========
+- move 'static' (non transaction processing) detail from transaction list grouping to accounts in dynamoDb
+- add an edit button to accounts list (replaces link on actual account list item)
+- modify account list item click to go to list of transactions for account
+- add extra detail
+    - opening balance
+    - opening date
+    - opening interest amount
+    - opening interest rate
+    - 'stop' date
+    - account type
+        - 'interest'
+        - 'cc'
+- replace 'content' with name'
+- remove S3 attachment code
+- add concept of a debit and a credit interest rate so that credits and debits can attract different rates.
+
+transactions
+============
+- add Save Transactions button 
+    - implements saving of all data to S3/dynamoDb
+- add Load transactions button
+    - reads from S3 and populates data structures for transaction displays per account
+    - what happens if accounts in transaction data doesn't match account list?
+- allow manual editing of transactions in transaction list
+- allow reconciliation of transactions in transaction list
+- use 'inflate' from template rather than hardcoded version
+- add in 'offset' feature for transfers
+- add in manual interest rate adjustment transaction
+
+templates
+=========
+- Add 'inflate' toggle for templates
+- Add 'close' template - sweep all funds from account to another account
+- Add 'minimise' template - sweep money out of account but still keep a minimum amount in it
+- Improve interest calculations to be more efficient than going back to the beginning. Perhaps can go back to the first 'interest' credit/debit before today, set TotalInt = 0, retrieve the rates as at that time, and go forward from there as the new 'interestStartDdate'. Then when creating an 'interest' transaction, insert current db and cr rate at that point. If no 'interest' is found prior to today, use account default values. These would be 0 for the total initially but could be altered later when introducing the idea of saving a partial budget.
+
+main
+====
+- add data settings
+    - interest rate
+    - default end date
+- add in 'scratch pad' for notes
+    - add in link to calculator from scratch pad
+
+miscellaneous
+=============
+- handle state better - redux?
+- use const instead of let where appropriate
+- handle many accounts in the nav bar on the Transactions list
+- look at better table processing
+    - scrolling within list

@@ -114,7 +114,11 @@ let processSpecials = (transactions, templates) => {
     let endDate = Moment(account.endDate);
     let periodEndDay = account.periodEndDay;
     let periodType = account.ccPeriodType;
-    let periodCnt = account.ccPeriodCnt;
+		let periodCnt = account.ccPeriodCnt;
+		let payFromAccount = transactions.find(
+      acc => acc.accountId === account.payFromAccId
+    );
+
 
     while (transDate.isSameOrBefore(endDate, "day")) {
       transDate = transDate.add(periodCnt, periodType);
@@ -125,7 +129,7 @@ let processSpecials = (transactions, templates) => {
           transactionId: uuid(),
           crAmount: 0,
           dbAmount: 0,
-          description: `Payment from ${account.payFromAccId}`,
+          description: `Payment from ${payFromAccount.tempName}`,
           type: "cc"
         };
         account.trans.push(newTrans);
@@ -395,13 +399,13 @@ let updateBalance = (account, transactions) => {
             };
             if (bal < 0) {
               tr.description = `From ${
-                closePartnerAcc.accountId
+                closePartnerAcc.tempName
                 } to clear balance`;
               newTrans.dbAmount = -bal;
               newTrans.description = `To ${account.tempName}`;
             } else {
               tr.description = `To ${
-                closePartnerAcc.accountId
+                closePartnerAcc.tempName
                 } to clear balance`;
               newTrans.crAmount = bal;
               newTrans.description = `From ${account.tempName}`;

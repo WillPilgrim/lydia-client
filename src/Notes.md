@@ -26,3 +26,15 @@ Restrictions
 - One Minimise attribute per account. This reflects that an account can only minimise to one partner account.
 - Minimise and Zero attributes cannot be applied to Credit Card accounts. This is because the 'Payoff' attribute for Credit Card transactions is a special type of Minimise attribute and would create conflicts.
 - Accounts can cascade Minimise and Zero attributes provided this does not create a dependency loop. For example, account A, B and C all minimise to $100. A uses funds from B, B uses funds from C, and C uses funds from A. This cannot be resolved and is not permitted.
+
+Interest
+========
+Interest is specified at the account level. It can be turned off or on when creating and modifying accounts. If turned on then the following values can be specified:
+- First date that interest is calculated from. This must be on or after date of entry. 
+- Initial debit interest rate. This is the rate that will apply when the balance of the period applied to is negative.
+- Initial credit interest rate. This is the rate that will apply when the balance of the period applied to is positive.
+- First date accumulated interest is applied to the account. This represents the first credit or debit entry of interest.
+- Applied interest period type and period count. These two values specify how frequently interest will be applied to the account.
+
+Note that the separation of credit and debit interest rates allow for accounts where the rate is not consistent. For example, many account types have a very small credit interest (or none at all) but a much larger debit interest. In either case, the interest is calculated on each period from one entry in the account to the next and the type of rate is based on the balance at the time of the former entry. In practice the rules applied to accounts are often more complex especially for credit interest. For example, to accrue credit interest an account may require a minimum balance or at least no negative balance for a large period. However this mechanism allows for reasonable approximations of account behaviour. A good practical use is to set loan accounts to the appropriate debit rate but set the credit rate to 0. For cheque accounts that pay little interest, turning off interest altogether may be appropriate. 
+
