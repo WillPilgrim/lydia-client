@@ -22,7 +22,7 @@ export default class Accounts extends Component {
       closingDate: Moment()
         .add(10, "y")
         .format(), // default closing date to 10 years from now
-      name: "",
+      accName: "",
       amount100: "0.00",
       crRate: "",
       dbRate: "",
@@ -37,7 +37,7 @@ export default class Accounts extends Component {
         description,
         openingDate,
         closingDate,
-        name,
+        accName,
         amount,
         crRate,
         dbRate,
@@ -49,7 +49,7 @@ export default class Accounts extends Component {
         description,
         openingDate,
         closingDate,
-        name,
+        accName,
         amount,
         amount100: (amount / 100).toFixed(2),
         crRate,
@@ -93,7 +93,7 @@ export default class Accounts extends Component {
   }
 
   getNameValidationState() {
-    if (this.state.name.length > 0) return "success";
+    if (this.state.accName.length > 0) return "success";
     return "error";
   }
 
@@ -179,7 +179,7 @@ export default class Accounts extends Component {
 
     try {
       await this.saveAccount({
-        name: this.state.name,
+        accName: this.state.accName,
         description: this.state.description,
         openingDate: Moment(this.state.openingDate).format(),
         closingDate: Moment(this.state.closingDate).format(),
@@ -223,12 +223,12 @@ export default class Accounts extends Component {
         {this.state.account &&
           <form onSubmit={this.handleSubmit}>
             <FormGroup
-              controlId="name"
+              controlId="accName"
               validationState={this.getNameValidationState()}
             >
               <ControlLabel>Name</ControlLabel>
               <FormControl
-                value={this.state.name}
+                value={this.state.accName}
                 placeholder="Enter an account Name"
                 onChange={this.handleChange}
               />

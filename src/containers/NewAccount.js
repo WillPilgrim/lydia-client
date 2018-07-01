@@ -23,7 +23,7 @@ export default class NewAccount extends Component {
       closingDate: Moment()
         .add(10, "y")
         .format(), // default closing date to 10 years from now
-      name: "",
+      accName: "",
       amount100: "0.00",
       crRate: "",
       dbRate: "",
@@ -55,7 +55,7 @@ export default class NewAccount extends Component {
   }
 
   getNameValidationState() {
-    if (this.state.name.length > 0) return "success";
+    if (this.state.accName.length > 0) return "success";
     return "error";
   }
 
@@ -140,7 +140,7 @@ export default class NewAccount extends Component {
 
     try {
       await this.createAccount({
-        name: this.state.name,
+        accName: this.state.accName,
         description: this.state.description,
         openingDate: Moment(this.state.openingDate).format(),
         closingDate: Moment(this.state.closingDate).format(),
@@ -161,12 +161,12 @@ export default class NewAccount extends Component {
       <div className="NewAccount">
         <form onSubmit={this.handleSubmit}>
           <FormGroup
-            controlId="name"
+            controlId="accName"
             validationState={this.getNameValidationState()}
           >
             <ControlLabel>Name</ControlLabel>
             <FormControl 
-              value={this.state.name}
+              value={this.state.accName}
               placeholder="Enter an account Name"
               onChange={this.handleChange}
             />
