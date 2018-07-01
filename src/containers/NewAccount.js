@@ -170,8 +170,7 @@ export default class NewAccount extends Component {
             validationState={this.getNameValidationState()}
           >
             <ControlLabel>Name</ControlLabel>
-            <FormControl
-              type="text"
+            <FormControl 
               value={this.state.name}
               placeholder="Enter an account Name"
               onChange={this.handleChange}
