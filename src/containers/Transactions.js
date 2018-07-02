@@ -46,9 +46,12 @@ export default class Transactions extends Component {
         transAcc.openingDate = acc.openingDate;
         transAcc.closingDate = acc.closingDate;
         transAcc.openingBal = acc.amount;
-        transAcc.crRate = acc.crRate;
-        transAcc.dbRate = acc.dbRate;
+        transAcc.openingCrRate = acc.crRate;
+        transAcc.openingDbRate = acc.dbRate;
         transAcc.calcInterest = acc.interest;
+        transAcc.intPeriodType = acc.periodType;
+        transAcc.intPeriodCnt = acc.periodCnt;
+        transAcc.intFirstAppliedDate = acc.intFirstAppliedDate;
       });
 
       this.setState({

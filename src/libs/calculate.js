@@ -115,7 +115,7 @@ let processSpecials = (transactions, templates) => {
     let payDay = account.payDay;
     let startDate = Moment(account.openingDate).date(payDay); // set initial date to first period on the payment date
     let transDate = Moment(startDate);
-    let endDate = Moment(account.endDate);
+    let endDate = Moment(account.closingDate);
     let periodEndDay = account.periodEndDay;
     let periodType = account.ccPeriodType;
 		let periodCnt = account.ccPeriodCnt;
@@ -154,11 +154,11 @@ let processSpecials = (transactions, templates) => {
 
   // 2. Process all interest accounts
   transactions
-    .filter(account => account.type === "interest")
+    .filter(account => account.calcInterest)
     .forEach(account => {
-      let startDate = Moment(account.interestStartDate);
+      let startDate = Moment(account.intFirstAppliedDate);
       let transDate = Moment(startDate);
-      let endDate = Moment(account.endDate);
+      let endDate = Moment(account.closingDate);
       let periodType = account.intPeriodType;
       let periodCnt = account.intPeriodCnt;
 
@@ -183,13 +183,13 @@ let processSpecials = (transactions, templates) => {
   // 3. Process dynamic transfer template types
   let specials = [];
   transactions.forEach(account => {
-    if (account.close)
+    if (account.zero)
       specials.push({
-        type: "close",
+        type: "zero",
         active: true,
         accountId: account.accountId,
-        partner: account.closePartner,
-        startDate: Moment(account.closeDate)
+        partner: account.zeroPartner,
+        startDate: Moment(account.zeroDate)
       });
     if (account.minimise)
       specials.push({
@@ -239,7 +239,7 @@ let processSpecials = (transactions, templates) => {
               startDate = startDate.add(periodCnt, periodType);
             }
             break;
-          case "close":
+          case "zero":
             if (startDate.isAfter(Moment(), "day")) {
               account.trans.push({
                 date: startDate.format(),
@@ -290,11 +290,11 @@ let updateBalance = (account, transactions) => {
     );
 
     let bal = account.openingBal;
-    let dbRate = account.dbRate/100;
-    let crRate = account.crRate/100;
-    let interestStartDate = Moment(account.interestStartDate);
-    let totalInterest = account.openingInterest;
-    let prevInterestDate = Moment(interestStartDate);
+    let dbRate = account.openingDbRate/100;
+    let crRate = account.openingCrRate/100;
+    let intFirstAppliedDate = Moment(account.intFirstAppliedDate);
+    let totalInterest = 0;
+    let prevInterestDate = Moment(intFirstAppliedDate);
     let accType = account.type;
     let currentBal = bal;
     let lowestBal = 0;
@@ -329,9 +329,9 @@ let updateBalance = (account, transactions) => {
 
     // Initialise closing partner account
     let closePartnerAcc;
-    if (account.closePartner) {
+    if (account.zeroPartner) {
       closePartnerAcc = transactions.find(
-        acc => acc.accountId === account.closePartner
+        acc => acc.accountId === account.zeroPartner
       );
     }
 
@@ -377,8 +377,8 @@ let updateBalance = (account, transactions) => {
       }
 
       if (lineDate.isAfter(Moment(), "day")) {
-        // Close account to/from partner (if provided)
-        if (tr.type === "close") {
+        // Zero account to/from partner (if provided)
+        if (tr.type === "zero") {
           if (bal >= 0) {
             tr.crAmount = 0;
             tr.dbAmount = bal;
@@ -479,8 +479,8 @@ let updateBalance = (account, transactions) => {
       }
 
       // interest rate calculations
-      if (accType === "interest") {
-        if (lineDate.isSameOrAfter(interestStartDate, "day")) {
+      if (account.calcInterest) {
+        if (lineDate.isSameOrAfter(intFirstAppliedDate, "day")) {
           // calculate 'line interest' which is the interest calculated since the last line entry
           let daysDiff = lineDate.diff(prevInterestDate, "days");
           prevInterestDate = Moment(lineDate);

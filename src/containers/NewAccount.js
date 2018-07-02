@@ -5,7 +5,8 @@ import {
   FormControl,
   ControlLabel,
   InputGroup,
-  Checkbox
+  Checkbox,
+  Col
 } from "react-bootstrap";
 import LoaderButton from "../components/LoaderButton";
 import "./NewAccount.css";
@@ -20,13 +21,16 @@ export default class NewAccount extends Component {
       isLoading: null,
       description: "",
       openingDate: Moment().format(),
+      intFirstAppliedDate: Moment().format(),
       closingDate: Moment()
         .add(10, "y")
         .format(), // default closing date to 10 years from now
       accName: "",
       amount100: "0.00",
-      crRate: "",
-      dbRate: "",
+      crRate: 0,
+      dbRate: 0,
+      periodType: 'M',
+      periodCnt: 1,
       interest: false
     };
   }
@@ -45,8 +49,27 @@ export default class NewAccount extends Component {
       this.getDescriptionValidationState() === "success" &&
       this.getNameValidationState() === "success" &&
       this.getOpeningDateValidationState() === "success" &&
-      this.getClosingDateValidationState() !== "error"
+      this.getClosingDateValidationState() !== "error" &&
+      this.getFreqValidationState() !== "error" &&
+      this.getFirstAppliedDateValidationState() !== "error" &&
+      this.getPeriodTypeValidationState() !== "error"
     );
+  }
+
+  getFreqValidationState() {
+    if (!this.state.interest) return "warning";
+    if (this.state.periodCnt.length <= 0) return "error";
+    if (isNaN(parseInt(this.state.periodCnt, 10)))
+      return "error";
+    let val = parseInt(this.state.periodCnt, 10);
+    if (val > 99 || val < 1)
+      return "error";
+    return "success";
+  }
+
+  getPeriodTypeValidationState() {
+    if (!this.state.interest) return "warning";
+    return "success";
   }
 
   getDescriptionValidationState() {
@@ -61,6 +84,30 @@ export default class NewAccount extends Component {
 
   getOpeningDateValidationState() {
     if (this.state.openingDate === null) return "error";
+    if (Moment(this.state.openingDate).isAfter(Moment().add(30, "y")))
+      return "error";
+    return "success";
+  }
+
+  getFirstAppliedDateValidationState() {
+    if (!this.state.interest) return "warning";
+    if (this.state.intFirstAppliedDate === null) return "error";
+    if (Moment(this.state.intFirstAppliedDate).isAfter(Moment().add(30, "y")))
+      return "error";
+    if (
+      Moment(this.state.intFirstAppliedDate).isBefore(
+        Moment(this.state.openingDate),
+        "day"
+      )
+    )
+      return "error";
+    if (
+      Moment(this.state.intFirstAppliedDate).isAfter(
+        Moment(this.state.closingDate),
+        "day"
+      )
+    )
+      return "error";
     return "success";
   }
 
@@ -133,6 +180,12 @@ export default class NewAccount extends Component {
     });
   };
 
+  handleFirstAppliedDateChange = value => {
+    this.setState({
+      intFirstAppliedDate: value
+    });
+  };
+
   handleSubmit = async event => {
     event.preventDefault();
 
@@ -145,9 +198,13 @@ export default class NewAccount extends Component {
         openingDate: Moment(this.state.openingDate).format(),
         closingDate: Moment(this.state.closingDate).format(),
         amount: parseFloat(this.state.amount100).toFixed(2) * 100,
-        crRate: this.state.interest?parseFloat(this.state.crRate).toFixed(2):0,
-        dbRate: this.state.interest?parseFloat(this.state.dbRate).toFixed(2):0,
-        interest: this.state.interest
+        crRate: this.state.interest ? parseFloat(this.state.crRate).toFixed(2) : 0,
+        dbRate: this.state.interest ? parseFloat(this.state.dbRate).toFixed(2) : 0,
+        interest: this.state.interest,
+        periodType: this.state.interest ? this.state.periodType : "",
+        periodCnt: this.state.interest ? parseInt(this.state.periodCnt, 10) : 0,
+        intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).format()
+
       });
       this.props.history.push("/");
     } catch (e) {
@@ -165,7 +222,7 @@ export default class NewAccount extends Component {
             validationState={this.getNameValidationState()}
           >
             <ControlLabel>Name</ControlLabel>
-            <FormControl 
+            <FormControl
               value={this.state.accName}
               placeholder="Enter an account Name"
               onChange={this.handleChange}
@@ -236,41 +293,91 @@ export default class NewAccount extends Component {
               Calculate Interest For This Account
             </Checkbox>
           </FormGroup>
-          <FormGroup
-            controlId="crRate"
-            validationState={this.getCrRateValidationState()}
-          >
-            <ControlLabel>Credit Rate</ControlLabel>
-            <InputGroup>
-            <InputGroup.Addon>%</InputGroup.Addon>
-              <FormControl
-                type="text"
-                value={this.state.crRate}
-                placeholder="Credit interest rate"
-                onChange={this.handleChange}
-                disabled={!this.state.interest}
-              />
-            </InputGroup>
-            <FormControl.Feedback />
-          </FormGroup>
-          <FormGroup
-            controlId="dbRate"
-            validationState={this.getDbRateValidationState()}
-          >
-            <ControlLabel>Debit Rate</ControlLabel>
-            <InputGroup>
-            <InputGroup.Addon>%</InputGroup.Addon>
-              <FormControl
-                type="text"
-                value={this.state.dbRate}
-                placeholder="Debit interest rate"
-                onChange={this.handleChange}
-                disabled={!this.state.interest}
-              />
-            </InputGroup>
-            <FormControl.Feedback />
-          </FormGroup>
 
+          <Col sm={6}>
+
+            <FormGroup
+              controlId="crRate"
+              validationState={this.getCrRateValidationState()}
+            >
+              <ControlLabel>Opening Credit Rate</ControlLabel>
+              <InputGroup>
+                <InputGroup.Addon>%</InputGroup.Addon>
+                <FormControl
+                  type="text"
+                  value={this.state.crRate}
+                  placeholder="Credit interest rate"
+                  onChange={this.handleChange}
+                  disabled={!this.state.interest}
+                />
+              </InputGroup>
+              <FormControl.Feedback />
+            </FormGroup>
+            <FormGroup
+              controlId="dbRate"
+              validationState={this.getDbRateValidationState()}
+            >
+              <ControlLabel>Opening Debit Rate</ControlLabel>
+              <InputGroup>
+                <InputGroup.Addon>%</InputGroup.Addon>
+                <FormControl
+                  type="text"
+                  value={this.state.dbRate}
+                  placeholder="Debit interest rate"
+                  onChange={this.handleChange}
+                  disabled={!this.state.interest}
+                />
+              </InputGroup>
+              <FormControl.Feedback />
+            </FormGroup>
+            <FormGroup
+              controlId="intFirstAppliedDate"
+              validationState={this.getFirstAppliedDateValidationState()}
+            >
+              <ControlLabel>First Applied Date</ControlLabel>
+              <DatePicker
+                id="intFirstAppliedDate"
+                value={this.state.intFirstAppliedDate}
+                placeholder="First Applied Date"
+                onChange={this.handleFirstAppliedDateChange}
+                autoComplete="off"
+                disabled={!this.state.interest}
+              />
+            </FormGroup>
+          </Col>
+          <Col sm={6}>
+
+            <FormGroup controlId="periodType" validationState={this.getPeriodTypeValidationState()}>
+              <ControlLabel>Period Type</ControlLabel>
+              <FormControl
+                componentClass="select"
+                type="text"
+                value={this.state.periodType}
+                placeholder="Select period type"
+                onChange={this.handleChange}
+                disabled={!this.state.interest}
+              >
+                <option value="M">Month</option>
+                <option value="w">Week</option>
+                <option value="y">Year</option>
+                <option value="Q">Quarter</option>
+                <option value="d">Day</option>
+              </FormControl>
+            </FormGroup>
+
+            <FormGroup controlId="periodCnt" validationState={this.getFreqValidationState()}>
+              <ControlLabel>Frequency</ControlLabel>
+              <FormControl
+                type="text"
+                value={this.state.periodCnt}
+                placeholder="Number of periods"
+                onChange={this.handleChange}
+                disabled={!this.state.interest}
+              />
+            </FormGroup>
+
+          </Col>
+          
           <LoaderButton
             block
             bsStyle="primary"

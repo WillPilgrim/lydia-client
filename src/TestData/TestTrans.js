@@ -4,8 +4,6 @@ export const testTransactions = [
   {
     // Main - General purpose
     accountId: "ae29b1c0-73d0-11e8-8ec0-3fce1802dff7",
-    interestStartDate: Moment("2018-06-01").format(),
-    openingInterest: 5835,
     minimise: 'Y',
     minBalance: 10000,
     minimisePartner: "58749090-7adf-11e8-a000-cfaf666b12b9",
@@ -98,15 +96,9 @@ export const testTransactions = [
   {
     // Holiday - Holiday savings
     accountId: "a9ca4f40-73d0-11e8-8ec0-3fce1802dff7",
-    interestStartDate: Moment("2018-06-01").format(),
-    openingInterest: 0,
-    type: 'interest',
-    endDate: Moment("2025-01-01").format(),
-    intPeriodType: 'M',
-    intPeriodCnt: 1,
-    close: 'Y',
-    closePartner: 'c8c74b80-7adf-11e8-a000-cfaf666b12b9',
-    closeDate: Moment("2025-12-31").format(),
+    zero: 'Y',
+    zeroPartner: 'c8c74b80-7adf-11e8-a000-cfaf666b12b9',
+    zeroDate: Moment("2025-12-31").format(),
     trans: [
       {
         transactionId: 12,
@@ -129,10 +121,7 @@ export const testTransactions = [
   {
     // Mastercard - Bankwest Mastercard
     accountId: "3f42a830-79d8-11e8-8888-85e7b8290a9c",
-    interestStartDate: Moment("2018-06-01").format(),
-    openingInterest: 0,
     type: 'cc',
-    endDate: Moment("2025-01-01").format(),
     ccPeriodType: 'M',
     ccPeriodCnt: 1,
     ccDates: [],
@@ -157,16 +146,5 @@ export const testTransactions = [
         autogen: Moment("2018-06-15").format()
       }
     ]
-  },
-  {
-    // Savings - Long term savings
-    accountId: "58749090-7adf-11e8-a000-cfaf666b12b9",
-    interestStartDate: Moment("2018-06-01").format(),
-    openingInterest: 0,
-    type: 'interest',
-    endDate: Moment("2025-01-01").format(),
-    intPeriodType: 'M',
-    intPeriodCnt: 1,
-    trans: []
   }
 ];

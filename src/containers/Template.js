@@ -303,7 +303,6 @@ export default class Template extends Component {
                 <option value="Debit">Debit</option>
                 <option value="Credit">Credit</option>
                 <option value="Transfer">Transfer</option>
-                <option value="Interest">Interest</option>
               </FormControl>
             </FormGroup>
             <Col sm={6}>
