@@ -345,7 +345,7 @@ export default class Template extends Component {
               >
                 {this.state.accs.map(x => (
                   <option key={x.accountId} value={x.accountId}>
-                    {x.content}
+                    {x.accName  }
                   </option>
                 ))}
               </FormControl>
@@ -365,7 +365,7 @@ export default class Template extends Component {
               </option>
                 {this.state.accs.map(x => (
                   <option key={x.accountId} value={x.accountId}>
-                    {x.content}
+                    {x.accName}
                   </option>
                 ))}
               </FormControl>

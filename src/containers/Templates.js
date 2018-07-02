@@ -24,11 +24,11 @@ export default class Templates extends Component {
       const accs = await this.accounts();
       const t1 = await this.templates();
       const templates = t1.map(({ accountFromId: afid, accountToId: atid, ...rest }) => ({
-        accountFrom: accs.find(x => x.accountId === afid).content,
-        accountTo: atid==="0"?"":accs.find(x => x.accountId === atid).content,
+        accountFrom: accs.find(x => x.accountId === afid).accName,
+        accountTo: atid==="0"?"":accs.find(x => x.accountId === atid).accName,
         ...rest
       }));
-      this.setState({ templates });
+      this.setState({ templates, accs });
     } catch (e) {
       alert(e);
     }
@@ -115,6 +115,7 @@ export default class Templates extends Component {
     {
       dataField: "amount",
       text: "Amount",
+      align: "right",
       formatter: this.amountFormatter
     },
     {
