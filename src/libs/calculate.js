@@ -29,6 +29,11 @@ let delfuture = transactions => {
     account.trans = account.trans.filter(
       item => !Moment(item.autogen).isAfter(Moment(), "day")
     );
+    // Initialise work variables
+    account.dirty = false;
+    account.currentBal = 0;
+    account.currentCrRate = 0;
+    account.currentDbRate = 0;
   });
 };
 
@@ -105,7 +110,6 @@ let processNormal = (transactions, templates) => {
 let processSpecials = (transactions, templates) => {
   // 1. Process all credit card accounts
 
-  console.time("Specials - cc");
   transactions.filter(account => account.type === "cc").forEach(account => {
     //Note payDay must be <= 28
     let payDay = account.payDay;
@@ -129,7 +133,7 @@ let processSpecials = (transactions, templates) => {
           transactionId: uuid(),
           crAmount: 0,
           dbAmount: 0,
-          description: `Payment from ${payFromAccount.tempName}`,
+          description: `Payment from ${payFromAccount.accName}`,
           type: "cc"
         };
         account.trans.push(newTrans);
@@ -147,10 +151,8 @@ let processSpecials = (transactions, templates) => {
 
     account.ccDates.length = 0; // clear credit card dates array
   });
-  console.timeEnd("Specials - cc");
 
   // 2. Process all interest accounts
-  console.time("Specials - interest");
   transactions
     .filter(account => account.type === "interest")
     .forEach(account => {
@@ -177,10 +179,8 @@ let processSpecials = (transactions, templates) => {
       }
       updateBalance(account, transactions);
     });
-  console.timeEnd("Specials - interest");
 
   // 3. Process dynamic transfer template types
-  console.time("Specials - minimise/close");
   let specials = [];
   transactions.forEach(account => {
     if (account.close)
@@ -205,7 +205,6 @@ let processSpecials = (transactions, templates) => {
   });
 
   let completed = 0;
-  //completed = specials.length;
   while (completed < specials.length) {
     specials.filter(special => special.active).forEach(special => {
       let accId = special.accountId;
@@ -275,7 +274,6 @@ let processSpecials = (transactions, templates) => {
       }
     });
   }
-  console.timeEnd("Specials - minimise/close");
 };
 
 let updateBalances = transactions => {
@@ -292,7 +290,8 @@ let updateBalance = (account, transactions) => {
     );
 
     let bal = account.openingBal;
-    let rate = account.openingRate;
+    let dbRate = account.dbRate/100;
+    let crRate = account.crRate/100;
     let interestStartDate = Moment(account.interestStartDate);
     let totalInterest = account.openingInterest;
     let prevInterestDate = Moment(interestStartDate);
@@ -304,7 +303,8 @@ let updateBalance = (account, transactions) => {
     let ccBalance = bal;
     let minPeriodStartIndex = -1;
     let saveBal;
-    let saveRate;
+    let saveCrRate;
+    let saveDbRate;
     let saveTotalInt;
 
     if (Moment(account.openingDate).isAfter(Moment(), "day")) currentBal = 0;
@@ -367,7 +367,7 @@ let updateBalance = (account, transactions) => {
                   transactionId: uuid(),
                   dbAmount: -ccBalance,
                   crAmount: 0,
-                  description: `To ${account.tempName} for credit card payment`
+                  description: `To ${account.accName} for credit card payment`
                 });
                 ccPartnerAcc.dirty = true;
               }
@@ -399,16 +399,16 @@ let updateBalance = (account, transactions) => {
             };
             if (bal < 0) {
               tr.description = `From ${
-                closePartnerAcc.tempName
+                closePartnerAcc.accName
                 } to clear balance`;
               newTrans.dbAmount = -bal;
-              newTrans.description = `To ${account.tempName}`;
+              newTrans.description = `To ${account.accName}`;
             } else {
               tr.description = `To ${
-                closePartnerAcc.tempName
+                closePartnerAcc.accName
                 } to clear balance`;
               newTrans.crAmount = bal;
-              newTrans.description = `From ${account.tempName}`;
+              newTrans.description = `From ${account.accName}`;
             }
             closePartnerAcc.trans.push(newTrans);
             closePartnerAcc.dirty = true;
@@ -422,7 +422,8 @@ let updateBalance = (account, transactions) => {
             minPeriodStartIndex = trIndex;
             lowestBal = bal; // initial balance is the lowest for period so far
             saveBal = bal; // remember current balance when we return here
-            saveRate = rate; // remember current rate when we return here
+            saveCrRate = crRate;
+            saveDbRate = dbRate;
             saveTotalInt = totalInterest;
           } else {
             // remove final minimise end of period marker
@@ -453,23 +454,24 @@ let updateBalance = (account, transactions) => {
               };
               if (transferAmt < 0) {
                 tr.description = `From ${
-                  minPartnerAcc.tempName
+                  minPartnerAcc.accName
                   } to ensure minimum balance`;
                 newTrans.dbAmount = -transferAmt;
-                newTrans.description = `To ${account.tempName}`;
+                newTrans.description = `To ${account.accName}`;
               } else {
                 tr.description = `Excess funds above minimum to ${
-                  minPartnerAcc.tempName
+                  minPartnerAcc.accName
                   }`;
                 newTrans.crAmount = transferAmt;
-                newTrans.description = `From ${account.tempName}`;
+                newTrans.description = `From ${account.accName}`;
               }
               minPartnerAcc.trans.push(newTrans);
               minPartnerAcc.dirty = true;
             }
 
             bal = saveBal; // restore balance, rate and interest to start of period
-            rate = saveRate;
+            dbRate = saveDbRate;
+            crRate = saveCrRate;
             totalInterest = saveTotalInt;
             minPeriodStartIndex = -1; // start looking for a new period
           }
@@ -482,7 +484,7 @@ let updateBalance = (account, transactions) => {
           // calculate 'line interest' which is the interest calculated since the last line entry
           let daysDiff = lineDate.diff(prevInterestDate, "days");
           prevInterestDate = Moment(lineDate);
-          let lineInterest = bal * Math.pow(1 + rate / 365.25, daysDiff) - bal;
+          let lineInterest = bal * Math.pow(1 + (bal > 0 ? crRate: dbRate) / 365.25, daysDiff) - bal;
           totalInterest += lineInterest;
           tr.interest = lineInterest;
 
@@ -506,9 +508,11 @@ let updateBalance = (account, transactions) => {
 
         //  Get current rate from rate change entry
         if (tr.newRate !== undefined) {
-          rate = tr.newRate;
+          if (tr.credit) crRate = tr.newRate;
+          else dbRate = tr.newRate;
           if (lineDate.isSameOrBefore(Moment(), "day"))
-            account.currentRate = rate;
+            account.currentCrRate = crRate;
+            account.currentDbRate = dbRate;
         }
       }
       bal += tr.crAmount - tr.dbAmount; // update line running balance

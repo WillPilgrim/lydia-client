@@ -38,3 +38,59 @@ Interest is specified at the account level. It can be turned off or on when crea
 
 Note that the separation of credit and debit interest rates allow for accounts where the rate is not consistent. For example, many account types have a very small credit interest (or none at all) but a much larger debit interest. In either case, the interest is calculated on each period from one entry in the account to the next and the type of rate is based on the balance at the time of the former entry. In practice the rules applied to accounts are often more complex especially for credit interest. For example, to accrue credit interest an account may require a minimum balance or at least no negative balance for a large period. However this mechanism allows for reasonable approximations of account behaviour. A good practical use is to set loan accounts to the appropriate debit rate but set the credit rate to 0. For cheque accounts that pay little interest, turning off interest altogether may be appropriate. 
 
+Interest Algorithm
+==================
+
+First Applied Date (FAD) is in the account. It represents the first date the interest is applied from
+0. Set initial variables
+    - FAD = firstInterestAppliedDate
+    - currTotInt = 0
+    - startingIndex = 0
+    - exit = false
+    - currDbRate = openingDbRate
+    - currCrRate = openingCrRate
+1. Find First Base Interest Date (FBID)
+    - FBID - FAD - 1 period
+    - If FBID < OpeningDate, FBID = OpeningDate
+    - startIntDate = FBID
+2. If FBID > Today, then
+    - exit = true
+3. Find last applied record
+    -Loop Index (LI) = last transaction
+    - while trans(LI).date >= FBID and !exit
+        - if trans(LI).type == 'interest'
+            - startIntDate = trans(LI).date
+            - startingIndex = LI;
+            - currDbRate = trans(LI).currDbRate
+            - currCrRate = trans(LI).currCrRate
+            - exit = true
+        - else
+            - LI--
+4. UpdateBalance
+    - loop from startingIndex to the end...
+        - apply interest based on currDb/CrRate
+        - accumulate into currTotInt
+        - if trans.type = 'rate change'
+            - set new currDb/CrRate
+        - if date > Today and trans.type = 'interest'
+            - add interest currTotInt to trans
+            - set currTotInt = 0
+
+
+
+date = trans.filter(x=>x.type == 'interest').reduce((max,trans) => trans.date > max ? trans.date : max, openingDate )
+Quicker with a straight loop.
+
+    startingIndex = 0
+    currDbRate = openingDbRate
+    currCrRate = openingCrRate
+    for (let i = trans.length - 1; i >= 0; i--) {
+        if (trans.type == 'interest') {
+            startingIndex = i;
+            currDbRate = trans(i).currDbRate;
+            currCrRate = trans(i).currCrRate;
+            i = -1;
+        }
+    }
+
+

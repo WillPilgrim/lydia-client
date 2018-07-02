@@ -1,23 +1,21 @@
 Backlog in priority order
 =========================
-1. Allow for recurring transaction of 'interest' debit/credit in templates
-2. Apply new types to calculator
-    - pass account details into 'calculation' routine so it can use account in 'transactions' as well as accounts in dynamo
+1. Apply new interest processing to calculator
     - update testTransactions to remove new fields used in dynamo
     - modify calculate to work out efficient starting point (see template notes below)
-3. Wire up Save button to saving transactions somewhere
+2. Wire up Save button to saving transactions somewhere
     - loop through all accounts in 'transactions'
     - get trans for account
     - update dynamo with trans = trans[acc]
     - alternatively, store transactions as a blob in S3
-4. Wire up Load button to do the opposite
-5. Work out what to do at startup
+3. Wire up Load button to do the opposite
+4. Work out what to do at startup
     - do we load transactions automatically like accounts or is a 'load' required?
-6. Go onto 'credit card' handling
+5. Go onto 'credit card' handling
     - details to be added re. templates etc
-7. Do close and minimise
+6. Do close and minimise
     - details to be added re. templates etc
-8. Deprecate old 'transactions' format entirely.
+7. Deprecate old 'transactions' format entirely.
 
 
 accounts

@@ -34,11 +34,28 @@ export default class Transactions extends Component {
     try {
       const accs = await this.accounts();
       const templates = await this.templates();
+
+      accs.forEach((acc) => {
+        let transAcc = testTransactions.find(x => x.accountId === acc.accountId);
+        if (!transAcc) {
+          transAcc = {accountId: acc.accountId, trans:[]};
+          testTransactions.push(transAcc);
+        }
+        transAcc.accName = acc.accName;
+        transAcc.description = acc.description;
+        transAcc.openingDate = acc.openingDate;
+        transAcc.closingDate = acc.closingDate;
+        transAcc.openingBal = acc.amount;
+        transAcc.crRate = acc.crRate;
+        transAcc.dbRate = acc.dbRate;
+        transAcc.calcInterest = acc.interest;
+      });
+
       this.setState({
         templates,
         accs,
         transactions: testTransactions,
-        currentAcc: accs[1].accountId
+        currentAcc: accs[0].accountId
       });
     } catch (e) {
       alert(e);
@@ -145,7 +162,7 @@ export default class Transactions extends Component {
                     eventKey={x.accountId}
                     active={x.accountId === this.state.currentAcc}
                   >
-                    {x.content}
+                    {x.accName}
                   </NavItem>
                 ))}
               </Nav>

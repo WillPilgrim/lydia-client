@@ -2,15 +2,10 @@ import Moment from "moment";
 
 export const testTransactions = [
   {
+    // Main - General purpose
     accountId: "ae29b1c0-73d0-11e8-8ec0-3fce1802dff7",
-    tempName: "Cheque",
-    dirty: false,
-    openingDate: Moment("2010-01-01").format(),
-    openingBal: 0,
-    openingRate: 0.05,
     interestStartDate: Moment("2018-06-01").format(),
     openingInterest: 5835,
-    currentBal: 0,
     minimise: 'Y',
     minBalance: 10000,
     minimisePartner: "58749090-7adf-11e8-a000-cfaf666b12b9",
@@ -101,15 +96,10 @@ export const testTransactions = [
     ]
   },
   {
+    // Holiday - Holiday savings
     accountId: "a9ca4f40-73d0-11e8-8ec0-3fce1802dff7",
-    tempName: "Savings",
-    dirty: false,
-    openingDate: Moment("2018-06-01").format(),
-    openingBal: 50000,
-    openingRate: 0.03,
     interestStartDate: Moment("2018-06-01").format(),
     openingInterest: 0,
-    currentBal: 0,
     type: 'interest',
     endDate: Moment("2025-01-01").format(),
     intPeriodType: 'M',
@@ -137,15 +127,10 @@ export const testTransactions = [
     ]
   },
   {
+    // Mastercard - Bankwest Mastercard
     accountId: "3f42a830-79d8-11e8-8888-85e7b8290a9c",
-    tempName: "Credit Card",
-    dirty: false,
-    openingDate: Moment("2017-06-01").format(),
-    openingBal: 100000,
-    openingRate: 0.03,
     interestStartDate: Moment("2018-06-01").format(),
     openingInterest: 0,
-    currentBal: 0,
     type: 'cc',
     endDate: Moment("2025-01-01").format(),
     ccPeriodType: 'M',
@@ -174,26 +159,14 @@ export const testTransactions = [
     ]
   },
   {
+    // Savings - Long term savings
     accountId: "58749090-7adf-11e8-a000-cfaf666b12b9",
-    tempName: "Long Term Savings",
-    dirty: false,
-    openingDate: Moment("2018-06-01").format(),
-    openingBal: 50000,
-    openingRate: 0.03,
     interestStartDate: Moment("2018-06-01").format(),
     openingInterest: 0,
-    currentBal: 0,
     type: 'interest',
     endDate: Moment("2025-01-01").format(),
     intPeriodType: 'M',
     intPeriodCnt: 1,
-    trans: []
-  },
-  {
-    accountId: "c8c74b80-7adf-11e8-a000-cfaf666b12b9",
-    tempName: "Simple",
-    openingDate: Moment("2018-06-01").format(),
-    openingBal: 0,
     trans: []
   }
 ];
