@@ -1,7 +1,6 @@
 Backlog in priority order
 =========================
 1. Go onto 'credit card' handling
-    - details to be added re. templates etc
     - Update calculate.js to use new cc details
     - Remove cc details from testTrans
 2. Do zero and minimise

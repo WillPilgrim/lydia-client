@@ -23,12 +23,14 @@ export default class Template extends Component {
       description: "",
       amount: 0,
       startDate: Moment().format(),
-      endDate: Moment().format(),
+      endDate: Moment().add(10,"y").format(),
       accountFromId: "",
       accountToId: "0",
       templateType: "Debit",
       periodType: "M",
       periodCnt: 1,
+      paymentDay: 0,
+      periodLastDay: 0,
       new: ""
     };
   }
@@ -52,7 +54,9 @@ export default class Template extends Component {
         endDate,
         templateType,
         periodType,
-        periodCnt
+        periodCnt,
+        paymentDay,
+        periodLastDay
       } = template;
       this.setState({
         accs,
@@ -66,14 +70,16 @@ export default class Template extends Component {
         endDate,
         templateType,
         periodType,
-        periodCnt
+        periodCnt,
+        paymentDay: paymentDay ? paymentDay : 0,
+        periodLastDay: periodLastDay ? periodLastDay : 0
       });
     } catch (e) {
       alert(e);
     }
   }
 
-  getAccounts() {
+getAccounts() {
     return API.get("accounts", "/accounts");
   }
 
@@ -81,6 +87,9 @@ export default class Template extends Component {
     return API.get("accounts", `/templates/${this.props.match.params.id}`);
   }
 
+  getTemplates() {
+    return API.get("accounts", "/templates");
+}
   saveTemplate(template) {
     return API.put("accounts", `/templates/${this.props.match.params.id}`, {
       body: template
@@ -104,7 +113,9 @@ export default class Template extends Component {
       this.getAmountValidationState() === "success" &&
       this.getStartDateValidationState() === "success" &&
       this.getEndDateValidationState() !== "error" &&
-      this.getToAccountValidationState() === "success"
+      this.getToAccountValidationState() === "success" &&
+      this.getLastPeriodDayValidationState() !== "error" &&
+      this.getPaymentDayValidationState() !== "error"
     );
   }
 
@@ -117,7 +128,7 @@ export default class Template extends Component {
   handleTypeChange = event => {
     this.setState({
       [event.target.id]: event.target.value,
-      accountToId:"0"
+      accountToId: "0"
     });
   }
 
@@ -133,8 +144,21 @@ export default class Template extends Component {
     });
   };
 
+  handleFocus = event => {
+    event.target.select();
+  };
+
   handleSubmit = async event => {
     event.preventDefault();
+
+    if (this.state.templateType === "CC") {
+      const templates = await this.getTemplates();
+      console.log(this.state.accountFromId,templates)
+      if (templates.find(x => x.accountFromId === this.state.accountFromId)) {
+        alert(`Credit card template already exists for account '${this.state.accs.find(x => x.accountId === this.state.accountFromId).accName}'`);
+        return;
+      }
+    }
 
     this.setState({ isLoading: true });
 
@@ -143,7 +167,6 @@ export default class Template extends Component {
         numPeriods: this.state.template.numPeriods,
         noEnd: this.state.template.noEnd,
         inflation: this.state.template.inflation,
-        ccRelDate: this.state.template.ccRelDate,
 
         description: this.state.description,
         amount: parseFloat(this.state.amount100).toFixed(2) * 100,
@@ -152,6 +175,8 @@ export default class Template extends Component {
         templateType: this.state.templateType,
         periodType: this.state.periodType,
         periodCnt: parseInt(this.state.periodCnt, 10),
+        paymentDay: this.state.templateType === "CC" ? parseInt(this.state.paymentDay, 10) : 0,
+        periodLastDay: this.state.templateType === "CC" ? parseInt(this.state.periodLastDay, 10) : 0,
         accountFromId: this.state.accountFromId,
         accountToId: this.state.accountToId
       };
@@ -210,6 +235,26 @@ export default class Template extends Component {
       return "success";
   }
 
+  getLastPeriodDayValidationState() {
+    if (this.state.templateType !== "CC") return "success";
+    if (this.state.periodLastDay.length === 0) return "error";
+    if (isNaN(parseInt(this.state.periodLastDay, 10)))
+      return "error"
+    let val = parseInt(this.state.periodLastDay, 10);
+    if (val < 1 || val > 28) return "error";
+    return "success";
+  }
+
+  getPaymentDayValidationState() {
+    if (this.state.templateType !== "CC") return "success";
+    if (this.state.paymentDay.length === 0) return "error";
+    if (isNaN(parseInt(this.state.paymentDay, 10)))
+      return "error"
+    let val = parseInt(this.state.paymentDay, 10);
+    if (val < 1 || val > 28) return "error";
+    return "success";
+  }
+  
   getStartDateValidationState() {
     if (this.state.startDate === null) return "error";
     return "success";
@@ -218,14 +263,15 @@ export default class Template extends Component {
   getEndDateValidationState() {
     if (this.state.endDate === null) return "warning";
     if (this.state.startDate === null) return "warning";
-    if (Moment(this.state.endDate).isBefore(Moment(this.state.startDate),'day'))
+    if (Moment(this.state.endDate).isBefore(Moment(this.state.startDate), 'day'))
       return "error";
     return "success";
   }
 
   getToAccountValidationState() {
-    if (this.state.templateType !== "Transfer" && this.state.accountToId !== "0") return "error";  // can't have 'to' account with transfer type
-    if (this.state.templateType === "Transfer" && this.state.accountToId === "0") return "error";  // can't have transfer type without account
+    let partnerRequired = (this.state.templateType === "Transfer" || this.state.templateType === "CC");
+    if (!partnerRequired && this.state.accountToId !== "0") return "error";  // can't have 'to' account with transfer type
+    if (partnerRequired && this.state.accountToId === "0") return "error";  // can't have transfer type without account
     if (this.state.accountFromId === this.state.accountToId) return "error";  // from account equals to account
     return "success";
   }
@@ -248,64 +294,106 @@ export default class Template extends Component {
               />
               <FormControl.Feedback />
             </FormGroup>
-            <FormGroup
-              controlId="amount100"
-              validationState={this.getAmountValidationState()}
-            >
-              <ControlLabel>Amount</ControlLabel>
-              <InputGroup>
-                <InputGroup.Addon>$</InputGroup.Addon>
+            <Col sm={6}>
+              <FormGroup controlId="templateType" validationState="success">
+                <ControlLabel>Transaction Type</ControlLabel>
                 <FormControl
+                  componentClass="select"
                   type="text"
-                  value={this.state.amount100}
-                  placeholder="Enter transaction amount"
-                  onChange={this.handleChange}
+                  value={this.state.templateType}
+                  placeholder="Select transaction type"
+                  onChange={this.handleTypeChange}
+                >
+                  <option value="Debit">Debit</option>
+                  <option value="Credit">Credit</option>
+                  <option value="Transfer">Transfer</option>
+                  <option value="CC">Credit Card</option>
+                </FormControl>
+              </FormGroup>
+              <FormGroup
+                controlId="startDate"
+                validationState={this.getStartDateValidationState()}
+              >
+                <ControlLabel>Start Date</ControlLabel>
+                <DatePicker
+                  id="startDate"
+                  value={this.state.startDate}
+                  placeholder="Start date"
+                  onChange={this.handleStartDateChange}
+                  autoComplete="off"
                 />
-              </InputGroup>
-
-              <FormControl.Feedback />
-            </FormGroup>
-            <FormGroup
-              controlId="startDate"
-              validationState={this.getStartDateValidationState()}
-            >
-              <ControlLabel>Start Date</ControlLabel>
-              <DatePicker
-                id="startDate"
-                value={this.state.startDate}
-                placeholder="Start date"
-                onChange={this.handleStartDateChange}
-                autoComplete="off"
-              />
-            </FormGroup>
-            <FormGroup
-              controlId="endDate"
-              validationState={this.getEndDateValidationState()}
-            >
-              <ControlLabel>End Date</ControlLabel>
-              <DatePicker
-                id="endDate"
-                value={this.state.endDate}
-                placeholder="End date"
-                onChange={this.handleEndDateChange}
-                autoComplete="off"
-              />
-            </FormGroup>
-            <FormGroup controlId="templateType" validationState="success">
-              <ControlLabel>Transaction Type</ControlLabel>
+              </FormGroup>
+              <FormGroup
+                controlId="endDate"
+                validationState={this.getEndDateValidationState()}
+              >
+                <ControlLabel>End Date</ControlLabel>
+                <DatePicker
+                  id="endDate"
+                  value={this.state.endDate}
+                  placeholder="End date"
+                  onChange={this.handleEndDateChange}
+                  autoComplete="off"
+                />
+              </FormGroup>
+              <FormGroup controlId="accountFromId" validationState="success">
+              <ControlLabel>Template Account</ControlLabel>
               <FormControl
                 componentClass="select"
                 type="text"
-                value={this.state.templateType}
-                placeholder="Select transaction type"
-                onChange={this.handleTypeChange}
+                value={this.state.accountFromId}
+                placeholder="Select account template applies to"
+                onChange={this.handleChange}
               >
-                <option value="Debit">Debit</option>
-                <option value="Credit">Credit</option>
-                <option value="Transfer">Transfer</option>
+                {this.state.accs.map(x => (
+                  <option key={x.accountId} value={x.accountId}>
+                    {x.accName}
+                  </option>
+                ))}
               </FormControl>
             </FormGroup>
+            <FormGroup controlId="accountToId" validationState={this.getToAccountValidationState()}>
+              <ControlLabel>Partner Account</ControlLabel>
+              <FormControl
+                componentClass="select"
+                type="text"
+                value={this.state.accountToId}
+                placeholder="Select partner account"
+                onChange={this.handleChange}
+                disabled={this.state.templateType === "Debit" || this.state.templateType === "Credit"}
+              >
+                <option key={0} value={0}>
+                  -
+              </option>
+                {this.state.accs.map(x => (
+                  <option key={x.accountId} value={x.accountId}>
+                    {x.accName}
+                  </option>
+                ))}
+              </FormControl>
+            </FormGroup>
+
+            </Col>
             <Col sm={6}>
+              <FormGroup
+                controlId="amount100"
+                validationState={this.getAmountValidationState()}
+              >
+                <ControlLabel>Amount</ControlLabel>
+                <InputGroup>
+                  <InputGroup.Addon>$</InputGroup.Addon>
+                  <FormControl
+                    type="text"
+                    value={this.state.amount100}
+                    placeholder="Enter transaction amount"
+                    onChange={this.handleChange}
+                    disabled={this.state.templateType === "CC"}
+                    onFocus={this.handleFocus}
+                    />
+                </InputGroup>
+
+                <FormControl.Feedback />
+              </FormGroup>
               <FormGroup controlId="periodType" validationState="success">
                 <ControlLabel>Period Type</ControlLabel>
                 <FormControl
@@ -322,8 +410,6 @@ export default class Template extends Component {
                   <option value="d">Day</option>
                 </FormControl>
               </FormGroup>
-            </Col>
-            <Col sm={6}>
               <FormGroup controlId="periodCnt" validationState={this.getFreqValidationState()}>
                 <ControlLabel>Frequency</ControlLabel>
                 <FormControl
@@ -331,45 +417,32 @@ export default class Template extends Component {
                   value={this.state.periodCnt}
                   placeholder="Number of periods"
                   onChange={this.handleChange}
+                  onFocus={this.handleFocus}
+                />
+              </FormGroup>
+              <FormGroup controlId="paymentDay" validationState={this.getPaymentDayValidationState()}>
+                <ControlLabel>Payment Day</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.paymentDay}
+                  placeholder="Day on which payments are made"
+                  onChange={this.handleChange}
+                  disabled={this.state.templateType !== "CC"}
+                  onFocus={this.handleFocus}
+                />
+              </FormGroup>
+              <FormGroup controlId="periodLastDay" validationState={this.getLastPeriodDayValidationState()}>
+                <ControlLabel>Last Period Day</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.periodLastDay}
+                  placeholder="Last day of the period"
+                  onChange={this.handleChange}
+                  disabled={this.state.templateType !== "CC"}
+                  onFocus={this.handleFocus}
                 />
               </FormGroup>
             </Col>
-            <FormGroup controlId="accountFromId" validationState="success">
-              <ControlLabel>Source Account</ControlLabel>
-              <FormControl
-                componentClass="select"
-                type="text"
-                value={this.state.accountFromId}
-                placeholder="Select source account"
-                onChange={this.handleChange}
-              >
-                {this.state.accs.map(x => (
-                  <option key={x.accountId} value={x.accountId}>
-                    {x.accName  }
-                  </option>
-                ))}
-              </FormControl>
-            </FormGroup>
-            <FormGroup controlId="accountToId" validationState={this.getToAccountValidationState()}>
-              <ControlLabel>Destination Account</ControlLabel>
-              <FormControl
-                componentClass="select"
-                type="text"
-                value={this.state.accountToId}
-                placeholder="Select destination account"
-                onChange={this.handleChange}
-                disabled={this.state.templateType !== "Transfer"}
-              >   
-              <option key={0} value={0}>
-                  -
-              </option>
-                {this.state.accs.map(x => (
-                  <option key={x.accountId} value={x.accountId}>
-                    {x.accName}
-                  </option>
-                ))}
-              </FormControl>
-            </FormGroup>
             <LoaderButton
               block
               bsStyle="primary"

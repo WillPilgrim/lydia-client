@@ -463,7 +463,7 @@ let updateBalance = (account, transactions) => {
                 dbAmount: 0,
                 crAmount: 0
               };
-              if (transferAmt == 0) {
+              if (transferAmt === 0) {
                 tr.description = `No excess funds available to ${minPartnerAcc.accName}`;
                 newTrans.description = `No excess funds available from ${account.accName}`;
             } else {
@@ -516,7 +516,7 @@ let updateBalance = (account, transactions) => {
               totalInterest = Math.floor(totalInterest);
               tr.dbRate = dbRate;
               tr.crRate = crRate;
-              if (totalInterest == 0) {
+              if (totalInterest === 0) {
                 account.trans.splice(trIndex, 1);
                 trIndex--;
                 tr = account.trans[trIndex];
