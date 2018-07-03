@@ -25,9 +25,10 @@ export default (transactions, templates) => {
 let delfuture = transactions => {
   // Delete future auto transactions.
   // Not using the sorting and setting array length option. This method is order N which is very quick.
+  let today = Moment();
   transactions.forEach(account => {
     account.trans = account.trans.filter(
-      item => !Moment(item.autogen).isAfter(Moment(), "day")
+      item => !Moment(item.autogen).isAfter(today, "day")
     );
     // Initialise work variables
     account.dirty = false;
@@ -41,6 +42,7 @@ let processNormal = (transactions, templates) => {
   // Hardcode inflation rate for now
 
   const inflation = 0.03;
+  let today = Moment();
 
   templates.forEach(template => {
     let inflate = true; // hardcode for now...use template.inflate eventually
@@ -55,7 +57,7 @@ let processNormal = (transactions, templates) => {
     );
 
     while (transDate.isSameOrBefore(endDate, "day")) {
-      if (transDate.isAfter(Moment(), "day")) {
+      if (transDate.isAfter(today, "day")) {
         let amount = template.amount;
         if (inflate) {
           let numYears = transDate.diff(startDate, "years");
@@ -110,6 +112,8 @@ let processNormal = (transactions, templates) => {
 let processSpecials = (transactions, templates) => {
   // 1. Process all credit card accounts
 
+  let today = Moment();
+
   transactions.filter(account => account.type === "cc").forEach(account => {
     //Note payDay must be <= 28
     let payDay = account.payDay;
@@ -118,22 +122,21 @@ let processSpecials = (transactions, templates) => {
     let endDate = Moment(account.closingDate);
     let periodEndDay = account.periodEndDay;
     let periodType = account.ccPeriodType;
-		let periodCnt = account.ccPeriodCnt;
-		let payFromAccount = transactions.find(
+    let periodCnt = account.ccPeriodCnt;
+    let payFromAccount = transactions.find(
       acc => acc.accountId === account.payFromAccId
     );
 
-
     while (transDate.isSameOrBefore(endDate, "day")) {
       transDate = transDate.add(periodCnt, periodType);
-      if (transDate.isAfter(Moment(), "day")) {
+      if (transDate.isAfter(today, "day")) {
         let newTrans = {
           date: transDate.format(),
           autogen: transDate.format(),
           transactionId: uuid(),
           crAmount: 0,
           dbAmount: 0,
-          description: `Payment from ${payFromAccount.accName}`,
+          description: `Credit card payment from ${payFromAccount.accName}`,
           type: "cc"
         };
         account.trans.push(newTrans);
@@ -153,32 +156,31 @@ let processSpecials = (transactions, templates) => {
   });
 
   // 2. Process all interest accounts
-  transactions
-    .filter(account => account.calcInterest)
-    .forEach(account => {
-      let startDate = Moment(account.intFirstAppliedDate);
-      let transDate = Moment(startDate);
-      let endDate = Moment(account.closingDate);
-      let periodType = account.intPeriodType;
-      let periodCnt = account.intPeriodCnt;
+  transactions.filter(account => account.calcInterest).forEach(account => {
+    // First applied date is the first date an interest debit/credit entry is created for
+    let startDate = Moment(account.intFirstAppliedDate);
+    let transDate = Moment(startDate);
+    let endDate = Moment(account.closingDate); // Create entries until the end of the account
+    let periodType = account.intPeriodType;
+    let periodCnt = account.intPeriodCnt;
 
-      while (transDate.isSameOrBefore(endDate, "day")) {
-        transDate = transDate.add(periodCnt, periodType);
-        if (transDate.isAfter(Moment(), "day")) {
-          let newTrans = {
-            date: transDate.format(),
-            autogen: transDate.format(),
-            transactionId: uuid(),
-            crAmount: 0,
-            dbAmount: 0,
-            type: "interest"
-          };
-          account.trans.push(newTrans);
-          account.dirty = true;
-        }
+    while (transDate.isSameOrBefore(endDate, "day")) {
+      transDate = transDate.add(periodCnt, periodType);
+      if (transDate.isAfter(today, "day")) {
+        let newTrans = {
+          date: transDate.format(),
+          autogen: transDate.format(),
+          transactionId: uuid(),
+          crAmount: 0,
+          dbAmount: 0,
+          type: "interest"
+        };
+        account.trans.push(newTrans);
+        account.dirty = true;
       }
-      updateBalance(account, transactions);
-    });
+    }
+    updateBalance(account, transactions);
+  });
 
   // 3. Process dynamic transfer template types
   let specials = [];
@@ -224,7 +226,7 @@ let processSpecials = (transactions, templates) => {
         switch (specialType) {
           case "minimise":
             while (startDate.isSameOrBefore(endDate, "day")) {
-              if (startDate.isAfter(Moment(), "day")) {
+              if (startDate.isAfter(today, "day")) {
                 account.trans.push({
                   date: startDate.format(),
                   autogen: startDate.format(),
@@ -240,7 +242,7 @@ let processSpecials = (transactions, templates) => {
             }
             break;
           case "zero":
-            if (startDate.isAfter(Moment(), "day")) {
+            if (startDate.isAfter(today, "day")) {
               account.trans.push({
                 date: startDate.format(),
                 autogen: startDate.format(),
@@ -285,29 +287,25 @@ let updateBalance = (account, transactions) => {
   //	Sort given account and update balances
 
   if (account.dirty) {
+    // Sort all of the transactions by date
     account.trans.sort(
       (a, b) => Moment(a.date).valueOf() - Moment(b.date).valueOf()
     );
 
-    let bal = account.openingBal;
-    let dbRate = account.openingDbRate/100;
-    let crRate = account.openingCrRate/100;
-    let intFirstAppliedDate = Moment(account.intFirstAppliedDate);
-    let totalInterest = 0;
-    let prevInterestDate = Moment(intFirstAppliedDate);
-    let accType = account.type;
-    let currentBal = bal;
-    let lowestBal = 0;
+    let runningBalance = account.openingBal;
+    let balanceToday = runningBalance;
+    let lowestBalForPeriod = 0;
     let periodEndDate;
     let ccIndex = -1;
-    let ccBalance = bal;
+    let ccBalance = runningBalance;
     let minPeriodStartIndex = -1;
     let saveBal;
     let saveCrRate;
     let saveDbRate;
     let saveTotalInt;
+    let today = Moment();
 
-    if (Moment(account.openingDate).isAfter(Moment(), "day")) currentBal = 0;
+    if (Moment(account.openingDate).isAfter(today, "day")) balanceToday = 0;
 
     // Initialise first closing balance date for credit card accounts
     let ccPartnerAcc;
@@ -327,34 +325,48 @@ let updateBalance = (account, transactions) => {
       );
     }
 
-    // Initialise closing partner account
-    let closePartnerAcc;
+    // Initialise "zero" partner account
+    let zeroPartnerAcc;
     if (account.zeroPartner) {
-      closePartnerAcc = transactions.find(
+      zeroPartnerAcc = transactions.find(
         acc => acc.accountId === account.zeroPartner
       );
     }
 
-    //    for (let tr of account.trans) {
+    //  Interest related values
+    let totalInterest = 0;
+    let dbRate = account.calcInterest ? account.openingDbRate / 100 : 0;
+    let crRate = account.calcInterest ? account.openingCrRate / 100 : 0;
+    let crRateToday = crRate;
+    let dbRateToday = dbRate;
+
+    let intFirstAppliedDate = Moment(account.intFirstAppliedDate); // Set first applied date
+    // Find first date interest is to be calculated from
+    let firstBaseInterestDate = intFirstAppliedDate.subtract(
+      account.periodCnt,
+      account.periodType
+    );
+    if (firstBaseInterestDate.isBefore(account.openingDate, "day"))
+      firstBaseInterestDate = Moment(account.openingDate);
+    let prevInterestDate = Moment(firstBaseInterestDate);
 
     // Use an old school loop so it can be manipulated when
     // doing 'minimise' transactions
     for (let trIndex = 0; trIndex < account.trans.length; trIndex++) {
       let tr = account.trans[trIndex];
-
       let lineDate = Moment(tr.date);
 
       if (ccIndex > -1) {
         // Calculate period closing balance
         if (lineDate.isAfter(periodEndDate, "day")) {
-          ccBalance = bal;
+          ccBalance = runningBalance;
           ccIndex++;
           periodEndDate = Moment(account.ccDates[ccIndex]);
         }
 
         // Check if this line is a credit card payment line
         if (tr.type === "cc") {
-          if (lineDate.isAfter(Moment(), "day")) {
+          if (lineDate.isAfter(today, "day")) {
             if (ccBalance >= 0)
               tr.description = "No credit card payment required this period";
             else {
@@ -376,20 +388,20 @@ let updateBalance = (account, transactions) => {
         }
       }
 
-      if (lineDate.isAfter(Moment(), "day")) {
+      if (lineDate.isAfter(today, "day")) {
         // Zero account to/from partner (if provided)
         if (tr.type === "zero") {
-          if (bal >= 0) {
+          if (runningBalance >= 0) {
             tr.crAmount = 0;
-            tr.dbAmount = bal;
+            tr.dbAmount = runningBalance;
             tr.description = "Withdrawal to clear balance";
           } else {
             tr.dbAmount = 0;
-            tr.crAmount = -bal;
+            tr.crAmount = -runningBalance;
             tr.description = "Deposit to clear balance";
           }
 
-          if (closePartnerAcc) {
+          if (zeroPartnerAcc) {
             let newTrans = {
               date: tr.date,
               autogen: tr.date,
@@ -397,21 +409,19 @@ let updateBalance = (account, transactions) => {
               dbAmount: 0,
               crAmount: 0
             };
-            if (bal < 0) {
+            if (runningBalance < 0) {
               tr.description = `From ${
-                closePartnerAcc.accName
-                } to clear balance`;
-              newTrans.dbAmount = -bal;
+                zeroPartnerAcc.accName
+              } to clear balance`;
+              newTrans.dbAmount = -runningBalance;
               newTrans.description = `To ${account.accName}`;
             } else {
-              tr.description = `To ${
-                closePartnerAcc.accName
-                } to clear balance`;
-              newTrans.crAmount = bal;
+              tr.description = `To ${zeroPartnerAcc.accName} to clear balance`;
+              newTrans.crAmount = runningBalance;
               newTrans.description = `From ${account.accName}`;
             }
-            closePartnerAcc.trans.push(newTrans);
-            closePartnerAcc.dirty = true;
+            zeroPartnerAcc.trans.push(newTrans);
+            zeroPartnerAcc.dirty = true;
           }
         }
 
@@ -420,8 +430,8 @@ let updateBalance = (account, transactions) => {
           if (minPeriodStartIndex === -1) {
             // starting a new min period
             minPeriodStartIndex = trIndex;
-            lowestBal = bal; // initial balance is the lowest for period so far
-            saveBal = bal; // remember current balance when we return here
+            lowestBalForPeriod = runningBalance; // initial balance is the lowest for period so far
+            saveBal = runningBalance; // remember current balance when we return here
             saveCrRate = crRate;
             saveDbRate = dbRate;
             saveTotalInt = totalInterest;
@@ -430,9 +440,10 @@ let updateBalance = (account, transactions) => {
             if (tr.type === "periodEndMarker") account.trans.splice(trIndex, 1);
             trIndex = minPeriodStartIndex; // go back to the beginning of the period
             tr = account.trans[trIndex];
+            lineDate = Moment(tr.date);
             // Calculate amount to transfer out of account rounded down to 10
             let transferAmt =
-              Math.floor((lowestBal - account.minBalance) / 10) * 10;
+              Math.floor((lowestBalForPeriod - account.minBalance) / 10) * 10;
             if (transferAmt >= 0) {
               tr.crAmount = 0;
               tr.dbAmount = transferAmt;
@@ -452,24 +463,29 @@ let updateBalance = (account, transactions) => {
                 dbAmount: 0,
                 crAmount: 0
               };
-              if (transferAmt < 0) {
-                tr.description = `From ${
-                  minPartnerAcc.accName
+              if (transferAmt == 0) {
+                tr.description = `No excess funds available to ${minPartnerAcc.accName}`;
+                newTrans.description = `No excess funds available from ${account.accName}`;
+            } else {
+                if (transferAmt < 0) {
+                  tr.description = `From ${
+                    minPartnerAcc.accName
                   } to ensure minimum balance`;
-                newTrans.dbAmount = -transferAmt;
-                newTrans.description = `To ${account.accName}`;
-              } else {
-                tr.description = `Excess funds above minimum to ${
-                  minPartnerAcc.accName
+                  newTrans.dbAmount = -transferAmt;
+                  newTrans.description = `To ${account.accName}`;
+                } else {
+                  tr.description = `Excess funds above minimum to ${
+                    minPartnerAcc.accName
                   }`;
-                newTrans.crAmount = transferAmt;
-                newTrans.description = `From ${account.accName}`;
+                  newTrans.crAmount = transferAmt;
+                  newTrans.description = `From ${account.accName}`;
+                }
               }
               minPartnerAcc.trans.push(newTrans);
               minPartnerAcc.dirty = true;
             }
 
-            bal = saveBal; // restore balance, rate and interest to start of period
+            runningBalance = saveBal; // restore balance, rate and interest to start of period
             dbRate = saveDbRate;
             crRate = saveCrRate;
             totalInterest = saveTotalInt;
@@ -480,27 +496,46 @@ let updateBalance = (account, transactions) => {
 
       // interest rate calculations
       if (account.calcInterest) {
-        if (lineDate.isSameOrAfter(intFirstAppliedDate, "day")) {
+        if (lineDate.isAfter(firstBaseInterestDate, "day")) {
           // calculate 'line interest' which is the interest calculated since the last line entry
           let daysDiff = lineDate.diff(prevInterestDate, "days");
           prevInterestDate = Moment(lineDate);
-          let lineInterest = bal * Math.pow(1 + (bal > 0 ? crRate: dbRate) / 365.25, daysDiff) - bal;
+          let lineInterest =
+            runningBalance *
+              Math.pow(
+                1 + (runningBalance > 0 ? crRate : dbRate) / 365.25,
+                daysDiff
+              ) -
+            runningBalance;
           totalInterest += lineInterest;
           tr.interest = lineInterest;
 
           // Add accumulated interest between interest debit/credit entries
           if (tr.type === "interest") {
-            if (lineDate.isAfter(Moment(), "day")) {
+            if (lineDate.isAfter(today, "day")) {
               totalInterest = Math.floor(totalInterest);
-              if (totalInterest >= 0) {
-								tr.dbAmount = 0;
-                tr.crAmount = totalInterest;
-                tr.description = "Interest Credit";
+              tr.dbRate = dbRate;
+              tr.crRate = crRate;
+              if (totalInterest == 0) {
+                account.trans.splice(trIndex, 1);
+                trIndex--;
+                tr = account.trans[trIndex];
+                runningBalance = tr.balance;
+                lineDate = Moment(tr.date);
               } else {
-								tr.crAmount = 0;
-                tr.dbAmount = -totalInterest;
-                tr.description = "Interest Debit";
+                if (totalInterest > 0) {
+                  tr.dbAmount = 0;
+                  tr.crAmount = totalInterest;
+                  tr.description = "Interest Credit";
+                } else {
+                  tr.crAmount = 0;
+                  tr.dbAmount = -totalInterest;
+                  tr.description = "Interest Debit";
+                }
               }
+            } else {
+              crRate = tr.crRate;
+              dbRate = tr.dbRate;
             }
             totalInterest = 0;
           }
@@ -510,28 +545,27 @@ let updateBalance = (account, transactions) => {
         if (tr.newRate !== undefined) {
           if (tr.credit) crRate = tr.newRate;
           else dbRate = tr.newRate;
-          if (lineDate.isSameOrBefore(Moment(), "day"))
-            account.currentCrRate = crRate;
-            account.currentDbRate = dbRate;
         }
       }
-      bal += tr.crAmount - tr.dbAmount; // update line running balance
-      tr.balance = bal;
+
+      runningBalance += tr.crAmount - tr.dbAmount; // update line running balance
+      tr.balance = runningBalance;
 
       // check lowest balance of 'minimise' period
-      if (bal < lowestBal) lowestBal = tr.balance;
+      if (runningBalance < lowestBalForPeriod)
+        lowestBalForPeriod = runningBalance;
 
-      // if (account.minimise)
-      // {
-      // 	console.log(tr.date,trIndex,bal,lowestBal,tr.crAmount,tr.dbAmount,tr.balance)
-      // }
-
-      if (Moment(tr.date).isSameOrBefore(Moment(), "day"))
-        // Update today's running balance
-        currentBal = tr.balance;
+      if (lineDate.isSameOrBefore(today, "day")) {
+        balanceToday = runningBalance; // Update today's running balance
+        crRateToday = crRate;
+        dbRateToday = dbRate;
+      }
     }
 
-    account.currentBal = currentBal;
+    // Save "current" account values as the values at end of today
+    account.currentBal = balanceToday;
+    account.currentCrRate = crRateToday * 100;
+    account.currentDbRate = dbRateToday * 100;
     account.dirty = false;
   }
 };

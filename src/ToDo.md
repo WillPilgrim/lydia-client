@@ -1,21 +1,22 @@
 Backlog in priority order
 =========================
-1. Apply new interest processing to calculator
-    - update testTransactions to remove new fields used in dynamo
-    - modify calculate to work out efficient starting point (see template notes below)
-2. Wire up Save button to saving transactions somewhere
+1. Go onto 'credit card' handling
+    - details to be added re. templates etc
+    - Update calculate.js to use new cc details
+    - Remove cc details from testTrans
+2. Do zero and minimise
+    - details to be added re. templates etc
+    - Update calculate.js to use new zero/minimise details
+    - Remove zero/minimise details from testTrans
+3. Deprecate old 'transactions' format entirely.
+4. Wire up Save button to saving transactions somewhere
     - loop through all accounts in 'transactions'
     - get trans for account
     - update dynamo with trans = trans[acc]
     - alternatively, store transactions as a blob in S3
-3. Wire up Load button to do the opposite
-4. Work out what to do at startup
+5. Wire up Load button to do the opposite
+6. Work out what to do at startup
     - do we load transactions automatically like accounts or is a 'load' required?
-5. Go onto 'credit card' handling
-    - details to be added re. templates etc
-6. Do close and minimise
-    - details to be added re. templates etc
-7. Deprecate old 'transactions' format entirely.
 
 
 accounts
@@ -47,9 +48,8 @@ transactions
 templates
 =========
 - Add 'inflate' toggle for templates
-- Add 'close' template - sweep all funds from account to another account
+- Add 'zero' template - sweep all funds from account to another account
 - Add 'minimise' template - sweep money out of account but still keep a minimum amount in it
-- Improve interest calculations to be more efficient than going back to the beginning. Perhaps can go back to the first 'interest' credit/debit before today, set TotalInt = 0, retrieve the rates as at that time, and go forward from there as the new 'interestStartDdate'. Then when creating an 'interest' transaction, insert current db and cr rate at that point. If no 'interest' is found prior to today, use account default values. These would be 0 for the total initially but could be altered later when introducing the idea of saving a partial budget.
 
 main
 ====
