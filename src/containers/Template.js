@@ -29,7 +29,6 @@ export default class Template extends Component {
       templateType: "Debit",
       periodType: "M",
       periodCnt: 1,
-      paymentDay: 0,
       periodLastDay: 0,
       templateId: null,
       new: ""
@@ -56,7 +55,6 @@ export default class Template extends Component {
         templateType,
         periodType,
         periodCnt,
-        paymentDay,
         periodLastDay,
         templateId
       } = template;
@@ -73,7 +71,6 @@ export default class Template extends Component {
         templateType,
         periodType,
         periodCnt,
-        paymentDay: paymentDay ? paymentDay : 0,
         periodLastDay: periodLastDay ? periodLastDay : 0,
         templateId
       });
@@ -117,8 +114,7 @@ getAccounts() {
       this.getStartDateValidationState() === "success" &&
       this.getEndDateValidationState() !== "error" &&
       this.getToAccountValidationState() === "success" &&
-      this.getLastPeriodDayValidationState() !== "error" &&
-      this.getPaymentDayValidationState() !== "error"
+      this.getLastPeriodDayValidationState() !== "error"
     );
   }
 
@@ -174,11 +170,10 @@ getAccounts() {
         description: this.state.description,
         amount: parseFloat(this.state.amount100).toFixed(2) * 100,
         startDate: Moment(this.state.startDate).format(),
-        endDate: Moment(this.state.endDate).format(),
+        endDate: this.state.templateType === "Zero" ? Moment(this.state.startDate).format() : Moment(this.state.endDate).format(),
         templateType: this.state.templateType,
         periodType: this.state.periodType,
-        periodCnt: parseInt(this.state.periodCnt, 10),
-        paymentDay: this.state.templateType === "CC" ? parseInt(this.state.paymentDay, 10) : 0,
+        periodCnt: this.state.templateType !== "Zero" ? parseInt(this.state.periodCnt, 10) : 1,
         periodLastDay: this.state.templateType === "CC" ? parseInt(this.state.periodLastDay, 10) : 0,
         accountFromId: this.state.accountFromId,
         accountToId: this.state.accountToId
@@ -247,16 +242,6 @@ getAccounts() {
     if (val < 1 || val > 28) return "error";
     return "success";
   }
-
-  getPaymentDayValidationState() {
-    if (this.state.templateType !== "CC") return "success";
-    if (this.state.paymentDay.length === 0) return "error";
-    if (isNaN(parseInt(this.state.paymentDay, 10)))
-      return "error"
-    let val = parseInt(this.state.paymentDay, 10);
-    if (val < 1 || val > 28) return "error";
-    return "success";
-  }
   
   getStartDateValidationState() {
     if (this.state.startDate === null) return "error";
@@ -273,8 +258,9 @@ getAccounts() {
 
   getToAccountValidationState() {
     let partnerRequired = (this.state.templateType === "Transfer" || this.state.templateType === "CC");
-    if (!partnerRequired && this.state.accountToId !== "0") return "error";  // can't have 'to' account with transfer type
     if (partnerRequired && this.state.accountToId === "0") return "error";  // can't have transfer type without account
+    let partnerNotAllowed = (this.state.templateType === "Debit" || this.state.templateType === "Credit")
+    if (partnerNotAllowed && this.state.accountToId !== "0") return "error";  
     if (this.state.accountFromId === this.state.accountToId) return "error";  // from account equals to account
     return "success";
   }
@@ -311,6 +297,8 @@ getAccounts() {
                   <option value="Credit">Credit</option>
                   <option value="Transfer">Transfer</option>
                   <option value="CC">Credit Card</option>
+                  <option value="Minimise">Minimise</option>
+                  <option value="Zero">Zero</option>
                 </FormControl>
               </FormGroup>
               <FormGroup
@@ -337,6 +325,7 @@ getAccounts() {
                   placeholder="End date"
                   onChange={this.handleEndDateChange}
                   autoComplete="off"
+                  disabled={this.state.templateType === "Zero"}
                 />
               </FormGroup>
               <FormGroup controlId="accountFromId" validationState="success">
@@ -390,7 +379,7 @@ getAccounts() {
                     value={this.state.amount100}
                     placeholder="Enter transaction amount"
                     onChange={this.handleChange}
-                    disabled={this.state.templateType === "CC"}
+                    disabled={this.state.templateType === "CC" || this.state.templateType === "Zero"}
                     onFocus={this.handleFocus}
                     />
                 </InputGroup>
@@ -405,6 +394,7 @@ getAccounts() {
                   value={this.state.periodType}
                   placeholder="Select period type"
                   onChange={this.handleChange}
+                  disabled={this.state.templateType === "Zero"}
                 >
                   <option value="M">Month</option>
                   <option value="w">Week</option>
@@ -421,17 +411,7 @@ getAccounts() {
                   placeholder="Number of periods"
                   onChange={this.handleChange}
                   onFocus={this.handleFocus}
-                />
-              </FormGroup>
-              <FormGroup controlId="paymentDay" validationState={this.getPaymentDayValidationState()}>
-                <ControlLabel>Payment Day</ControlLabel>
-                <FormControl
-                  type="text"
-                  value={this.state.paymentDay}
-                  placeholder="Day on which payments are made"
-                  onChange={this.handleChange}
-                  disabled={this.state.templateType !== "CC"}
-                  onFocus={this.handleFocus}
+                  disabled={this.state.templateType === "Zero"}
                 />
               </FormGroup>
               <FormGroup controlId="periodLastDay" validationState={this.getLastPeriodDayValidationState()}>
