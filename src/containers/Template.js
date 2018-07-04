@@ -31,6 +31,7 @@ export default class Template extends Component {
       periodCnt: 1,
       paymentDay: 0,
       periodLastDay: 0,
+      templateId: null,
       new: ""
     };
   }
@@ -56,7 +57,8 @@ export default class Template extends Component {
         periodType,
         periodCnt,
         paymentDay,
-        periodLastDay
+        periodLastDay,
+        templateId
       } = template;
       this.setState({
         accs,
@@ -72,7 +74,8 @@ export default class Template extends Component {
         periodType,
         periodCnt,
         paymentDay: paymentDay ? paymentDay : 0,
-        periodLastDay: periodLastDay ? periodLastDay : 0
+        periodLastDay: periodLastDay ? periodLastDay : 0,
+        templateId
       });
     } catch (e) {
       alert(e);
@@ -154,7 +157,7 @@ getAccounts() {
     if (this.state.templateType === "CC") {
       const templates = await this.getTemplates();
       console.log(this.state.accountFromId,templates)
-      if (templates.find(x => x.accountFromId === this.state.accountFromId)) {
+      if (templates.find(x => x.accountFromId === this.state.accountFromId) && !this.state.templateId) {
         alert(`Credit card template already exists for account '${this.state.accs.find(x => x.accountId === this.state.accountFromId).accName}'`);
         return;
       }

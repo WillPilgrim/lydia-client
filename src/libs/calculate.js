@@ -35,6 +35,7 @@ let delfuture = transactions => {
     account.currentBal = 0;
     account.currentCrRate = 0;
     account.currentDbRate = 0;
+    account.ccDates = [];
   });
 };
 
@@ -44,7 +45,7 @@ let processNormal = (transactions, templates) => {
   const inflation = 0.03;
   let today = Moment();
 
-  templates.forEach(template => {
+  templates.filter(t => t.templateType !== "CC").forEach(template => {
     let inflate = true; // hardcode for now...use template.inflate eventually
     let startDate = Moment(template.startDate);
     let transDate = Moment(startDate);
@@ -114,15 +115,29 @@ let processSpecials = (transactions, templates) => {
 
   let today = Moment();
 
-  transactions.filter(account => account.type === "cc").forEach(account => {
-    //Note payDay must be <= 28
-    let payDay = account.payDay;
-    let startDate = Moment(account.openingDate).date(payDay); // set initial date to first period on the payment date
+  templates.filter(t => t.templateType == "CC").forEach(template => {
+    let account = transactions.find(
+      acc => acc.accountId === template.accountFromId
+    );
+    account.payFromAccId = template.accountToId;
+
+    let startDate = Moment(template.startDate);
     let transDate = Moment(startDate);
-    let endDate = Moment(account.closingDate);
-    let periodEndDay = account.periodEndDay;
-    let periodType = account.ccPeriodType;
-    let periodCnt = account.ccPeriodCnt;
+    let endDate = Moment(template.endDate);
+    let payDay = startDate.get("date");
+    let periodEndDay = template.periodLastDay;
+    let periodType = template.periodType;
+    let periodCnt = template.periodCnt;
+
+    // transactions.filter(account => account.type === "cc").forEach(account => {
+    //   let payDay = account.payDay;
+    //   let startDate = Moment(account.openingDate).date(payDay); // set initial date to first period on the payment date
+    //   let transDate = Moment(startDate);
+    //   let endDate = Moment(account.closingDate);
+    //   let periodEndDay = account.periodEndDay;
+    //   let periodType = account.ccPeriodType;
+    //   let periodCnt = account.ccPeriodCnt;
+
     let payFromAccount = transactions.find(
       acc => acc.accountId === account.payFromAccId
     );
@@ -151,7 +166,6 @@ let processSpecials = (transactions, templates) => {
     }
 
     updateBalance(account, transactions);
-
     account.ccDates.length = 0; // clear credit card dates array
   });
 
@@ -309,7 +323,7 @@ let updateBalance = (account, transactions) => {
 
     // Initialise first closing balance date for credit card accounts
     let ccPartnerAcc;
-    if (account.ccDates) {
+    if (account.ccDates.length > 0) {
       ccPartnerAcc = transactions.find(
         acc => acc.accountId === account.payFromAccId
       );
@@ -464,9 +478,13 @@ let updateBalance = (account, transactions) => {
                 crAmount: 0
               };
               if (transferAmt === 0) {
-                tr.description = `No excess funds available to ${minPartnerAcc.accName}`;
-                newTrans.description = `No excess funds available from ${account.accName}`;
-            } else {
+                tr.description = `No excess funds available to ${
+                  minPartnerAcc.accName
+                }`;
+                newTrans.description = `No excess funds available from ${
+                  account.accName
+                }`;
+              } else {
                 if (transferAmt < 0) {
                   tr.description = `From ${
                     minPartnerAcc.accName
