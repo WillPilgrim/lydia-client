@@ -61,8 +61,8 @@ export default class Accounts extends Component {
         amount100: (amount / 100).toFixed(2),
         crRate,
         dbRate,
-        periodType,
-        periodCnt,
+        periodType : periodType ? periodType : "M",
+        periodCnt : periodCnt ? periodCnt : 1,
         interest
       });
     } catch (e) {

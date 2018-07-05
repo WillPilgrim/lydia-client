@@ -4,13 +4,13 @@ export const testTransactions = [
   {
     // Main - General purpose
     accountId: "ae29b1c0-73d0-11e8-8ec0-3fce1802dff7",
-    minimise: "Y",
-    minBalance: 10000,
-    minimisePartner: "58749090-7adf-11e8-a000-cfaf666b12b9",
-    minStartDate: Moment("2018-01-15").format(),
-    minEndDate: Moment("2025-09-15").format(),
-    minPeriodType: "M",
-    minPeriodCnt: 1,
+    // minimise: "Y",
+    // minBalance: 10000,
+    // minimisePartner: "58749090-7adf-11e8-a000-cfaf666b12b9",
+    // minStartDate: Moment("2018-01-15").format(),
+    // minEndDate: Moment("2025-09-15").format(),
+    // minPeriodType: "M",
+    // minPeriodCnt: 1,
     trans: [
       {
         transactionId: 1,
@@ -108,9 +108,6 @@ export const testTransactions = [
   {
     // Holiday - Holiday savings
     accountId: "a9ca4f40-73d0-11e8-8ec0-3fce1802dff7",
-    zero: "Y",
-    zeroPartner: "c8c74b80-7adf-11e8-a000-cfaf666b12b9",
-    zeroDate: Moment("2025-12-31").format(),
     trans: [
       {
         transactionId: 11,

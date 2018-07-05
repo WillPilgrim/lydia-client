@@ -37,3 +37,13 @@ Interest is specified at the account level. It can be turned off or on when crea
 - Applied interest period type and period count. These two values specify how frequently interest will be applied to the account.
 
 Note that the separation of credit and debit interest rates allow for accounts where the rate is not consistent. For example, many account types have a very small credit interest (or none at all) but a much larger debit interest. In either case, the interest is calculated on each period from one entry in the account to the next and the type of rate is based on the balance at the time of the former entry. In practice the rules applied to accounts are often more complex especially for credit interest. For example, to accrue credit interest an account may require a minimum balance or at least no negative balance for a large period. However this mechanism allows for reasonable approximations of account behaviour. A good practical use is to set loan accounts to the appropriate debit rate but set the credit rate to 0. For cheque accounts that pay little interest, turning off interest altogether may be appropriate. 
+
+Notes on Transaction Load/Save
+==============================
+1. Upon login, auto load transactions with accounts - experiment with storing transaction data as a blob in Dynamo. Otherwise use S3.
+2. Experiment with data compression
+3. Save transactions will do a special put to account row.
+4. Restore reloads just the transaction portion of the account.
+5. Put the transactions in accounts 'state' and pass it to 'transactions'. Use Context?
+
+

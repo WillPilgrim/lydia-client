@@ -1,25 +1,25 @@
 Backlog in priority order
 =========================
-1. Go onto 'credit card' handling
-    - Update calculate.js to use new cc details
-    - Remove cc details from testTrans
-2. Do zero and minimise
-    - details to be added re. templates etc
-    - Update calculate.js to use new zero/minimise details
-    - Remove zero/minimise details from testTrans
-3. Deprecate old 'transactions' format entirely.
-4. Wire up Save button to saving transactions somewhere
+1. Deprecate old 'transactions' format entirely.
+2. Wire up Save button to saving transactions somewhere
     - loop through all accounts in 'transactions'
     - get trans for account
     - update dynamo with trans = trans[acc]
     - alternatively, store transactions as a blob in S3
-5. Wire up Load button to do the opposite
-6. Work out what to do at startup
+3. Wire up Load button to do the opposite
+4. Work out what to do at startup
     - do we load transactions automatically like accounts or is a 'load' required?
+5. Handle transaction scroll and make sure we return to the correct place after navigation
+6. Add manual transaction CRUD
+7. Add convert auto entry to manual
+8. Add reconciliation
+9. Make much more efficient with caching etc
+10. Make pretty
 
 
 accounts
 ========
+- Show current account balances, rates etc on main display
 - move 'static' (non transaction processing) detail from transaction list grouping to accounts in dynamoDb
 - add an edit button to accounts list (replaces link on actual account list item)
 - modify account list item click to go to list of transactions for account
@@ -29,7 +29,6 @@ accounts
         - 'interest'
         - 'cc'
 - remove S3 attachment code
-- add concept of a debit and a credit interest rate so that credits and debits can attract different rates.
 
 transactions
 ============
@@ -60,8 +59,10 @@ main
 
 miscellaneous
 =============
+- Use native date objects rather than Moment in key areas
 - handle state better - redux?
 - use const instead of let where appropriate
 - handle many accounts in the nav bar on the Transactions list
 - look at better table processing
     - scrolling within list
+    - React Table looks like a good candidate

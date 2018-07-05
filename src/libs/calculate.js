@@ -3,6 +3,7 @@ import { uuid } from "./utilities";
 
 export default (transactions, templates) => {
   // 1. Remove future transactions
+  console.time("Recalculation Total");
   console.time("delfuture");
   delfuture(transactions);
   console.timeEnd("delfuture");
@@ -18,7 +19,9 @@ export default (transactions, templates) => {
   console.time("updateBalances");
   updateBalances(transactions);
   console.timeEnd("updateBalances");
-
+  console.timeEnd("Recalculation Total");
+  delfuture(transactions);
+transactions.forEach(x => console.log(`Size of ${x.accName} is ${JSON.stringify(x.trans).length}`))
   return transactions;
 };
 
@@ -45,69 +48,79 @@ let processNormal = (transactions, templates) => {
   const inflation = 0.03;
   let today = Moment();
 
-  templates.filter(t => t.templateType !== "CC").forEach(template => {
-    let inflate = true; // hardcode for now...use template.inflate eventually
-    let startDate = Moment(template.startDate);
-    let transDate = Moment(startDate);
-    let endDate = Moment(template.endDate);
-    let account = transactions.find(
-      acc => acc.accountId === template.accountFromId
-    );
-    let accountTo = transactions.find(
-      acc => acc.accountId === template.accountToId
-    );
+  templates
+    .filter(
+      t =>
+        t.templateType !== "CC" &&
+        t.templateType !== "Minimise" &&
+        t.templateType !== "Zero"
+    )
+    .forEach(template => {
+      let inflate = true; // hardcode for now...use template.inflate eventually
+      let startDate = Moment(template.startDate);
+      let transDate = Moment(startDate);
+      let endDate = Moment(template.endDate);
+      let account = transactions.find(
+        acc => acc.accountId === template.accountFromId
+      );
+      let accountTo = transactions.find(
+        acc => acc.accountId === template.accountToId
+      );
 
-    while (transDate.isSameOrBefore(endDate, "day")) {
-      if (transDate.isAfter(today, "day")) {
-        let amount = template.amount;
-        if (inflate) {
-          let numYears = transDate.diff(startDate, "years");
-          if (numYears < 0) numYears = 0;
-          amount = Math.floor(amount * Math.pow(1 + inflation, numYears));
-        }
+      while (transDate.isSameOrBefore(endDate, "day")) {
+        if (transDate.isAfter(today, "day")) {
+          let amount = template.amount;
+          if (inflate) {
+            let numYears = transDate.diff(startDate, "years");
+            if (numYears < 0) numYears = 0;
+            amount = Math.floor(amount * Math.pow(1 + inflation, numYears));
+          }
 
-        let dbAmount = 0;
-        let crAmount = 0;
-        if (
-          template.templateType === "Debit" ||
-          template.templateType === "Transfer"
-        )
-          dbAmount = amount;
-        else crAmount = amount;
+          let dbAmount = 0;
+          let crAmount = 0;
+          if (
+            template.templateType === "Debit" ||
+            template.templateType === "Transfer"
+          )
+            dbAmount = amount;
+          else crAmount = amount;
 
-        let newTrans = {
-          date: transDate.format(),
-          description: template.description,
-          autogen: transDate.format(),
-          transactionId: uuid(),
-          dbAmount: dbAmount,
-          crAmount: crAmount
-        };
-        account.trans.push(newTrans);
-        account.dirty = true;
-
-        // Process partner account transaction
-        if (accountTo) {
-          // Allow for optional transfer day offset and partner description
-          let partnerDate = Moment(transDate);
-          if (template.dayOffs)
-            partnerDate = partnerDate.add(template.dayOffs, "d");
-          let partnerDesc = template.description;
-          if (template.partnerDesc) partnerDesc = template.partnerDesc;
-          accountTo.trans.push({
-            date: partnerDate.format(),
-            description: partnerDesc,
-            autogen: partnerDate.format(),
+          let newTrans = {
+            date: transDate.format(),
+            description: template.description,
+            autogen: transDate.format(),
             transactionId: uuid(),
-            dbAmount: crAmount,
-            crAmount: dbAmount
-          });
-          accountTo.dirty = true;
+            dbAmount: dbAmount,
+            crAmount: crAmount,
+            partnerAccId: template.accountToId,
+            type: template.templateType
+          };
+          account.trans.push(newTrans);
+          account.dirty = true;
+
+          // Process partner account transaction
+          if (accountTo) {
+            // Allow for optional transfer day offset and partner description
+            // Don't create partner here for "Zero" because we don't know the amount yet
+            let partnerDate = Moment(transDate);
+            if (template.dayOffs)
+              partnerDate = partnerDate.add(template.dayOffs, "d");
+            let partnerDesc = template.description;
+            if (template.partnerDesc) partnerDesc = template.partnerDesc;
+            accountTo.trans.push({
+              date: partnerDate.format(),
+              description: partnerDesc,
+              autogen: partnerDate.format(),
+              transactionId: uuid(),
+              dbAmount: crAmount,
+              crAmount: dbAmount
+            });
+            accountTo.dirty = true;
+          }
         }
+        transDate = transDate.add(template.periodCnt, template.periodType);
       }
-      transDate = transDate.add(template.periodCnt, template.periodType);
-    }
-  });
+    });
 };
 
 let processSpecials = (transactions, templates) => {
@@ -115,7 +128,7 @@ let processSpecials = (transactions, templates) => {
 
   let today = Moment();
 
-  templates.filter(t => t.templateType == "CC").forEach(template => {
+  templates.filter(t => t.templateType === "CC").forEach(template => {
     let account = transactions.find(
       acc => acc.accountId === template.accountFromId
     );
@@ -129,7 +142,7 @@ let processSpecials = (transactions, templates) => {
     let periodType = template.periodType;
     let periodCnt = template.periodCnt;
 
-    // transactions.filter(account => account.type === "cc").forEach(account => {
+    // transactions.filter(account => account.type === "CC").forEach(account => {
     //   let payDay = account.payDay;
     //   let startDate = Moment(account.openingDate).date(payDay); // set initial date to first period on the payment date
     //   let transDate = Moment(startDate);
@@ -152,7 +165,7 @@ let processSpecials = (transactions, templates) => {
           crAmount: 0,
           dbAmount: 0,
           description: `Credit card payment from ${payFromAccount.accName}`,
-          type: "cc"
+          type: template.templateType
         };
         account.trans.push(newTrans);
         account.dirty = true;
@@ -198,27 +211,22 @@ let processSpecials = (transactions, templates) => {
 
   // 3. Process dynamic transfer template types
   let specials = [];
-  transactions.forEach(account => {
-    if (account.zero)
+
+  templates
+    .filter(t => t.templateType === "Minimise" || t.templateType === "Zero")
+    .forEach(template => {
       specials.push({
-        type: "zero",
         active: true,
-        accountId: account.accountId,
-        partner: account.zeroPartner,
-        startDate: Moment(account.zeroDate)
+        accountId: template.accountFromId,
+        partnerAccId: template.accountToId,
+        startDate: template.startDate,
+        endDate: template.endDate,
+        periodType: template.periodType,
+        periodCnt: template.periodCnt,
+        type: template.templateType,
+        amount: template.amount
       });
-    if (account.minimise)
-      specials.push({
-        type: "minimise",
-        active: true,
-        accountId: account.accountId,
-        partner: account.minimisePartner,
-        startDate: account.minStartDate,
-        endDate: account.minEndDate,
-        periodType: account.minPeriodType,
-        periodCnt: account.minPeriodCnt
-      });
-  });
+    });
 
   let completed = 0;
   while (completed < specials.length) {
@@ -227,60 +235,62 @@ let processSpecials = (transactions, templates) => {
 
       // Only process this special if no active account minimises to this one
       if (
-        !specials.find(special => special.partner === accId && special.active)
+        !specials.find(
+          special => special.partnerAccId === accId && special.active
+        )
       ) {
         let startDate = Moment(special.startDate);
         let endDate = Moment(special.endDate);
         let account = transactions.find(acc => acc.accountId === accId);
-        let periodType = special.periodType;
-        let periodCnt = special.periodCnt;
-        let specialType = special.type;
-        let insertEndMarker = false;
 
-        switch (specialType) {
-          case "minimise":
+        switch (special.type) {
+          case "Minimise":
+            let insertEndMarker = false;
             while (startDate.isSameOrBefore(endDate, "day")) {
               if (startDate.isAfter(today, "day")) {
                 account.trans.push({
                   date: startDate.format(),
                   autogen: startDate.format(),
                   transactionId: uuid(),
+                  partnerAccId: special.partnerAccId,
                   dbAmount: 0,
                   crAmount: 0,
-                  type: specialType
+                  minBalance: special.amount,
+                  type: special.type
                 });
                 account.dirty = true;
                 insertEndMarker = true;
               }
-              startDate = startDate.add(periodCnt, periodType);
+              startDate = startDate.add(special.periodCnt, special.periodType);
             }
-            break;
-          case "zero":
-            if (startDate.isAfter(today, "day")) {
+            if (insertEndMarker) {
               account.trans.push({
                 date: startDate.format(),
                 autogen: startDate.format(),
                 transactionId: uuid(),
                 dbAmount: 0,
                 crAmount: 0,
-                type: specialType
+                type: "PeriodEndMarker"
+              });
+            }
+            break;
+
+          case "Zero":
+            if (startDate.isAfter(today, "day")) {
+              account.trans.push({
+                date: startDate.format(),
+                autogen: startDate.format(),
+                transactionId: uuid(),
+                partnerAccId: special.partnerAccId,
+                dbAmount: 0,
+                crAmount: 0,
+                type: special.type
               });
               account.dirty = true;
             }
             break;
           default:
             break;
-        }
-
-        if (insertEndMarker) {
-          account.trans.push({
-            date: startDate.format(),
-            autogen: startDate.format(),
-            transactionId: uuid(),
-            dbAmount: 0,
-            crAmount: 0,
-            type: "periodEndMarker"
-          });
         }
 
         updateBalance(account, transactions); // ensure account ready to process
@@ -301,53 +311,57 @@ let updateBalance = (account, transactions) => {
   //	Sort given account and update balances
 
   if (account.dirty) {
+    console.time(`updateBalance for ${account.accName}`);
     // Sort all of the transactions by date
-    account.trans.sort(
-      (a, b) => Moment(a.date).valueOf() - Moment(b.date).valueOf()
-    );
+    console.time("Sort time");
+    let newarray = account.trans.map(x => ({
+      ...x,
+      date: new Date(x.date).valueOf()
+    }));
+    //     account.trans.sort(
+    // //      (a, b) => Moment(a.date).valueOf() - Moment(b.date).valueOf()
+    //       (a, b) => new Date(a.date) - new Date(b.date)
+    //     );
+    console.timeEnd("Sort time");
+    console.time("Sort time 2");
+    newarray.sort((a, b) => a.date - b.date);
+    console.timeEnd("Sort time 2");
+    account.trans = newarray;
 
+    let today = Moment();
     let runningBalance = account.openingBal;
     let balanceToday = runningBalance;
-    let lowestBalForPeriod = 0;
-    let periodEndDate;
-    let ccIndex = -1;
-    let ccBalance = runningBalance;
-    let minPeriodStartIndex = -1;
-    let saveBal;
-    let saveCrRate;
-    let saveDbRate;
-    let saveTotalInt;
-    let today = Moment();
-
     if (Moment(account.openingDate).isAfter(today, "day")) balanceToday = 0;
 
-    // Initialise first closing balance date for credit card accounts
+    //  Credit card related set up
+    //  ==========================
+
+    let ccIndex = -1;
+    let ccBalance = runningBalance;
+    let periodEndDate;
     let ccPartnerAcc;
     if (account.ccDates.length > 0) {
       ccPartnerAcc = transactions.find(
         acc => acc.accountId === account.payFromAccId
       );
+      // Initialise first closing balance date for credit card accounts
       periodEndDate = Moment(account.ccDates[0]);
       ccIndex = 0;
     }
+    //  ==========================`
 
-    // Initialise minimising partner account
-    let minPartnerAcc;
-    if (account.minimisePartner) {
-      minPartnerAcc = transactions.find(
-        acc => acc.accountId === account.minimisePartner
-      );
-    }
+    //  Minimise related set up
+    //  =======================
+    let saveBal;
+    let saveCrRate;
+    let saveDbRate;
+    let saveTotalInt;
+    let lowestBalForPeriod = 0;
+    let minPeriodStartIndex = -1;
+    //  =======================
 
-    // Initialise "zero" partner account
-    let zeroPartnerAcc;
-    if (account.zeroPartner) {
-      zeroPartnerAcc = transactions.find(
-        acc => acc.accountId === account.zeroPartner
-      );
-    }
-
-    //  Interest related values
+    //  Interest related set up
+    //  =======================
     let totalInterest = 0;
     let dbRate = account.calcInterest ? account.openingDbRate / 100 : 0;
     let crRate = account.calcInterest ? account.openingCrRate / 100 : 0;
@@ -363,9 +377,10 @@ let updateBalance = (account, transactions) => {
     if (firstBaseInterestDate.isBefore(account.openingDate, "day"))
       firstBaseInterestDate = Moment(account.openingDate);
     let prevInterestDate = Moment(firstBaseInterestDate);
+    //  =======================
 
     // Use an old school loop so it can be manipulated when
-    // doing 'minimise' transactions
+    // doing 'Minimise' transactions
     for (let trIndex = 0; trIndex < account.trans.length; trIndex++) {
       let tr = account.trans[trIndex];
       let lineDate = Moment(tr.date);
@@ -379,7 +394,7 @@ let updateBalance = (account, transactions) => {
         }
 
         // Check if this line is a credit card payment line
-        if (tr.type === "cc") {
+        if (tr.type === "CC") {
           if (lineDate.isAfter(today, "day")) {
             if (ccBalance >= 0)
               tr.description = "No credit card payment required this period";
@@ -404,7 +419,7 @@ let updateBalance = (account, transactions) => {
 
       if (lineDate.isAfter(today, "day")) {
         // Zero account to/from partner (if provided)
-        if (tr.type === "zero") {
+        if (tr.type === "Zero") {
           if (runningBalance >= 0) {
             tr.crAmount = 0;
             tr.dbAmount = runningBalance;
@@ -415,6 +430,9 @@ let updateBalance = (account, transactions) => {
             tr.description = "Deposit to clear balance";
           }
 
+          let zeroPartnerAcc = transactions.find(
+            acc => acc.accountId === tr.partnerAccId
+          );
           if (zeroPartnerAcc) {
             let newTrans = {
               date: tr.date,
@@ -440,7 +458,7 @@ let updateBalance = (account, transactions) => {
         }
 
         // minimise types calculation process
-        if (tr.type === "minimise" || tr.type === "periodEndMarker") {
+        if (tr.type === "Minimise" || tr.type === "PeriodEndMarker") {
           if (minPeriodStartIndex === -1) {
             // starting a new min period
             minPeriodStartIndex = trIndex;
@@ -451,13 +469,13 @@ let updateBalance = (account, transactions) => {
             saveTotalInt = totalInterest;
           } else {
             // remove final minimise end of period marker
-            if (tr.type === "periodEndMarker") account.trans.splice(trIndex, 1);
+            if (tr.type === "PeriodEndMarker") account.trans.splice(trIndex, 1);
             trIndex = minPeriodStartIndex; // go back to the beginning of the period
             tr = account.trans[trIndex];
             lineDate = Moment(tr.date);
             // Calculate amount to transfer out of account rounded down to 10
             let transferAmt =
-              Math.floor((lowestBalForPeriod - account.minBalance) / 10) * 10;
+              Math.floor((lowestBalForPeriod - tr.minBalance) / 10) * 10;
             if (transferAmt >= 0) {
               tr.crAmount = 0;
               tr.dbAmount = transferAmt;
@@ -468,6 +486,10 @@ let updateBalance = (account, transactions) => {
               tr.crAmount = -transferAmt;
               tr.description = "Deposit to ensure minimum balance";
             }
+
+            let minPartnerAcc = transactions.find(
+              acc => acc.accountId === tr.partnerAccId
+            );
 
             if (minPartnerAcc) {
               let newTrans = {
@@ -486,17 +508,17 @@ let updateBalance = (account, transactions) => {
                 }`;
               } else {
                 if (transferAmt < 0) {
-                  tr.description = `From ${
+                  tr.description = `Transfer from ${
                     minPartnerAcc.accName
                   } to ensure minimum balance`;
                   newTrans.dbAmount = -transferAmt;
-                  newTrans.description = `To ${account.accName}`;
+                  newTrans.description = `Transfer to ${account.accName}`;
                 } else {
                   tr.description = `Excess funds above minimum to ${
                     minPartnerAcc.accName
                   }`;
                   newTrans.crAmount = transferAmt;
-                  newTrans.description = `From ${account.accName}`;
+                  newTrans.description = `Transfer from ${account.accName}`;
                 }
               }
               minPartnerAcc.trans.push(newTrans);
@@ -569,7 +591,7 @@ let updateBalance = (account, transactions) => {
       runningBalance += tr.crAmount - tr.dbAmount; // update line running balance
       tr.balance = runningBalance;
 
-      // check lowest balance of 'minimise' period
+      // check lowest balance of 'Minimise' period
       if (runningBalance < lowestBalForPeriod)
         lowestBalForPeriod = runningBalance;
 
@@ -585,5 +607,6 @@ let updateBalance = (account, transactions) => {
     account.currentCrRate = crRateToday * 100;
     account.currentDbRate = dbRateToday * 100;
     account.dirty = false;
+    console.timeEnd(`updateBalance for ${account.accName}`);
   }
 };
