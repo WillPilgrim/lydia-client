@@ -20,7 +20,6 @@ export default (transactions, templates) => {
   updateBalances(transactions);
   console.timeEnd("updateBalances");
   console.timeEnd("Recalculation Total");
-  delfuture(transactions);
 transactions.forEach(x => console.log(`Size of ${x.accName} is ${JSON.stringify(x.trans).length}`))
   return transactions;
 };

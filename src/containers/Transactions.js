@@ -13,11 +13,11 @@ import { API } from "aws-amplify";
 import Moment from "moment";
 import { testTransactions } from "../TestData/TestTrans";
 import Calculate from "../libs/calculate";
+import { Storage } from "aws-amplify";
 
 export default class Transactions extends Component {
   constructor(props) {
     super(props);
-
     this.state = {
       isLoading: true,
       templates: [],
@@ -34,30 +34,39 @@ export default class Transactions extends Component {
     try {
       const accs = await this.accounts();
       const templates = await this.templates();
+      let transAcc = this.props.transAcc;
+      if (!transAcc) {
+        console.log("Trans not here...have to make them")
+        transAcc = await this.getTransactions();
+        this.props.setTransactions(transAcc)
+      } else { 
+        console.log("Trans already exist!")
+      }
+      console.log('trans=',transAcc)
 
       accs.forEach((acc) => {
-        let transAcc = testTransactions.find(x => x.accountId === acc.accountId);
-        if (!transAcc) {
-          transAcc = {accountId: acc.accountId, trans:[]};
-          testTransactions.push(transAcc);
+        let accInTrans = transAcc.find(x => x.accountId === acc.accountId);
+        if (!accInTrans) {
+          accInTrans = {accountId: acc.accountId, trans:[]};
+          transAcc.push(accInTrans);
         }
-        transAcc.accName = acc.accName;
-        transAcc.description = acc.description;
-        transAcc.openingDate = acc.openingDate;
-        transAcc.closingDate = acc.closingDate;
-        transAcc.openingBal = acc.amount;
-        transAcc.openingCrRate = acc.crRate;
-        transAcc.openingDbRate = acc.dbRate;
-        transAcc.calcInterest = acc.interest;
-        transAcc.intPeriodType = acc.periodType;
-        transAcc.intPeriodCnt = acc.periodCnt;
-        transAcc.intFirstAppliedDate = acc.intFirstAppliedDate;
+        accInTrans.accName = acc.accName;
+        accInTrans.description = acc.description;
+        accInTrans.openingDate = acc.openingDate;
+        accInTrans.closingDate = acc.closingDate;
+        accInTrans.openingBal = acc.amount;
+        accInTrans.openingCrRate = acc.crRate;
+        accInTrans.openingDbRate = acc.dbRate;
+        accInTrans.calcInterest = acc.interest;
+        accInTrans.intPeriodType = acc.periodType;
+        accInTrans.intPeriodCnt = acc.periodCnt;
+        accInTrans.intFirstAppliedDate = acc.intFirstAppliedDate;
       });
 
       this.setState({
         templates,
         accs,
-        transactions: testTransactions,
+        transactions: transAcc,
         currentAcc: accs[0].accountId
       });
     } catch (e) {
@@ -65,6 +74,11 @@ export default class Transactions extends Component {
     }
 
     this.setState({ isLoading: false });
+  }
+
+  getTransactions = () => {
+//    return testTransactions;
+return [];
   }
 
   accounts() {
@@ -147,6 +161,12 @@ export default class Transactions extends Component {
     this.setState({ currentAcc: eventKey });
   };
 
+  handleSave = () => {
+    let key = "hello"
+    Storage.put(key, JSON.stringify(this.state.transactions), {
+      contentType: "application/json"})
+  };
+
   render() {
     let currAcc = this.state.transactions.find(
       x => x.accountId === this.state.currentAcc
@@ -175,7 +195,7 @@ export default class Transactions extends Component {
             <ButtonToolbar className="pull-right">
               <ButtonGroup>
                 <Button bsSize="large">Load</Button>
-                <Button bsSize="large">Save</Button>
+                <Button bsSize="large" onClick={this.handleSave}>Save</Button>
               </ButtonGroup>
               <Button
                 bsStyle="success"

@@ -1,20 +1,19 @@
 Backlog in priority order
 =========================
-1. Deprecate old 'transactions' format entirely.
-2. Wire up Save button to saving transactions somewhere
+1. Wire up Save button to saving transactions somewhere
     - loop through all accounts in 'transactions'
     - get trans for account
     - update dynamo with trans = trans[acc]
     - alternatively, store transactions as a blob in S3
-3. Wire up Load button to do the opposite
-4. Work out what to do at startup
+2. Wire up Load button to do the opposite
+3. Work out what to do at startup
     - do we load transactions automatically like accounts or is a 'load' required?
-5. Handle transaction scroll and make sure we return to the correct place after navigation
-6. Add manual transaction CRUD
-7. Add convert auto entry to manual
-8. Add reconciliation
-9. Make much more efficient with caching etc
-10. Make pretty
+4. Handle transaction scroll and make sure we return to the correct place after navigation
+5. Add manual transaction CRUD
+6. Add convert auto entry to manual
+7. Add reconciliation
+8. Make much more efficient with caching etc
+9. Make pretty
 
 
 accounts

@@ -14,7 +14,8 @@ class App extends Component {
       isAuthenticated: false,
       isAuthenticating: true,
       currentUser: "",
-      accounts: null
+      accounts: null,
+      transAcc: null
     };
   }
 
@@ -38,9 +39,9 @@ class App extends Component {
     this.setState({ currentUser: user });
   }
 
-  setAccounts = (setacc) => {
-    this.setState({accounts:setacc})
-  }
+  setAccounts = setacc => this.setState({accounts:setacc})
+  
+  setTransactions = t => this.setState({transAcc: t})
 
   handleLogout = async event => {
     await Auth.signOut();
@@ -55,7 +56,9 @@ class App extends Component {
       isAuthenticated: this.state.isAuthenticated,
       userHasAuthenticated: this.userHasAuthenticated,
       setAccounts:this.setAccounts,
-      accounts:this.state.accounts
+      accounts:this.state.accounts,
+      setTransactions: this.setTransactions,
+      transAcc: this.state.transAcc
     };
 
     return (
