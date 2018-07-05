@@ -162,9 +162,27 @@ return [];
   };
 
   handleSave = () => {
-    let key = "hello"
+    let key = "hello.txt"
     Storage.put(key, JSON.stringify(this.state.transactions), {
-      contentType: "application/json"})
+      level: 'private',
+      contentType: 'application/json'}).then (result => console.log(result)).catch(err => console.log(err));
+    };
+
+  handleLoad = () => {
+    let key = "hello.txt"
+    Storage.get(key, {level: 'private',download: true})
+    .then(result => {
+      console.log('Result=>',result)
+      let res = new TextDecoder("utf-8").decode(result.Body);
+      console.log('res=>',res)
+
+
+      let transAcc = JSON.parse(res)
+      console.log("transAcc=>",transAcc)
+      this.setState({transactions:transAcc})
+      })
+    .catch(err => console.log(err));
+
   };
 
   render() {
@@ -194,7 +212,7 @@ return [];
           <div className="col-sm-4">
             <ButtonToolbar className="pull-right">
               <ButtonGroup>
-                <Button bsSize="large">Load</Button>
+                <Button bsSize="large" onClick={this.handleLoad}>Load</Button>
                 <Button bsSize="large" onClick={this.handleSave}>Save</Button>
               </ButtonGroup>
               <Button
