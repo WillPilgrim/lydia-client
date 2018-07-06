@@ -12,7 +12,7 @@ import BootstrapTable from "react-bootstrap-table-next";
 import { API } from "aws-amplify";
 import Moment from "moment";
 import { testTransactions } from "../TestData/TestTrans";
-import Calculate from "../libs/calculate";
+import { calculate, delfuture} from "../libs/calculate";
 import { Storage } from "aws-amplify";
 
 export default class Transactions extends Component {
@@ -32,40 +32,34 @@ export default class Transactions extends Component {
       return;
     }
     try {
-      const accs = await this.accounts();
+      // 3. get trans from props  [{id:1,trans:[]}]
+      // 4. if !trans
+      //       load trans from S3
+      //       verify accs in trans all exist in acc - error if not!
+      //       build trans using this.props.setTransactions
+      // 5. call calculate passing (acc,trans,templates)
+      // 6. setstate trans 
+
+
+
+
+      const accs = this.props.accounts;
       const templates = await this.templates();
       let transAcc = this.props.transAcc;
       if (!transAcc) {
-        console.log("Trans not here...have to make them")
-        transAcc = await this.getTransactions();
-        this.props.setTransactions(transAcc)
-      } else { 
-        console.log("Trans already exist!")
-      }
-      console.log('trans=',transAcc)
+        transAcc = this.getTransactions();
+        // ToDo: need to verify evey account in transAcc exists in accs
 
-      accs.forEach((acc) => {
-        let accInTrans = transAcc.find(x => x.accountId === acc.accountId);
-        if (!accInTrans) {
-          accInTrans = {accountId: acc.accountId, trans:[]};
-          transAcc.push(accInTrans);
-        }
-        accInTrans.accName = acc.accName;
-        accInTrans.description = acc.description;
-        accInTrans.openingDate = acc.openingDate;
-        accInTrans.closingDate = acc.closingDate;
-        accInTrans.openingBal = acc.amount;
-        accInTrans.openingCrRate = acc.crRate;
-        accInTrans.openingDbRate = acc.dbRate;
-        accInTrans.calcInterest = acc.interest;
-        accInTrans.intPeriodType = acc.periodType;
-        accInTrans.intPeriodCnt = acc.periodCnt;
-        accInTrans.intFirstAppliedDate = acc.intFirstAppliedDate;
-      });
+        // This will build out transAcc but leave accs and template
+
+        transAcc = calculate(accs,templates,transAcc);
+        this.props.setTransactions(transAcc)
+      }
+
+
 
       this.setState({
         templates,
-        accs,
         transactions: transAcc,
         currentAcc: accs[0].accountId
       });
@@ -78,11 +72,16 @@ export default class Transactions extends Component {
 
   getTransactions = () => {
 //    return testTransactions;
-return [];
-  }
+    let key = "data.txt"
+    let transAcc = [];
+    // Storage.get(key, {level: 'private',download: true})
+    // .then(result => {
+    //   let res = new TextDecoder("utf-8").decode(result.Body);
+    //   transAcc = JSON.parse(res)
 
-  accounts() {
-    return API.get("accounts", "/accounts");
+    //   })
+    // .catch(err => console.log(err));
+    return transAcc;
   }
 
   templates() {
@@ -153,7 +152,7 @@ return [];
 
   recalculate = () => {
     this.setState({
-      transactions: Calculate(this.state.transactions, this.state.templates)
+      transactions: calculate(this.state.transactions, this.state.templates)
     });
   };
 
@@ -162,29 +161,33 @@ return [];
   };
 
   handleSave = () => {
-    let key = "hello.txt"
+    delfuture(this.state.transactions);
+
+    let key = "data.txt"
     Storage.put(key, JSON.stringify(this.state.transactions), {
       level: 'private',
-      contentType: 'application/json'}).then (result => console.log(result)).catch(err => console.log(err));
+      contentType: 'application/json'})
+      .then ( this.recalculate()
+//        this.setState({transactions: this.state.transactions})
+      )
+      .catch(err => alert(err));
     };
 
   handleLoad = () => {
-    let key = "hello.txt"
+    let key = "data.txt"
+    let transAcc = [];
     Storage.get(key, {level: 'private',download: true})
     .then(result => {
-      console.log('Result=>',result)
       let res = new TextDecoder("utf-8").decode(result.Body);
-      console.log('res=>',res)
+      transAcc = JSON.parse(res)
 
-
-      let transAcc = JSON.parse(res)
-      console.log("transAcc=>",transAcc)
-      this.setState({transactions:transAcc})
       })
     .catch(err => console.log(err));
+    this.setState({transactions:calculate(transAcc, this.state.templates)})
+    this.props.setTransactions(transAcc)
 
   };
-
+//        {this.state.accs.map((x, index) => (
   render() {
     let currAcc = this.state.transactions.find(
       x => x.accountId === this.state.currentAcc
@@ -193,11 +196,12 @@ return [];
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
 
-        <div className="row">
+        <div className="row">s
           <div className="col-sm-8">
             <Navbar onSelect={this.handleAccountSelection}>
               <Nav>
-                {this.state.accs.map((x, index) => (
+                {this.props.accounts.map((x, index) => (
+
                   <NavItem
                     key={x.accountId}
                     eventKey={x.accountId}

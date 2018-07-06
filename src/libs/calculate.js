@@ -1,8 +1,32 @@
 import Moment from "moment";
 import { uuid } from "./utilities";
 
-export default (transactions, templates) => {
+export const calculate = (accs, templates, transAcc) => {
+  // accs.forEach((acc) => {
+  //   let accInTrans = accs.find(x => x.accountId === acc.accountId);
+  //   if (!accInTrans) {
+  //     accInTrans = {accountId: acc.accountId, trans:[]};
+  //     transAcc.push(accInTrans);
+  //   }
+  //   accInTrans.accName = acc.accName;
+  //   accInTrans.description = acc.description;
+  //   accInTrans.openingDate = acc.openingDate;
+  //   accInTrans.closingDate = acc.closingDate;
+  //   accInTrans.amount = acc.amount;
+  //   accInTrans.crRate = acc.crRate;
+  //   accInTrans.dbRate = acc.dbRate;
+  //   accInTrans.interest = acc.interest;
+  //   accInTrans.periodType = acc.periodType;
+  //   accInTrans.periodCnt = acc.periodCnt;
+  //   accInTrans.intFirstAppliedDate = acc.intFirstAppliedDate;
+  // });
+
+  let transactions = accs.map(acc => {
+    let ta = transAcc.find(x=>x.accountId === acc.AccountId);
+     return {trans: ta ? ta.trans : [],...acc};
+    });
   // 1. Remove future transactions
+  console.log(transactions)
   console.time("Recalculation Total");
   console.time("delfuture");
   delfuture(transactions);
@@ -24,7 +48,7 @@ transactions.forEach(x => console.log(`Size of ${x.accName} is ${JSON.stringify(
   return transactions;
 };
 
-let delfuture = transactions => {
+export const delfuture = transactions => {
   // Delete future auto transactions.
   // Not using the sorting and setting array length option. This method is order N which is very quick.
   let today = Moment();
@@ -182,13 +206,13 @@ let processSpecials = (transactions, templates) => {
   });
 
   // 2. Process all interest accounts
-  transactions.filter(account => account.calcInterest).forEach(account => {
+  transactions.filter(account => account.interest).forEach(account => {
     // First applied date is the first date an interest debit/credit entry is created for
     let startDate = Moment(account.intFirstAppliedDate);
     let transDate = Moment(startDate);
     let endDate = Moment(account.closingDate); // Create entries until the end of the account
-    let periodType = account.intPeriodType;
-    let periodCnt = account.intPeriodCnt;
+    let periodType = account.periodType;
+    let periodCnt = account.periodCnt;
 
     while (transDate.isSameOrBefore(endDate, "day")) {
       transDate = transDate.add(periodCnt, periodType);
@@ -328,7 +352,7 @@ let updateBalance = (account, transactions) => {
     account.trans = newarray;
 
     let today = Moment();
-    let runningBalance = account.openingBal;
+    let runningBalance = account.amount;
     let balanceToday = runningBalance;
     if (Moment(account.openingDate).isAfter(today, "day")) balanceToday = 0;
 
@@ -362,8 +386,8 @@ let updateBalance = (account, transactions) => {
     //  Interest related set up
     //  =======================
     let totalInterest = 0;
-    let dbRate = account.calcInterest ? account.openingDbRate / 100 : 0;
-    let crRate = account.calcInterest ? account.openingCrRate / 100 : 0;
+    let dbRate = account.interest ? account.dbRate / 100 : 0;
+    let crRate = account.interest ? account.crRate / 100 : 0;
     let crRateToday = crRate;
     let dbRateToday = dbRate;
 
@@ -534,7 +558,7 @@ let updateBalance = (account, transactions) => {
       }
 
       // interest rate calculations
-      if (account.calcInterest) {
+      if (account.interest) {
         if (lineDate.isAfter(firstBaseInterestDate, "day")) {
           // calculate 'line interest' which is the interest calculated since the last line entry
           let daysDiff = lineDate.diff(prevInterestDate, "days");

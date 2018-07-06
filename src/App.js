@@ -5,6 +5,8 @@ import { Nav, Navbar, NavItem } from "react-bootstrap";
 import { LinkContainer } from "react-router-bootstrap";
 import Routes from "./Routes";
 import "./App.css";
+import { API } from "aws-amplify";
+
 
 class App extends Component {
   constructor(props) {
@@ -25,18 +27,25 @@ class App extends Component {
         const { attributes } = await Auth.currentUserInfo();
         this.userHasAuthenticated(true,attributes.email);
       }
+      const accs = await this.getAccounts();
+      this.setAccounts(accs);
     }
     catch (e) {
       if (e !== 'No current user') {
         alert(e);
       }
     }
+
     this.setState({ isAuthenticating: false });
   }
 
   userHasAuthenticated = (authenticated,user) => {
     this.setState({ isAuthenticated: authenticated });
     this.setState({ currentUser: user });
+  }
+
+  getAccounts() {
+    return API.get("accounts", "/accounts");
   }
 
   setAccounts = setacc => this.setState({accounts:setacc})
