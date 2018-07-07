@@ -23,7 +23,9 @@ export default class Template extends Component {
       description: "",
       amount: 0,
       startDate: Moment().format(),
-      endDate: Moment().add(10,"y").format(),
+      endDate: Moment()
+        .add(10, "y")
+        .format(),
       accountFromId: "",
       accountToId: "0",
       templateType: "Debit",
@@ -37,11 +39,12 @@ export default class Template extends Component {
 
   async componentDidMount() {
     try {
-      const accs = await this.getAccounts();
       let template;
       if (this.props.match.params.id === "new") {
         template = this.state;
-        template.accountFromId = accs[0].accountId;
+        template.accountFromId = this.props.accounts
+          ? this.props.accounts[0].accountId
+          : "0";
       } else {
         template = await this.getTemplate();
       }
@@ -59,7 +62,6 @@ export default class Template extends Component {
         templateId
       } = template;
       this.setState({
-        accs,
         accountFromId,
         accountToId,
         template,
@@ -79,17 +81,10 @@ export default class Template extends Component {
     }
   }
 
-getAccounts() {
-    return API.get("accounts", "/accounts");
-  }
-
   getTemplate() {
     return API.get("accounts", `/templates/${this.props.match.params.id}`);
   }
 
-  getTemplates() {
-    return API.get("accounts", "/templates");
-}
   saveTemplate(template) {
     return API.put("accounts", `/templates/${this.props.match.params.id}`, {
       body: template
@@ -129,7 +124,7 @@ getAccounts() {
       [event.target.id]: event.target.value,
       accountToId: "0"
     });
-  }
+  };
 
   handleStartDateChange = value => {
     this.setState({
@@ -151,11 +146,20 @@ getAccounts() {
     event.preventDefault();
 
     if (this.state.templateType === "CC") {
-      const templates = await this.getTemplates();
-      console.log(this.state.accountFromId,templates)
-      if (templates.find(x => x.accountFromId === this.state.accountFromId) && !this.state.templateId) {
-        alert(`Credit card template already exists for account '${this.state.accs.find(x => x.accountId === this.state.accountFromId).accName}'`);
-        return;
+      if (this.props.templates) {
+        if (
+          this.props.templates.find(x => x.accountFromId === this.state.accountFromId) &&
+          !this.state.templateId
+        ) {
+          alert(
+            `Credit card template already exists for account '${
+              this.props.accounts.find(
+                x => x.accountId === this.state.accountFromId
+              ).accName
+            }'`
+          );
+          return;
+        }
       }
     }
 
@@ -170,11 +174,20 @@ getAccounts() {
         description: this.state.description,
         amount: parseFloat(this.state.amount100).toFixed(2) * 100,
         startDate: Moment(this.state.startDate).format(),
-        endDate: this.state.templateType === "Zero" ? Moment(this.state.startDate).format() : Moment(this.state.endDate).format(),
+        endDate:
+          this.state.templateType === "Zero"
+            ? Moment(this.state.startDate).format()
+            : Moment(this.state.endDate).format(),
         templateType: this.state.templateType,
         periodType: this.state.periodType,
-        periodCnt: this.state.templateType !== "Zero" ? parseInt(this.state.periodCnt, 10) : 1,
-        periodLastDay: this.state.templateType === "CC" ? parseInt(this.state.periodLastDay, 10) : 0,
+        periodCnt:
+          this.state.templateType !== "Zero"
+            ? parseInt(this.state.periodCnt, 10)
+            : 1,
+        periodLastDay:
+          this.state.templateType === "CC"
+            ? parseInt(this.state.periodLastDay, 10)
+            : 0,
         accountFromId: this.state.accountFromId,
         accountToId: this.state.accountToId
       };
@@ -184,6 +197,7 @@ getAccounts() {
         await this.saveTemplate(templ);
       }
       this.setState({ isLoading: false });
+      await this.props.refreshTemplates();
       this.props.history.push("/templates");
     } catch (e) {
       alert(e);
@@ -206,6 +220,7 @@ getAccounts() {
 
     try {
       await this.deleteTemplate();
+      await this.props.refreshTemplates();
       this.props.history.push("/templates");
     } catch (e) {
       alert(e);
@@ -227,22 +242,19 @@ getAccounts() {
 
   getFreqValidationState() {
     if (this.state.periodCnt.length <= 0) return "error";
-    if (isNaN(parseInt(this.state.periodCnt, 10)))
-      return "error"
-    else
-      return "success";
+    if (isNaN(parseInt(this.state.periodCnt, 10))) return "error";
+    else return "success";
   }
 
   getLastPeriodDayValidationState() {
     if (this.state.templateType !== "CC") return "success";
     if (this.state.periodLastDay.length === 0) return "error";
-    if (isNaN(parseInt(this.state.periodLastDay, 10)))
-      return "error"
+    if (isNaN(parseInt(this.state.periodLastDay, 10))) return "error";
     let val = parseInt(this.state.periodLastDay, 10);
     if (val < 1 || val > 28) return "error";
     return "success";
   }
-  
+
   getStartDateValidationState() {
     if (this.state.startDate === null) return "error";
     return "success";
@@ -251,17 +263,23 @@ getAccounts() {
   getEndDateValidationState() {
     if (this.state.endDate === null) return "warning";
     if (this.state.startDate === null) return "warning";
-    if (Moment(this.state.endDate).isBefore(Moment(this.state.startDate), 'day'))
+    if (
+      Moment(this.state.endDate).isBefore(Moment(this.state.startDate), "day")
+    )
       return "error";
     return "success";
   }
 
   getToAccountValidationState() {
-    let partnerRequired = (this.state.templateType === "Transfer" || this.state.templateType === "CC");
-    if (partnerRequired && this.state.accountToId === "0") return "error";  // can't have transfer type without account
-    let partnerNotAllowed = (this.state.templateType === "Debit" || this.state.templateType === "Credit")
-    if (partnerNotAllowed && this.state.accountToId !== "0") return "error";  
-    if (this.state.accountFromId === this.state.accountToId) return "error";  // from account equals to account
+    let partnerRequired =
+      this.state.templateType === "Transfer" ||
+      this.state.templateType === "CC";
+    if (partnerRequired && this.state.accountToId === "0") return "error"; // can't have transfer type without account
+    let partnerNotAllowed =
+      this.state.templateType === "Debit" ||
+      this.state.templateType === "Credit";
+    if (partnerNotAllowed && this.state.accountToId !== "0") return "error";
+    if (this.state.accountFromId === this.state.accountToId) return "error"; // from account equals to account
     return "success";
   }
 
@@ -329,42 +347,47 @@ getAccounts() {
                 />
               </FormGroup>
               <FormGroup controlId="accountFromId" validationState="success">
-              <ControlLabel>Template Account</ControlLabel>
-              <FormControl
-                componentClass="select"
-                type="text"
-                value={this.state.accountFromId}
-                placeholder="Select account template applies to"
-                onChange={this.handleChange}
+                <ControlLabel>Template Account</ControlLabel>
+                <FormControl
+                  componentClass="select"
+                  type="text"
+                  value={this.state.accountFromId}
+                  placeholder="Select account template applies to"
+                  onChange={this.handleChange}
+                >
+                  {this.props.accounts.map(x => (
+                    <option key={x.accountId} value={x.accountId}>
+                      {x.accName}
+                    </option>
+                  ))}
+                </FormControl>
+              </FormGroup>
+              <FormGroup
+                controlId="accountToId"
+                validationState={this.getToAccountValidationState()}
               >
-                {this.state.accs.map(x => (
-                  <option key={x.accountId} value={x.accountId}>
-                    {x.accName}
+                <ControlLabel>Partner Account</ControlLabel>
+                <FormControl
+                  componentClass="select"
+                  type="text"
+                  value={this.state.accountToId}
+                  placeholder="Select partner account"
+                  onChange={this.handleChange}
+                  disabled={
+                    this.state.templateType === "Debit" ||
+                    this.state.templateType === "Credit"
+                  }
+                >
+                  <option key={0} value={0}>
+                    -
                   </option>
-                ))}
-              </FormControl>
-            </FormGroup>
-            <FormGroup controlId="accountToId" validationState={this.getToAccountValidationState()}>
-              <ControlLabel>Partner Account</ControlLabel>
-              <FormControl
-                componentClass="select"
-                type="text"
-                value={this.state.accountToId}
-                placeholder="Select partner account"
-                onChange={this.handleChange}
-                disabled={this.state.templateType === "Debit" || this.state.templateType === "Credit"}
-              >
-                <option key={0} value={0}>
-                  -
-              </option>
-                {this.state.accs.map(x => (
-                  <option key={x.accountId} value={x.accountId}>
-                    {x.accName}
-                  </option>
-                ))}
-              </FormControl>
-            </FormGroup>
-
+                  {this.props.accounts.map(x => (
+                    <option key={x.accountId} value={x.accountId}>
+                      {x.accName}
+                    </option>
+                  ))}
+                </FormControl>
+              </FormGroup>
             </Col>
             <Col sm={6}>
               <FormGroup
@@ -379,9 +402,12 @@ getAccounts() {
                     value={this.state.amount100}
                     placeholder="Enter transaction amount"
                     onChange={this.handleChange}
-                    disabled={this.state.templateType === "CC" || this.state.templateType === "Zero"}
+                    disabled={
+                      this.state.templateType === "CC" ||
+                      this.state.templateType === "Zero"
+                    }
                     onFocus={this.handleFocus}
-                    />
+                  />
                 </InputGroup>
 
                 <FormControl.Feedback />
@@ -403,7 +429,10 @@ getAccounts() {
                   <option value="d">Day</option>
                 </FormControl>
               </FormGroup>
-              <FormGroup controlId="periodCnt" validationState={this.getFreqValidationState()}>
+              <FormGroup
+                controlId="periodCnt"
+                validationState={this.getFreqValidationState()}
+              >
                 <ControlLabel>Frequency</ControlLabel>
                 <FormControl
                   type="text"
@@ -414,7 +443,10 @@ getAccounts() {
                   disabled={this.state.templateType === "Zero"}
                 />
               </FormGroup>
-              <FormGroup controlId="periodLastDay" validationState={this.getLastPeriodDayValidationState()}>
+              <FormGroup
+                controlId="periodLastDay"
+                validationState={this.getLastPeriodDayValidationState()}
+              >
                 <ControlLabel>Last Period Day</ControlLabel>
                 <FormControl
                   type="text"

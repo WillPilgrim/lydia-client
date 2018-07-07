@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { API } from "aws-amplify";
 import { Link } from "react-router-dom";
 import { PageHeader, ListGroup, ListGroupItem } from "react-bootstrap";
 import "./Home.css";
@@ -9,8 +8,7 @@ export default class Home extends Component {
     super(props);
 
     this.state = {
-      isLoading: true,
-      accounts: []
+      isLoading: true
     };
   }
 
@@ -20,17 +18,11 @@ export default class Home extends Component {
     }
 
     try {
-      let accounts = await this.accounts();
-      this.setState({ accounts });
     } catch (e) {
       alert(e);
     }
 
     this.setState({ isLoading: false });
-  }
-
-  accounts() {
-    return API.get("accounts", "/accounts");
   }
 
   handleAccountClick = event => {
@@ -84,7 +76,7 @@ export default class Home extends Component {
       <div className="accounts">
         <PageHeader>Your Accounts</PageHeader>
         <ListGroup>
-          {!this.state.isLoading && this.renderAccountsList(this.state.accounts)}
+          {!this.state.isLoading && this.renderAccountsList(this.props.accounts)}
         </ListGroup>
       </div>
     );

@@ -249,6 +249,7 @@ export default class Accounts extends Component {
         intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).format()
       }
       await this.saveAccount(acc);
+      await this.props.refreshAccounts();
       this.props.history.push("/");
     } catch (e) {
       alert(e);
@@ -271,6 +272,7 @@ export default class Accounts extends Component {
 
     try {
       await this.deleteAccount();
+      await this.props.refreshAccounts();
       this.props.history.push("/");
     } catch (e) {
       alert(e);

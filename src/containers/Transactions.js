@@ -9,21 +9,15 @@ import { Navbar, NavItem, Nav } from "react-bootstrap";
 import "./Transactions.css";
 import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
 import BootstrapTable from "react-bootstrap-table-next";
-import { API } from "aws-amplify";
 import Moment from "moment";
-import { testTransactions } from "../TestData/TestTrans";
-import { calculate, delfuture} from "../libs/calculate";
+import { calculate, deleteFutureAllTransactions } from "../libs/calculate";
 import { Storage } from "aws-amplify";
 
 export default class Transactions extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      isLoading: true,
-      templates: [],
-      transactions: [],
-      accs: [],
-      currentAcc: null
+      isLoading: true
     };
   }
 
@@ -32,60 +26,12 @@ export default class Transactions extends Component {
       return;
     }
     try {
-      // 3. get trans from props  [{id:1,trans:[]}]
-      // 4. if !trans
-      //       load trans from S3
-      //       verify accs in trans all exist in acc - error if not!
-      //       build trans using this.props.setTransactions
-      // 5. call calculate passing (acc,trans,templates)
-      // 6. setstate trans 
-
-
-
-
-      const accs = this.props.accounts;
-      const templates = await this.templates();
       let transAcc = this.props.transAcc;
-      if (!transAcc) {
-        transAcc = this.getTransactions();
-        // ToDo: need to verify evey account in transAcc exists in accs
-
-        // This will build out transAcc but leave accs and template
-
-        transAcc = calculate(accs,templates,transAcc);
-        this.props.setTransactions(transAcc)
-      }
-
-
-
-      this.setState({
-        templates,
-        transactions: transAcc,
-        currentAcc: accs[0].accountId
-      });
+      if (!transAcc) this.handleLoad();
     } catch (e) {
       alert(e);
     }
-
     this.setState({ isLoading: false });
-  }
-
-  getTransactions = () => {
-//    return testTransactions;
-    let key = "data.txt"
-    let transAcc = [];
-    // Storage.get(key, {level: 'private',download: true})
-    // .then(result => {
-    //   let res = new TextDecoder("utf-8").decode(result.Body);
-    //   transAcc = JSON.parse(res)
-
-    //   })
-    // .catch(err => console.log(err));
-    return transAcc;
-  }
-
-  templates() {
-    return API.get("accounts", "/templates");
   }
 
   dateFormatter = (cell, row) => {
@@ -150,62 +96,85 @@ export default class Transactions extends Component {
     }
   };
 
-  recalculate = () => {
-    this.setState({
-      transactions: calculate(this.state.transactions, this.state.templates)
-    });
+  handleRecalculate = () => {
+    this.props.setTransactions(
+      calculate(this.props.accounts, this.props.templates, this.props.transAcc)
+    );
   };
 
   handleAccountSelection = eventKey => {
-    this.setState({ currentAcc: eventKey });
+    this.props.setCurrentAccId(eventKey);
   };
 
   handleSave = () => {
-    delfuture(this.state.transactions);
-
-    let key = "data.txt"
-    Storage.put(key, JSON.stringify(this.state.transactions), {
-      level: 'private',
-      contentType: 'application/json'})
-      .then ( this.recalculate()
-//        this.setState({transactions: this.state.transactions})
-      )
+    //    console.log('Transactions:handleSave:About to delfuture',this.props.transAcc)
+    let dataToSave = deleteFutureAllTransactions(
+      this.props.accounts,
+      this.props.transAcc
+    );
+    let key = "data.txt";
+    Storage.put(key, JSON.stringify(dataToSave), {
+      level: "private",
+      contentType: "application/json"
+    })
+      .then(alert("Transactions saved successfully"))
       .catch(err => alert(err));
-    };
+  };
 
   handleLoad = () => {
-    let key = "data.txt"
+    let key = "data.txt";
     let transAcc = [];
-    Storage.get(key, {level: 'private',download: true})
-    .then(result => {
-      let res = new TextDecoder("utf-8").decode(result.Body);
-      transAcc = JSON.parse(res)
-
+    // if (this.state.isLoading) {
+    //   transAcc = calculate(
+    //     this.props.accounts,
+    //     this.props.templates,
+    //     transAcc
+    //   );
+    //   this.props.setTransactions(transAcc);
+    //   return;
+    // }
+    Storage.get(key, { level: "private", download: true })
+      .then(result => {
+        let res = new TextDecoder("utf-8").decode(result.Body);
+//        console.log("Transactions:handleLoad:Before calculate", res);
+        transAcc = calculate(
+          this.props.accounts,
+          this.props.templates,
+          JSON.parse(res)
+        );
+        this.props.setTransactions(transAcc);
       })
-    .catch(err => console.log(err));
-    this.setState({transactions:calculate(transAcc, this.state.templates)})
-    this.props.setTransactions(transAcc)
-
+      .catch(err => {
+        if (err.statusCode === 403) {
+          transAcc = calculate(
+            this.props.accounts,
+            this.props.templates,
+            transAcc
+          );
+          this.props.setTransactions(transAcc);
+        } else console.log(err);
+      });
   };
-//        {this.state.accs.map((x, index) => (
+
   render() {
-    let currAcc = this.state.transactions.find(
-      x => x.accountId === this.state.currentAcc
-    );
+    let currAcc;
+    if (this.props.transAcc)
+      currAcc = this.props.transAcc.find(
+        x => x.accountId === this.props.currentAccId
+      );
     return (
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
 
-        <div className="row">s
+        <div className="row">
           <div className="col-sm-8">
             <Navbar onSelect={this.handleAccountSelection}>
               <Nav>
                 {this.props.accounts.map((x, index) => (
-
                   <NavItem
                     key={x.accountId}
                     eventKey={x.accountId}
-                    active={x.accountId === this.state.currentAcc}
+                    active={x.accountId === this.props.currentAccId}
                   >
                     {x.accName}
                   </NavItem>
@@ -216,13 +185,17 @@ export default class Transactions extends Component {
           <div className="col-sm-4">
             <ButtonToolbar className="pull-right">
               <ButtonGroup>
-                <Button bsSize="large" onClick={this.handleLoad}>Load</Button>
-                <Button bsSize="large" onClick={this.handleSave}>Save</Button>
+                <Button bsSize="large" onClick={this.handleLoad}>
+                  Load
+                </Button>
+                <Button bsSize="large" onClick={this.handleSave}>
+                  Save
+                </Button>
               </ButtonGroup>
               <Button
                 bsStyle="success"
                 bsSize="large"
-                onClick={this.recalculate}
+                onClick={this.handleRecalculate}
               >
                 Recalculate
               </Button>
@@ -231,16 +204,17 @@ export default class Transactions extends Component {
         </div>
 
         <BootstrapTable
-          keyField="transactionId" maxHeight='120px'
+          keyField="transactionId"
+          maxHeight="120px"
           data={
-            this.state.currentAcc === null
+            !currAcc
               ? []
               : [
                   {
                     transactionId: 0,
                     date: currAcc.openingDate,
                     description: "Opening Balance",
-                    balance: currAcc.openingBal
+                    balance: currAcc.amount
                   },
                   ...currAcc.trans
                 ]

@@ -1,75 +1,62 @@
 import Moment from "moment";
 import { uuid } from "./utilities";
+import { testTransactions } from "../TestData/TestTrans";
 
-export const calculate = (accs, templates, transAcc) => {
-  // accs.forEach((acc) => {
-  //   let accInTrans = accs.find(x => x.accountId === acc.accountId);
-  //   if (!accInTrans) {
-  //     accInTrans = {accountId: acc.accountId, trans:[]};
-  //     transAcc.push(accInTrans);
-  //   }
-  //   accInTrans.accName = acc.accName;
-  //   accInTrans.description = acc.description;
-  //   accInTrans.openingDate = acc.openingDate;
-  //   accInTrans.closingDate = acc.closingDate;
-  //   accInTrans.amount = acc.amount;
-  //   accInTrans.crRate = acc.crRate;
-  //   accInTrans.dbRate = acc.dbRate;
-  //   accInTrans.interest = acc.interest;
-  //   accInTrans.periodType = acc.periodType;
-  //   accInTrans.periodCnt = acc.periodCnt;
-  //   accInTrans.intFirstAppliedDate = acc.intFirstAppliedDate;
-  // });
+const testData = false;
+const timings = false;
+const today = Moment();
 
-  let transactions = accs.map(acc => {
-    let ta = transAcc.find(x=>x.accountId === acc.AccountId);
-     return {trans: ta ? ta.trans : [],...acc};
-    });
+export const calculate = (accounts, templates, transAcc) => {
+  if (timings) console.time("Recalculation Total");
   // 1. Remove future transactions
-  console.log(transactions)
-  console.time("Recalculation Total");
-  console.time("delfuture");
-  delfuture(transactions);
-  console.timeEnd("delfuture");
+  if (timings) console.time("deleteFutureAllTransactions");
+  let transactions = deleteFutureAllTransactions(accounts, transAcc);
+  if (timings) console.timeEnd("deleteFutureAllTransactions");
   // 2. Process normal template transactions
-  console.time("processNormal");
+  if (timings) console.time("processNormal");
   processNormal(transactions, templates);
-  console.timeEnd("processNormal");
+  if (timings) console.timeEnd("processNormal");
   // 3. Calculate special template transactions
-  console.time("processSpecials");
+  if (timings) console.time("processSpecials");
   processSpecials(transactions, templates);
-  console.timeEnd("processSpecials");
+  if (timings) console.timeEnd("processSpecials");
   // 4. Update transaction balances
-  console.time("updateBalances");
+  if (timings) console.time("updateBalances");
   updateBalances(transactions);
-  console.timeEnd("updateBalances");
-  console.timeEnd("Recalculation Total");
-transactions.forEach(x => console.log(`Size of ${x.accName} is ${JSON.stringify(x.trans).length}`))
+  if (timings) console.timeEnd("updateBalances");
+  if (timings) console.timeEnd("Recalculation Total");
+  //transactions.forEach(x => console.log(`Size of ${x.accName} is ${JSON.stringify(x.trans).length}`))
   return transactions;
 };
 
-export const delfuture = transactions => {
-  // Delete future auto transactions.
-  // Not using the sorting and setting array length option. This method is order N which is very quick.
-  let today = Moment();
-  transactions.forEach(account => {
-    account.trans = account.trans.filter(
+export const deleteFutureAllTransactions = (accounts, transAcc) =>
+  accounts.map(account => {
+    // ToDo: need to verify evey account in transAcc exists in accs
+    //let today = Moment();
+    let ta = transAcc.find(x => x.accountId === account.accountId); // find corresponding transAcc entry for this account
+    let newTrans =[];
+    if (testData) {
+      let testAcc = testTransactions.find(tt => tt.accountId === account.accountId);
+      if (testAcc) newTrans = testAcc.trans;
+    }
+    let newAccount = { trans: ta ? ta.trans : newTrans, ...account }; // Build new account from Dynamo account plus trans
+    newAccount.trans = newAccount.trans.filter(
       item => !Moment(item.autogen).isAfter(today, "day")
     );
     // Initialise work variables
-    account.dirty = false;
-    account.currentBal = 0;
-    account.currentCrRate = 0;
-    account.currentDbRate = 0;
-    account.ccDates = [];
+    newAccount.dirty = false;
+    newAccount.currentBal = 0;
+    newAccount.currentCrRate = 0;
+    newAccount.currentDbRate = 0;
+    newAccount.ccDates = [];
+    return newAccount;
   });
-};
 
 let processNormal = (transactions, templates) => {
   // Hardcode inflation rate for now
 
   const inflation = 0.03;
-  let today = Moment();
+  //let today = Moment();
 
   templates
     .filter(
@@ -149,7 +136,7 @@ let processNormal = (transactions, templates) => {
 let processSpecials = (transactions, templates) => {
   // 1. Process all credit card accounts
 
-  let today = Moment();
+  //let today = Moment();
 
   templates.filter(t => t.templateType === "CC").forEach(template => {
     let account = transactions.find(
@@ -334,9 +321,9 @@ let updateBalance = (account, transactions) => {
   //	Sort given account and update balances
 
   if (account.dirty) {
-    console.time(`updateBalance for ${account.accName}`);
+    //console.time(`updateBalance for ${account.accName}`);
     // Sort all of the transactions by date
-    console.time("Sort time");
+    //console.time("Sort time");
     let newarray = account.trans.map(x => ({
       ...x,
       date: new Date(x.date).valueOf()
@@ -345,13 +332,13 @@ let updateBalance = (account, transactions) => {
     // //      (a, b) => Moment(a.date).valueOf() - Moment(b.date).valueOf()
     //       (a, b) => new Date(a.date) - new Date(b.date)
     //     );
-    console.timeEnd("Sort time");
-    console.time("Sort time 2");
+    //console.timeEnd("Sort time");
+    //console.time("Sort time 2");
     newarray.sort((a, b) => a.date - b.date);
-    console.timeEnd("Sort time 2");
+    //console.timeEnd("Sort time 2");
     account.trans = newarray;
 
-    let today = Moment();
+    //let today = Moment();
     let runningBalance = account.amount;
     let balanceToday = runningBalance;
     if (Moment(account.openingDate).isAfter(today, "day")) balanceToday = 0;
@@ -630,6 +617,6 @@ let updateBalance = (account, transactions) => {
     account.currentCrRate = crRateToday * 100;
     account.currentDbRate = dbRateToday * 100;
     account.dirty = false;
-    console.timeEnd(`updateBalance for ${account.accName}`);
+    //    console.timeEnd(`updateBalance for ${account.accName}`);
   }
 };

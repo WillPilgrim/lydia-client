@@ -7,7 +7,6 @@ import Routes from "./Routes";
 import "./App.css";
 import { API } from "aws-amplify";
 
-
 class App extends Component {
   constructor(props) {
     super(props);
@@ -17,7 +16,9 @@ class App extends Component {
       isAuthenticating: true,
       currentUser: "",
       accounts: null,
-      transAcc: null
+      currentAccId: null,
+      transAcc: null,
+      templates: null
     };
   }
 
@@ -25,13 +26,12 @@ class App extends Component {
     try {
       if (await Auth.currentSession()) {
         const { attributes } = await Auth.currentUserInfo();
-        this.userHasAuthenticated(true,attributes.email);
+        this.userHasAuthenticated(true, attributes.email);
       }
-      const accs = await this.getAccounts();
-      this.setAccounts(accs);
-    }
-    catch (e) {
-      if (e !== 'No current user') {
+      await this.refreshAccounts();
+      await this.refreshTemplates();
+    } catch (e) {
+      if (e !== "No current user") {
         alert(e);
       }
     }
@@ -39,76 +39,97 @@ class App extends Component {
     this.setState({ isAuthenticating: false });
   }
 
-  userHasAuthenticated = (authenticated,user) => {
+  userHasAuthenticated = (authenticated, user) => {
     this.setState({ isAuthenticated: authenticated });
     this.setState({ currentUser: user });
-  }
+  };
 
   getAccounts() {
     return API.get("accounts", "/accounts");
   }
 
-  setAccounts = setacc => this.setState({accounts:setacc})
-  
-  setTransactions = t => this.setState({transAcc: t})
+  getTemplates() {
+    return API.get("accounts", "/templates");
+  }
+
+  refreshTemplates = async () => {
+    const templates = await this.getTemplates();
+    this.setState({ templates });
+  };
+
+  refreshAccounts = async () => {
+    const accounts = await this.getAccounts();
+    this.setState({ accounts });
+    if (accounts) this.setCurrentAccId(accounts[0].accountId);
+  };
+
+  setTransactions = transAcc => this.setState({ transAcc });
+
+  setCurrentAccId = accId => this.setState({ currentAccId: accId });
 
   handleLogout = async event => {
     await Auth.signOut();
 
-    this.userHasAuthenticated(false,"");
+    this.userHasAuthenticated(false, "");
 
     this.props.history.push("/login");
-  }
+  };
 
   render() {
     const childProps = {
       isAuthenticated: this.state.isAuthenticated,
       userHasAuthenticated: this.userHasAuthenticated,
-      setAccounts:this.setAccounts,
-      accounts:this.state.accounts,
+      accounts: this.state.accounts,
+      templates: this.state.templates,
+      refreshAccounts: this.refreshAccounts,
+      refreshTemplates: this.refreshTemplates,
+      currentAccId: this.state.currentAccId,
+      setCurrentAccId: this.setCurrentAccId,
       setTransactions: this.setTransactions,
       transAcc: this.state.transAcc
     };
 
     return (
-      !this.state.isAuthenticating &&
-      <div className="App container">
-        <Navbar fluid collapseOnSelect>
-          <Navbar.Header>
-            <Navbar.Brand>
-              <Link to="/">Lydia</Link>
-            </Navbar.Brand>
-            <Navbar.Toggle />
-          </Navbar.Header>
-          <Navbar.Collapse>
-            <Nav pullRight>
-              {this.state.isAuthenticated
-                ? <Fragment>
-                  <LinkContainer to="/transactions">
-                    <NavItem>Transactions</NavItem>
-                  </LinkContainer>
-                  <LinkContainer to="/templates">
-                    <NavItem>Templates</NavItem>
-                  </LinkContainer>
-                  <LinkContainer to="/settings">
-                    <NavItem>{this.state.currentUser}</NavItem>
-                  </LinkContainer>
-                  <NavItem onClick={this.handleLogout}>Logout</NavItem>
-                </Fragment>
-                : <Fragment>
-                  <LinkContainer to="/signup">
-                    <NavItem>Signup</NavItem>
-                  </LinkContainer>
-                  <LinkContainer to="/login">
-                    <NavItem>Login</NavItem>
-                  </LinkContainer>
-                </Fragment>
-              }
-            </Nav>
-          </Navbar.Collapse>
-        </Navbar>
-        <Routes childProps={childProps} />
-      </div>
+      !this.state.isAuthenticating && (
+        <div className="App container">
+          <Navbar fluid collapseOnSelect>
+            <Navbar.Header>
+              <Navbar.Brand>
+                <Link to="/">Lydia</Link>
+              </Navbar.Brand>
+              <Navbar.Toggle />
+            </Navbar.Header>
+            <Navbar.Collapse>
+              <Nav pullRight>
+                {this.state.isAuthenticated ? (
+                  <Fragment>
+                    <LinkContainer to="/transactions">
+                      <NavItem>Transactions</NavItem>
+                    </LinkContainer>
+                    <LinkContainer to="/templates">
+                      <NavItem>Templates</NavItem>
+                    </LinkContainer>
+                    <LinkContainer to="/settings">
+                      <NavItem>{this.state.currentUser}</NavItem>
+                    </LinkContainer>
+                    <NavItem onClick={this.handleLogout}>Logout</NavItem>
+                  </Fragment>
+                ) : (
+                  <Fragment>
+                    <LinkContainer to="/signup">
+                      <NavItem>Signup</NavItem>
+                    </LinkContainer>
+                    <LinkContainer to="/login">
+                      <NavItem>Login</NavItem>
+                    </LinkContainer>
+                  </Fragment>
+                )}
+              </Nav>
+            </Navbar.Collapse>
+          </Navbar>
+          <Routes childProps={childProps} />
+        </div>
+      )
     );
   }
 }

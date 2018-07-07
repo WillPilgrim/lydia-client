@@ -3,7 +3,6 @@ import { PageHeader, ListGroup, ListGroupItem } from "react-bootstrap";
 import "./Templates.css";
 import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
 import BootstrapTable from "react-bootstrap-table-next";
-import { API } from "aws-amplify";
 import Moment from "moment";
 
 export default class Templates extends Component {
@@ -21,27 +20,18 @@ export default class Templates extends Component {
       return;
     }
     try {
-      const accs = await this.accounts();
-      const t1 = await this.templates();
+      const t1 = this.props.templates;
       const templates = t1.map(({ accountFromId: afid, accountToId: atid, ...rest }) => ({
-        accountFrom: accs.find(x => x.accountId === afid).accName,
-        accountTo: atid==="0"?"":accs.find(x => x.accountId === atid).accName,
+        accountFrom: this.props.accounts.find(x => x.accountId === afid).accName,
+        accountTo: atid==="0"?"":this.props.accounts.find(x => x.accountId === atid).accName,
         ...rest
       }));
-      this.setState({ templates, accs });
+      this.setState({ templates});
     } catch (e) {
       alert(e);
     }
 
     this.setState({ isLoading: false });
-  }
-
-  accounts() {
-    return API.get("accounts", "/accounts");
-  }
-
-  templates() {
-    return API.get("accounts", "/templates");
   }
 
   dateFormatter = (cell, row) => {

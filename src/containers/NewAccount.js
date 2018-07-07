@@ -201,11 +201,12 @@ export default class NewAccount extends Component {
         crRate: this.state.interest ? parseFloat(this.state.crRate).toFixed(2) : 0,
         dbRate: this.state.interest ? parseFloat(this.state.dbRate).toFixed(2) : 0,
         interest: this.state.interest,
-        periodType: this.state.interest ? this.state.periodType : "",
-        periodCnt: this.state.interest ? parseInt(this.state.periodCnt, 10) : 0,
+        periodType: this.state.interest ? this.state.periodType : "M",
+        periodCnt: this.state.interest ? parseInt(this.state.periodCnt, 10) : 1,
         intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).format()
 
       });
+      await this.props.refreshAccounts();
       this.props.history.push("/");
     } catch (e) {
       alert(e);
