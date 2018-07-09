@@ -5,18 +5,21 @@ import {
   ButtonToolbar,
   ButtonGroup
 } from "react-bootstrap";
-import { Navbar, NavItem, Nav } from "react-bootstrap";
+import { Navbar, NavItem, Nav, Tabs, Tab } from "react-bootstrap";
 import "./Transactions.css";
 import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
 import BootstrapTable from "react-bootstrap-table-next";
 import Moment from "moment";
 import { calculate, deleteFutureAllTransactions } from "../libs/calculate";
 import { Storage } from "aws-amplify";
+import ReactTable from "react-table";
+import "react-table/react-table.css";
 
 export default class Transactions extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      data: [],
       isLoading: true
     };
   }
@@ -28,6 +31,24 @@ export default class Transactions extends Component {
     try {
       let transAcc = this.props.transAcc;
       if (!transAcc) this.handleLoad();
+      else {
+        let data = [];
+        // Maybe redundant. Should make sure data is present before allowing a Save
+        let currAcc = transAcc.find(
+          x => x.accountId === this.props.currentAccId
+        );
+        if (currAcc)
+          data = [
+            {
+              transactionId: 0,
+              date: currAcc.openingDate,
+              description: "Opening Balance",
+              balance: currAcc.amount
+            },
+            ...currAcc.trans
+          ];
+        this.setState({ data });
+      }
     } catch (e) {
       alert(e);
     }
@@ -89,6 +110,28 @@ export default class Transactions extends Component {
     else return { textAlign: "right" };
   };
 
+  amountFormat = row => {
+    let val = parseInt(row.value, 10) / 100;
+    if (val) {
+      let st;
+      if (val < 0) st = { color: "red", textAlign: "right" };
+      else st = { textAlign: "right" };
+      return <div style={st}>{val.toFixed(2)}</div>;
+    }
+  };
+
+  balanceFormat = row => {
+    let val = parseInt(row.value, 10) / 100;
+    let st;
+    if (val < 0) st = { color: "red", textAlign: "right" };
+    else st = { textAlign: "right" };
+    return <div style={st}>{val.toFixed(2)}</div>;
+  };
+
+  dateFormat = row => {
+    if (row != null) return <div>{Moment(row.value).format("Do MMM YY")}</div>;
+  };
+
   rowEvents = {
     onClick: (e, row, rowIndex) => {
       e.preventDefault();
@@ -136,13 +179,32 @@ export default class Transactions extends Component {
     Storage.get(key, { level: "private", download: true })
       .then(result => {
         let res = new TextDecoder("utf-8").decode(result.Body);
-//        console.log("Transactions:handleLoad:Before calculate", res);
+        //        console.log("Transactions:handleLoad:Before calculate", res);
         transAcc = calculate(
           this.props.accounts,
           this.props.templates,
           JSON.parse(res)
         );
+        let data = [];
+        let currentAccId = 0;
+        // Maybe redundant. Should make sure data is present before allowing a Save
+        if (transAcc.length > 0) {
+          let currAcc = transAcc[0];
+          currentAccId = currAcc.accountId;
+          data = [
+            {
+              transactionId: 0,
+              date: currAcc.openingDate,
+              description: "Opening Balance",
+              balance: currAcc.amount
+            },
+            ...currAcc.trans
+          ];
+        }
+        this.setState({ data });
+
         this.props.setTransactions(transAcc);
+        this.props.setCurrentAccId(currentAccId);
       })
       .catch(err => {
         if (err.statusCode === 403) {
@@ -152,16 +214,70 @@ export default class Transactions extends Component {
             transAcc
           );
           this.props.setTransactions(transAcc);
+          let data = [];
+          let currentAccId = 0;
+          let currAcc;
+          if (transAcc) {
+            currAcc = transAcc[0];
+            currentAccId = currAcc.accountId;
+          }
+          if (currAcc)
+            data = [
+              {
+                transactionId: 0,
+                date: currAcc.openingDate,
+                description: "Opening Balance",
+                balance: currAcc.amount
+              },
+              ...currAcc.trans
+            ];
+          this.props.setCurrentAccId(currentAccId);
+          this.setState({ data });
         } else console.log(err);
       });
   };
 
-  render() {
+  handleTabSelect = eventKey => {
+    this.props.setCurrentAccId(eventKey);
+    let data = [];
     let currAcc;
     if (this.props.transAcc)
-      currAcc = this.props.transAcc.find(
-        x => x.accountId === this.props.currentAccId
-      );
+      currAcc = this.props.transAcc.find(x => x.accountId === eventKey);
+    if (currAcc)
+      data = [
+        {
+          transactionId: 0,
+          date: currAcc.openingDate,
+          description: "Opening Balance",
+          balance: currAcc.amount
+        },
+        ...currAcc.trans
+      ];
+    this.setState({ data });
+  };
+
+  render() {
+    let data = this.state.data;
+    //  if (!data) data =[];
+
+    // let currAcc;
+    // if (this.props.transAcc)
+    //   currAcc = this.props.transAcc.find(
+    //     x => x.accountId === this.props.currentAccId
+    //   );
+
+    // let data = !currAcc
+    //   ? []
+    //   : [
+    //       {
+    //         transactionId: 0,
+    //         date: currAcc.openingDate,
+    //         description: "Opening Balance",
+    //         balance: currAcc.amount
+    //       },
+    //       ...currAcc.trans
+    //     ];
+
     return (
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
@@ -202,26 +318,64 @@ export default class Transactions extends Component {
             </ButtonToolbar>
           </div>
         </div>
-
-        <BootstrapTable
-          keyField="transactionId"
-          maxHeight="120px"
-          data={
-            !currAcc
-              ? []
-              : [
+        <Tabs
+          defaultActiveKey={1}
+          animation={false}
+          activeKey={this.props.currentAccId}
+          onSelect={this.handleTabSelect}
+          id="trans-tab"
+        >
+          {this.props.accounts.map((x, index) => (
+            <Tab key={x.accountId} eventKey={x.accountId} title={x.accName}>
+              {/* <BootstrapTable
+                keyField="transactionId"
+                maxHeight="120px"
+                data={data}
+                columns={this.columns()}
+                rowEvents={this.rowEvents}
+              /> */}
+              <ReactTable
+                data={data}
+                columns={[
                   {
-                    transactionId: 0,
-                    date: currAcc.openingDate,
-                    description: "Opening Balance",
-                    balance: currAcc.amount
-                  },
-                  ...currAcc.trans
-                ]
-          }
-          columns={this.columns()}
-          rowEvents={this.rowEvents}
-        />
+                    columns: [
+                      {
+                        Header: "Date",
+                        accessor: "date",
+                        Cell: this.dateFormat
+                      },
+                      {
+                        Header: "Description",
+                        accessor: "description",
+                        width: 400
+                      },
+                      {
+                        Header: "Credit",
+                        accessor: "crAmount",
+                        Cell: this.amountFormat
+                      },
+                      {
+                        Header: "Debit",
+                        accessor: "dbAmount",
+                        Cell: this.amountFormat
+                      },
+                      {
+                        Header: "Balance",
+                        accessor: "balance",
+                        Cell: this.balanceFormat
+                      }
+                    ]
+                  }
+                ]}
+                defaultPageSize={100}
+                style={{
+                  height: "500px" // This will force the table body to overflow and scroll, since there is not enough room
+                }}
+                className="-striped -highlight"
+              />
+            </Tab>
+          ))}
+        </Tabs>
       </div>
     );
   }

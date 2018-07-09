@@ -67,6 +67,7 @@ miscellaneous
 - look at better table processing
     - scrolling within list
     - React Table looks like a good candidate
+- Check at least one account created before allowing Save
 
 Testing
 =======
