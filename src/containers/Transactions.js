@@ -5,15 +5,18 @@ import {
   ButtonToolbar,
   ButtonGroup
 } from "react-bootstrap";
-import { Navbar, NavItem, Nav, Tabs, Tab } from "react-bootstrap";
+import { Tabs, Tab } from "react-bootstrap";
 import "./Transactions.css";
 import "react-bootstrap-table-next/dist/react-bootstrap-table2.min.css";
-import BootstrapTable from "react-bootstrap-table-next";
+//import BootstrapTable from "react-bootstrap-table-next";
 import Moment from "moment";
-import { calculate, deleteFutureAllTransactions } from "../libs/calculate";
+import { calculate } from "../libs/calculate";
 import { Storage } from "aws-amplify";
-import ReactTable from "react-table";
+//import ReactTable from "react-table";
 import "react-table/react-table.css";
+import ReactDataGrid from "react-data-grid";
+// import { Formatters } from 'react-data-grid-addons';
+//const { DateRangeFormatter } = Formatters;
 
 export default class Transactions extends Component {
   constructor(props) {
@@ -23,14 +26,16 @@ export default class Transactions extends Component {
       isLoading: true
     };
   }
-
+  
   async componentDidMount() {
     if (!this.props.isAuthenticated) {
       return;
     }
     try {
       let transAcc = this.props.transAcc;
-      if (!transAcc) this.handleLoad();
+      if (!transAcc) {
+        this.handleLoad();
+      }
       else {
         let data = [];
         // Maybe redundant. Should make sure data is present before allowing a Save
@@ -52,12 +57,8 @@ export default class Transactions extends Component {
     } catch (e) {
       alert(e);
     }
-    this.setState({ isLoading: false });
+    this.setState({ isLoading: false});
   }
-
-  dateFormatter = (cell, row) => {
-    if (cell != null) return Moment(cell).format("Do MMM YY");
-  };
 
   columns = () => [
     {
@@ -95,6 +96,10 @@ export default class Transactions extends Component {
     }
   ];
 
+  rowGetter = (i) => {
+    return this.state.data[i];
+  };
+
   amountFormatter = cell => {
     let val = parseInt(cell, 10) / 100;
     if (val) return val.toFixed(2);
@@ -118,6 +123,7 @@ export default class Transactions extends Component {
       else st = { textAlign: "right" };
       return <div style={st}>{val.toFixed(2)}</div>;
     }
+    return <div />
   };
 
   balanceFormat = row => {
@@ -128,8 +134,12 @@ export default class Transactions extends Component {
     return <div style={st}>{val.toFixed(2)}</div>;
   };
 
-  dateFormat = row => {
-    if (row != null) return <div>{Moment(row.value).format("Do MMM YY")}</div>;
+  dateFormat = (row) => {
+    if (row != null) return <div style={{textAlign: "right"}}>{Moment(row.value).format("Do MMM YY")}</div>;
+  };
+
+  dateFormatter = (cell, row) => {
+    if (cell != null) return Moment(cell).format("Do MMM YY");
   };
 
   rowEvents = {
@@ -140,9 +150,24 @@ export default class Transactions extends Component {
   };
 
   handleRecalculate = () => {
-    this.props.setTransactions(
-      calculate(this.props.accounts, this.props.templates, this.props.transAcc)
-    );
+    let transAcc = calculate(this.props.accounts, this.props.templates, this.props.transAcc);
+    let data = [];
+    
+    if (transAcc.length > 0) {
+      let currAcc = transAcc[0];
+      data = [
+        {
+          transactionId: 0,
+          date: currAcc.openingDate,
+          description: "Opening Balance",
+          balance: currAcc.amount
+        },
+        ...currAcc.trans
+      ];
+    }
+    this.setState({ data });
+    this.props.setTransactions(transAcc);
+
   };
 
   handleAccountSelection = eventKey => {
@@ -151,10 +176,11 @@ export default class Transactions extends Component {
 
   handleSave = () => {
     //    console.log('Transactions:handleSave:About to delfuture',this.props.transAcc)
-    let dataToSave = deleteFutureAllTransactions(
-      this.props.accounts,
-      this.props.transAcc
-    );
+    // let dataToSave = deleteFutureAllTransactions(
+    //   this.props.accounts,
+    //   this.props.transAcc
+    // );
+    let dataToSave = this.props.transAcc;
     let key = "data.txt";
     Storage.put(key, JSON.stringify(dataToSave), {
       level: "private",
@@ -257,7 +283,7 @@ export default class Transactions extends Component {
   };
 
   render() {
-    let data = this.state.data;
+
     //  if (!data) data =[];
 
     // let currAcc;
@@ -277,47 +303,10 @@ export default class Transactions extends Component {
     //       },
     //       ...currAcc.trans
     //     ];
-
     return (
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
 
-        <div className="row">
-          <div className="col-sm-8">
-            <Navbar onSelect={this.handleAccountSelection}>
-              <Nav>
-                {this.props.accounts.map((x, index) => (
-                  <NavItem
-                    key={x.accountId}
-                    eventKey={x.accountId}
-                    active={x.accountId === this.props.currentAccId}
-                  >
-                    {x.accName}
-                  </NavItem>
-                ))}
-              </Nav>
-            </Navbar>
-          </div>
-          <div className="col-sm-4">
-            <ButtonToolbar className="pull-right">
-              <ButtonGroup>
-                <Button bsSize="large" onClick={this.handleLoad}>
-                  Load
-                </Button>
-                <Button bsSize="large" onClick={this.handleSave}>
-                  Save
-                </Button>
-              </ButtonGroup>
-              <Button
-                bsStyle="success"
-                bsSize="large"
-                onClick={this.handleRecalculate}
-              >
-                Recalculate
-              </Button>
-            </ButtonToolbar>
-          </div>
-        </div>
         <Tabs
           defaultActiveKey={1}
           animation={false}
@@ -334,7 +323,9 @@ export default class Transactions extends Component {
                 columns={this.columns()}
                 rowEvents={this.rowEvents}
               /> */}
-              <ReactTable
+
+
+              {/* <ReactTable
                 data={data}
                 columns={[
                   {
@@ -372,11 +363,63 @@ export default class Transactions extends Component {
                   height: "500px" // This will force the table body to overflow and scroll, since there is not enough room
                 }}
                 className="-striped -highlight"
-              />
+              /> */}
+
+                    <ReactDataGrid
+        columns={[
+          { key: 'date', name: 'Date',width:110, formatter: this.dateFormat },
+          { key: 'description', name: 'Description', width: 500},
+          { key: 'crAmount', name: 'Credit', width: 100, formatter: this.amountFormat }, 
+          { key: 'dbAmount', name: 'Debit', width: 100, formatter: this.amountFormat }, 
+          { key: 'balance', name: 'Balance', width: 100, formatter: this.balanceFormat } 
+        ]}
+        rowGetter={this.rowGetter}
+        rowsCount={this.state.data.length}
+//        scrollToRowIndex={sc}
+        minHeight={500}
+         />
             </Tab>
           ))}
         </Tabs>
+        <div className="row">
+          <div className="col-sm-8">
+            {/* <Navbar onSelect={this.handleAccountSelection}>
+              <Nav>
+                {this.props.accounts.map((x, index) => (
+                  <NavItem
+                    key={x.accountId}
+                    eventKey={x.accountId}
+                    active={x.accountId === this.props.currentAccId}
+                  >
+                    {x.accName}
+                  </NavItem>
+                ))}
+              </Nav>
+            </Navbar> */}
+          </div>
+          <div className="col-sm-4">
+            <ButtonToolbar className="pull-right">
+              <ButtonGroup>
+                <Button bsSize="large" onClick={this.handleLoad}>
+                  Load
+                </Button>
+                <Button bsSize="large" onClick={this.handleSave}>
+                  Save
+                </Button>
+              </ButtonGroup>
+              <Button
+                bsStyle="success"
+                bsSize="large"
+                onClick={this.handleRecalculate}
+              >
+                Recalculate
+              </Button>
+            </ButtonToolbar>
+          </div>
+        </div>
+
       </div>
     );
   }
+
 }
