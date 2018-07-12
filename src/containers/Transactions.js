@@ -264,7 +264,7 @@ export default class Transactions extends Component {
                 id="transGrid"
                 style={{
                   boxSizing: "border-box",
-                  height: "500px"
+                  height: "308px"
                 }}
                 className="ag-theme-bootstrap"
                 >
@@ -283,24 +283,23 @@ onGridReady={(params) => {console.log('===>',index);this.gridApi[x.accountId] = 
           ))}
         </Tabs>
         <div className="row">
-          <div className="col-sm-8">
+          <div className="col-sm-6">
           </div>
-          <div className="col-sm-4">
-            <ButtonToolbar className="pull-right">
+          <div className="col-sm-6">
+            <ButtonToolbar id="buttons" className="pull-right">
               <ButtonGroup>
-                <Button bsSize="large" onClick={this.handleInsert}>
+                <Button onClick={this.handleInsert}>
                     Insert
                 </Button>
-                <Button bsSize="large" onClick={this.handleLoad}>
+                <Button onClick={this.handleLoad}>
                   Load
                 </Button>
-                <Button bsSize="large" onClick={this.handleSave}>
+                <Button onClick={this.handleSave}>
                   Save
                 </Button>
               </ButtonGroup>
               <Button
                 bsStyle="success"
-                bsSize="large"
                 onClick={this.handleRecalculate}
               >
                 Recalculate
