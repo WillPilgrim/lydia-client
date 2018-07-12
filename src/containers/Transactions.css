@@ -9,3 +9,9 @@
 .Transactions .transactions p {
     color: #666;
   }
+
+ .ag-header-cell-label {
+    /* justify-content: center; */
+    font-weight: 600;
+    font-size:20px;
+ } 

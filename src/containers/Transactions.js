@@ -14,10 +14,12 @@ import { Storage } from "aws-amplify";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid/dist/styles/ag-grid.css";
 import "ag-grid/dist/styles/ag-theme-bootstrap.css";
+import { uuid } from "../libs/utilities";
 
 export default class Transactions extends Component {
   constructor(props) {
     super(props);
+    this.gridApi = [];
     this.state = {
       data: [],
       isLoading: true,
@@ -209,7 +211,7 @@ export default class Transactions extends Component {
       });
   };
 
-  handleTabSelect = eventKey => {
+  handleTabSelect = (eventKey) => {
     this.props.setCurrentAccId(eventKey);
     let data = [];
     let currAcc;
@@ -227,6 +229,22 @@ export default class Transactions extends Component {
       ];
     this.setState({ data });
   };
+
+  handleInsert = () => {
+    let newItem = {date:Moment(),id:uuid(),description:"XXXXXXXXXXXXXXXXX"};
+    let res = this.gridApi[this.props.currentAccId].updateRowData({
+      add: [newItem],
+      addIndex: 1
+    });
+    printResult(res);
+  };
+
+  onGridReady(params) {
+    console.log('==>',params)
+    this.gridApi = params.api;
+  }
+
+
 
   render() {
     return (
@@ -251,10 +269,15 @@ export default class Transactions extends Component {
                 className="ag-theme-bootstrap"
                 >
                 <AgGridReact
+                  headerHeight={30}
                   columnDefs={this.state.columnDefs}
                   rowData={this.state.data}
                   getRowStyle={this.getRowStyle}
-                />
+   //               onGridReady={this.onGridReady.bind(this)}
+//                  onGridReady={(params) => {console.log('===>',index);if (x.accountId === this.props.currentAccId) this.gridApi = params.api}}
+//onGridReady={(params) => {console.log('===>',index);this.gridApi.push(params.api)}}
+onGridReady={(params) => {console.log('===>',index);this.gridApi[x.accountId] = params.api}}
+/>
               </div>
             </Tab>
           ))}
@@ -265,6 +288,9 @@ export default class Transactions extends Component {
           <div className="col-sm-4">
             <ButtonToolbar className="pull-right">
               <ButtonGroup>
+                <Button bsSize="large" onClick={this.handleInsert}>
+                    Insert
+                </Button>
                 <Button bsSize="large" onClick={this.handleLoad}>
                   Load
                 </Button>
@@ -284,5 +310,24 @@ export default class Transactions extends Component {
         </div>
       </div>
     );
+  }
+}
+
+function printResult(res) {
+  console.log("---------------------------------------");
+  if (res.add) {
+    res.add.forEach(function(rowNode) {
+      console.log("Added Row Node", rowNode);
+    });
+  }
+  if (res.remove) {
+    res.remove.forEach(function(rowNode) {
+      console.log("Removed Row Node", rowNode);
+    });
+  }
+  if (res.update) {
+    res.update.forEach(function(rowNode) {
+      console.log("Updated Row Node", rowNode);
+    });
   }
 }
