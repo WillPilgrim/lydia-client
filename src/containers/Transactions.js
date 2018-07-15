@@ -21,6 +21,7 @@ export default class Transactions extends Component {
     super(props);
     this.gridApi = [];
     this.state = {
+//      components: { datePicker: getDatePicker() },
       isLoading: true,
       columnDefs: [
         {
@@ -29,22 +30,28 @@ export default class Transactions extends Component {
           filter: "agDateColumnFilter",
           width: 110,
           valueFormatter: this.dateFormatter,
-          cellStyle: { textAlign: "right" }
+          valueGetter: data => '2010-06-25',
+          cellStyle: { textAlign: "right" },
+          editable: true
         },
         {
           headerName: "Description",
           field: "description",
+          editable: true,
+          onCellValueChanged: data => console.log(data),
           width: 400
         },
         {
           headerName: "Credit",
           field: "crAmount",
           type: "numericColumn",
+          editable: true,
           valueFormatter: this.amountFormatter
         },
         {
           headerName: "Debit",
           field: "dbAmount",
+          editable: true,
           type: "numericColumn",
           valueFormatter: this.amountFormatter
         },
@@ -92,6 +99,7 @@ export default class Transactions extends Component {
     if (params.node.rowIndex === 0) {
       return { "font-weight": "bold" };
     }
+    if (!params.node.data.autogen) return { "font-style": "italic" };
   };
 
   handleRecalculate = () => {
@@ -149,17 +157,43 @@ export default class Transactions extends Component {
     this.props.setCurrentAccId(eventKey);
   };
 
-  handleInsert = () => {
-    let newItem = {
-      date: Moment(),
-      id: uuid(),
-      description: "XXXXXXXXXXXXXXXXX"
-    };
-    let res = this.gridApi[this.props.currentAccId].updateRowData({
-      add: [newItem],
-      addIndex: 1
-    });
-    // ToDo: Save result to underlying props.transAcc
+  handleDelete = () => {
+    let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
+    let transAcc = this.props.transAcc;
+    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+    let data = nodes[0].data;
+    acc.trans = acc.trans.filter(x => x.transactionId !== data.transactionId);
+    nodes[0].setData(data);
+    this.props.setTransactions(transAcc);
+    let params = { rowNodes: nodes };
+    this.gridApi[this.props.currentAccId].refreshCells(params);
+  };
+
+  handleManual = () => {
+    let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
+    let transAcc = this.props.transAcc;
+    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+    let data = nodes[0].data;
+    let transToUpdate = acc.trans.find(
+      x => x.transactionId === data.transactionId
+    );
+    data.autogen = null;
+    transToUpdate.autogen = null;
+    nodes[0].setData(data);
+    this.props.setTransactions(transAcc);
+    let params = { rowNodes: nodes };
+    this.gridApi[this.props.currentAccId].refreshCells(params);
+  };
+
+  updateRow = node => {
+    let transAcc = this.props.transAcc;
+    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+    let data = node.data;
+    let transToUpdate = acc.trans.find(
+      x => x.transactionId === data.transactionId
+    );
+    transToUpdate.description = data.description;
+    this.props.setTransactions(transAcc);
   };
 
   render() {
@@ -173,16 +207,31 @@ export default class Transactions extends Component {
       currAcc = this.props.transAcc.find(
         x => x.accountId === this.props.currentAccId
       );
-    if (currAcc)
+    if (currAcc) {
       data = [
         {
           transactionId: 0,
           date: currAcc.openingDate,
           description: "Opening Balance",
           balance: currAcc.amount
-        },
-        ...currAcc.trans
+        }
       ];
+      currAcc.trans.forEach(x => {
+        let newitem = { ...x };
+        data.push(newitem);
+      });
+    }
+    if (this.gridApi[this.props.currentAccId])
+      this.gridApi[this.props.currentAccId].setRowData(data);
+    // data = [
+    //   {
+    //     transactionId: 0,
+    //     date: currAcc.openingDate,
+    //     description: "Opening Balance",
+    //     balance: currAcc.amount
+    //   },
+    //  ...currAcc.trans
+    // ];
     return (
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
@@ -204,10 +253,37 @@ export default class Transactions extends Component {
                 <AgGridReact
                   headerHeight={30}
                   columnDefs={this.state.columnDefs}
-                  rowData={data}
+                  //               rowData={data}
+                  //               editType="fullRow"
+                  rowSelection="single"
+                  onCellEditingStopped={this.updateRow}
+                  rowDeselection={true}
+                  deltaRowDataMode={true}
+                  components={this.state.components}
+                  getRowNodeId={data => data.transactionId}
                   getRowStyle={this.getRowStyle}
+                  isRowSelectable={node => node.data.transactionId !== 0}
                   onGridReady={params => {
                     this.gridApi[x.accountId] = params.api;
+
+                    let data = [];
+                    let currAcc;
+                    if (this.props.transAcc)
+                      currAcc = this.props.transAcc.find(
+                        x => x.accountId === this.props.currentAccId
+                      );
+                    if (currAcc)
+                      data = [
+                        {
+                          transactionId: 0,
+                          date: currAcc.openingDate,
+                          description: "Opening Balance",
+                          balance: currAcc.amount
+                        },
+                        ...currAcc.trans
+                      ];
+
+                    params.api.setRowData(data);
                   }}
                 />
               </div>
@@ -219,7 +295,8 @@ export default class Transactions extends Component {
           <div className="col-sm-6">
             <ButtonToolbar id="buttons" className="pull-right">
               <ButtonGroup>
-                <Button onClick={this.handleInsert}>Insert</Button>
+                <Button onClick={this.handleDelete}>Delete</Button>
+                <Button onClick={this.handleManual}>Manual</Button>
                 <Button onClick={this.handleLoad}>Load</Button>
                 <Button onClick={this.handleSave}>Save</Button>
               </ButtonGroup>
@@ -233,3 +310,27 @@ export default class Transactions extends Component {
     );
   }
 }
+
+// function getDatePicker() {
+//   function Datepicker() {}
+//   Datepicker.prototype.init = function(params) {
+//     this.eInput = document.createElement("input");
+//     this.eInput.value = params.value;
+//     $(this.eInput).datepicker({ dateFormat: "dd/mm/yy" });
+//   };
+//   Datepicker.prototype.getGui = function() {
+//     return this.eInput;
+//   };
+//   Datepicker.prototype.afterGuiAttached = function() {
+//     this.eInput.focus();
+//     this.eInput.select();
+//   };
+//   Datepicker.prototype.getValue = function() {
+//     return this.eInput.value;
+//   };
+//   Datepicker.prototype.destroy = function() {};
+//   Datepicker.prototype.isPopup = function() {
+//     return false;
+//   };
+//   return Datepicker;
+// }

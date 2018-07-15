@@ -63,7 +63,7 @@ class App extends Component {
     if (accounts) this.setCurrentAccId(accounts[0].accountId);
   };
 
-  setTransactions = transAcc => this.setState({ transAcc });
+  setTransactions = transAcc => this.setState({ transAcc })
 
   setCurrentAccId = accId => this.setState({ currentAccId: accId });
 
