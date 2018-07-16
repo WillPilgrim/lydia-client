@@ -31,7 +31,9 @@ export default class Home extends Component {
   }
 
   renderAccountsList(accounts) {
-    return [{}].concat(accounts).map(
+    let acclist = [{}]
+    if (accounts) acclist = acclist.concat(accounts)
+    return acclist.map(
       (account, i) =>
         i !== 0
           ? <ListGroupItem

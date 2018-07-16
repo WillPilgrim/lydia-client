@@ -207,6 +207,7 @@ export default class NewAccount extends Component {
 
       });
       await this.props.refreshAccounts();
+      this.props.setRecalcRequired(false)
       this.props.history.push("/");
     } catch (e) {
       alert(e);

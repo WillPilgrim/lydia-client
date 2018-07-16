@@ -198,6 +198,7 @@ export default class Template extends Component {
       }
       this.setState({ isLoading: false });
       await this.props.refreshTemplates();
+      this.props.setRecalcRequired(true)
       this.props.history.push("/templates");
     } catch (e) {
       alert(e);
@@ -221,6 +222,7 @@ export default class Template extends Component {
     try {
       await this.deleteTemplate();
       await this.props.refreshTemplates();
+      this.props.setRecalcRequired(true)
       this.props.history.push("/templates");
     } catch (e) {
       alert(e);

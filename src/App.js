@@ -18,7 +18,9 @@ class App extends Component {
       accounts: null,
       currentAccId: null,
       transAcc: null,
-      templates: null
+      templates: null,
+      recalcRequired: false,
+      saveRequired: false
     };
   }
 
@@ -44,6 +46,18 @@ class App extends Component {
     this.setState({ currentUser: user });
   };
 
+  clearState = () => {
+    this.userHasAuthenticated(false, "");
+    this.setState({
+      accounts: null,
+      currentAccId: null,
+      transAcc: null,
+      templates: null,
+      recalcRequired: false,
+      saveRequired: false
+    })
+  }
+
   getAccounts() {
     return API.get("accounts", "/accounts");
   }
@@ -60,18 +74,20 @@ class App extends Component {
   refreshAccounts = async () => {
     const accounts = await this.getAccounts();
     this.setState({ accounts });
-    if (accounts) this.setCurrentAccId(accounts[0].accountId);
+    if (accounts.length) this.setCurrentAccId(accounts[0].accountId);
   };
 
   setTransactions = transAcc => this.setState({ transAcc })
 
   setCurrentAccId = accId => this.setState({ currentAccId: accId });
 
+  setRecalcRequired = recalc => this.setState({recalcRequired: recalc})
+
+  setSaveRequired = save => this.setState({saveRequired: save})
+
   handleLogout = async event => {
     await Auth.signOut();
-
-    this.userHasAuthenticated(false, "");
-
+    this.clearState();
     this.props.history.push("/login");
   };
 
@@ -86,7 +102,11 @@ class App extends Component {
       currentAccId: this.state.currentAccId,
       setCurrentAccId: this.setCurrentAccId,
       setTransactions: this.setTransactions,
-      transAcc: this.state.transAcc
+      setRecalcRequired: this.setRecalcRequired,
+      setSaveRequired: this.setSaveRequired,
+      transAcc: this.state.transAcc,
+      recalcRequired: this.state.recalcRequired,
+      saveRequired: this.state.saveRequired
     };
 
     return (
@@ -115,15 +135,15 @@ class App extends Component {
                     <NavItem onClick={this.handleLogout}>Logout</NavItem>
                   </Fragment>
                 ) : (
-                  <Fragment>
-                    <LinkContainer to="/signup">
-                      <NavItem>Signup</NavItem>
-                    </LinkContainer>
-                    <LinkContainer to="/login">
-                      <NavItem>Login</NavItem>
-                    </LinkContainer>
-                  </Fragment>
-                )}
+                    <Fragment>
+                      <LinkContainer to="/signup">
+                        <NavItem>Signup</NavItem>
+                      </LinkContainer>
+                      <LinkContainer to="/login">
+                        <NavItem>Login</NavItem>
+                      </LinkContainer>
+                    </Fragment>
+                  )}
               </Nav>
             </Navbar.Collapse>
           </Navbar>

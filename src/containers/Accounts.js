@@ -250,6 +250,7 @@ export default class Accounts extends Component {
       }
       await this.saveAccount(acc);
       await this.props.refreshAccounts();
+      this.props.setRecalcRequired(true)
       this.props.history.push("/");
     } catch (e) {
       alert(e);
@@ -273,6 +274,7 @@ export default class Accounts extends Component {
     try {
       await this.deleteAccount();
       await this.props.refreshAccounts();
+      this.props.setRecalcRequired(false)
       this.props.history.push("/");
     } catch (e) {
       alert(e);

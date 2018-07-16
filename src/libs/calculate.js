@@ -25,7 +25,6 @@ export const calculate = (accounts, templates, transAcc) => {
   updateBalances(transactions);
   if (timings) console.timeEnd("updateBalances");
   if (timings) console.timeEnd("Recalculation Total");
-  //transactions.forEach(x => console.log(`Size of ${x.accName} is ${JSON.stringify(x.trans).length}`))
   return transactions;
 };
 

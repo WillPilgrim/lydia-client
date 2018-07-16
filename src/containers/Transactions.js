@@ -90,9 +90,7 @@ export default class Transactions extends Component {
   }
 
   onAmountChanged = params => {
-    console.log('Before==>',params)
     if (isNaN(params.newValue)) this.gridApi[this.props.currentAccId].stopEditing(true);
-    console.log('After==>',params)
   }
 
    amountParser = params => {
@@ -127,6 +125,8 @@ export default class Transactions extends Component {
       this.props.transAcc
     );
     this.props.setTransactions(transAcc);
+    this.props.setSaveRequired(true)
+    this.props.setRecalcRequired(false)
   };
 
   handleSave = () => {
@@ -155,6 +155,8 @@ export default class Transactions extends Component {
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
         this.props.setTransactions(transAcc);
         this.props.setCurrentAccId(currentAccId);
+        this.props.setSaveRequired(false)
+        this.props.setRecalcRequired(false)
       })
       .catch(err => {
         if (err.statusCode === 403) {
@@ -167,6 +169,8 @@ export default class Transactions extends Component {
           if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
           this.props.setCurrentAccId(currentAccId);
           this.props.setTransactions(transAcc);
+          this.props.setSaveRequired(false)
+          this.props.setRecalcRequired(false)
         } else console.log(err);
       });
   };
@@ -199,6 +203,8 @@ export default class Transactions extends Component {
     transToUpdate.autogen = null;
     nodes[0].setData(data);
     this.props.setTransactions(transAcc);
+    this.props.setRecalcRequired(true)
+    this.props.setSaveRequired(true)
     let params = { rowNodes: nodes };
     this.gridApi[this.props.currentAccId].refreshCells(params);
   };
@@ -215,12 +221,14 @@ export default class Transactions extends Component {
     transToUpdate.crAmount = data.crAmount;
     transToUpdate.dbAmount = data.dbAmount;
     this.props.setTransactions(transAcc);
+    this.props.setRecalcRequired(true)
+    this.props.setSaveRequired(true)
   };
 
   render() {
     let h =
       Math.max(document.documentElement.clientHeight, window.innerHeight || 0) -
-      284;
+      280;
     let divStyle = { boxSizing: "border-box", height: `${h}px` };
     let data = [];
     let currAcc;
@@ -321,7 +329,7 @@ export default class Transactions extends Component {
                 <Button onClick={this.handleLoad}>Load</Button>
                 <Button onClick={this.handleSave}>Save</Button>
               </ButtonGroup>
-              <Button bsStyle="success" onClick={this.handleRecalculate}>
+              <Button bsStyle={this.props.recalcRequired ? "success" : "primary"} onClick={this.handleRecalculate}>
                 Recalculate
               </Button>
             </ButtonToolbar>
