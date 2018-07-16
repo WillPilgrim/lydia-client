@@ -30,29 +30,33 @@ export default class Transactions extends Component {
           filter: "agDateColumnFilter",
           width: 110,
           valueFormatter: this.dateFormatter,
-          valueGetter: data => '2010-06-25',
           cellStyle: { textAlign: "right" },
-          editable: true
+          editable: this.rowEditable
         },
         {
           headerName: "Description",
           field: "description",
-          editable: true,
-          onCellValueChanged: data => console.log(data),
+          editable: this.rowEditable,
           width: 400
         },
         {
           headerName: "Credit",
           field: "crAmount",
           type: "numericColumn",
-          editable: true,
+          editable: this.rowEditable,
+          cellEditor: 'agTextCellEditor',
+          cellEditorParams: { useFormatter: true},
+          valueParser: this.amountParser,
           valueFormatter: this.amountFormatter
         },
         {
           headerName: "Debit",
           field: "dbAmount",
-          editable: true,
+          editable: this.rowEditable,
           type: "numericColumn",
+          cellEditor: 'agTextCellEditor',
+          cellEditorParams: { useFormatter: true},
+          valueParser: this.amountParser,
           valueFormatter: this.amountFormatter
         },
         {
@@ -85,6 +89,18 @@ export default class Transactions extends Component {
     this.setState({ isLoading: false });
   }
 
+  onAmountChanged = params => {
+    console.log('Before==>',params)
+    if (isNaN(params.newValue)) this.gridApi[this.props.currentAccId].stopEditing(true);
+    console.log('After==>',params)
+  }
+
+   amountParser = params => {
+     let val = Number(params.newValue);
+     if (isNaN(val)) return params.oldValue
+     else return Math.floor(val * 100)
+   }
+
   amountFormatter = params => {
     let val = parseInt(params.value, 10) / 100;
     if (val) return val.toFixed(2);
@@ -101,6 +117,8 @@ export default class Transactions extends Component {
     }
     if (!params.node.data.autogen) return { "font-style": "italic" };
   };
+
+  rowEditable = node => node.data.transactionId !== 0
 
   handleRecalculate = () => {
     let transAcc = calculate(
@@ -193,6 +211,9 @@ export default class Transactions extends Component {
       x => x.transactionId === data.transactionId
     );
     transToUpdate.description = data.description;
+    transToUpdate.date = data.date;
+    transToUpdate.crAmount = data.crAmount;
+    transToUpdate.dbAmount = data.dbAmount;
     this.props.setTransactions(transAcc);
   };
 

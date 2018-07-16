@@ -337,6 +337,7 @@ let updateBalance = (account, transactions) => {
     newarray.sort((a, b) => a.date - b.date);
     //console.timeEnd("Sort time 2");
     account.trans = newarray;
+    account.trans.forEach(x => x.date = new Date(x.date).toISOString().split('T')[0])
 
     //let today = Moment();
     let runningBalance = account.amount;
