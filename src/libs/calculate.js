@@ -43,7 +43,7 @@ export const deleteFutureAllTransactions = (accounts, transAcc) =>
       item => !Moment(item.autogen).isAfter(today, "day")
     );
     // Initialise work variables
-    newAccount.dirty = false;
+    newAccount.dirty = true;
     newAccount.currentBal = 0;
     newAccount.currentCrRate = 0;
     newAccount.currentDbRate = 0;

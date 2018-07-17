@@ -281,6 +281,10 @@ export default class Accounts extends Component {
       this.setState({ isDeleting: false });
     }
   }
+  
+  handleFocus = event => {
+    event.target.select();
+  }
 
   render() {
     return (
@@ -350,6 +354,7 @@ export default class Accounts extends Component {
                   value={this.state.amount100}
                   placeholder="Enter an opening balance"
                   onChange={this.handleChange}
+                  onFocus={this.handleFocus}
                 />
               </InputGroup>
               <FormControl.Feedback />
@@ -378,6 +383,7 @@ export default class Accounts extends Component {
                     placeholder="Credit interest rate"
                     onChange={this.handleChange}
                     disabled={!this.state.interest}
+                    onFocus={this.handleFocus}
                   />
                 </InputGroup>
                 <FormControl.Feedback />
@@ -395,6 +401,7 @@ export default class Accounts extends Component {
                     placeholder="Debit interest rate"
                     onChange={this.handleChange}
                     disabled={!this.state.interest}
+                    onFocus={this.handleFocus}
                   />
                 </InputGroup>
                 <FormControl.Feedback />
@@ -442,6 +449,7 @@ export default class Accounts extends Component {
                   placeholder="Number of periods"
                   onChange={this.handleChange}
                   disabled={!this.state.interest}
+                  onFocus={this.handleFocus}
                 />
               </FormGroup>
 

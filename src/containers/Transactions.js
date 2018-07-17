@@ -136,7 +136,8 @@ export default class Transactions extends Component {
       level: "private",
       contentType: "application/json"
     })
-      .then(alert("Transactions saved successfully"))
+      .then(result => {this.props.setSaveRequired(false);
+      alert("Transactions saved successfully")})
       .catch(err => alert(err));
   };
 

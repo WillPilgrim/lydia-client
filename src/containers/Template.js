@@ -148,8 +148,8 @@ export default class Template extends Component {
     if (this.state.templateType === "CC") {
       if (this.props.templates) {
         if (
-          this.props.templates.find(x => x.accountFromId === this.state.accountFromId) &&
-          !this.state.templateId
+          this.props.templates.find(x => x.accountFromId === this.state.accountFromId && x.templateType === "CC" &&
+          this.state.templateId !== x.templateId)
         ) {
           alert(
             `Credit card template already exists for account '${

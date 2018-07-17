@@ -197,7 +197,7 @@ export default class NewAccount extends Component {
         description: this.state.description,
         openingDate: Moment(this.state.openingDate).format(),
         closingDate: Moment(this.state.closingDate).format(),
-        amount: parseFloat(this.state.amount100).toFixed(2) * 100,
+        amount: Math.floor(parseFloat(this.state.amount100) * 100),
         crRate: this.state.interest ? parseFloat(this.state.crRate).toFixed(2) : 0,
         dbRate: this.state.interest ? parseFloat(this.state.dbRate).toFixed(2) : 0,
         interest: this.state.interest,
@@ -206,14 +206,19 @@ export default class NewAccount extends Component {
         intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).format()
 
       });
+      this.props.setTransactions(null)
       await this.props.refreshAccounts();
-      this.props.setRecalcRequired(false)
+      this.props.setRecalcRequired(true)
       this.props.history.push("/");
     } catch (e) {
       alert(e);
       this.setState({ isLoading: false });
     }
-  };
+  }
+
+  handleFocus = event => {
+    event.target.select();
+  }
 
   render() {
     return (
@@ -282,6 +287,7 @@ export default class NewAccount extends Component {
                 value={this.state.amount100}
                 placeholder="Enter an opening balance"
                 onChange={this.handleChange}
+                onFocus={this.handleFocus}
               />
             </InputGroup>
             <FormControl.Feedback />
@@ -311,6 +317,7 @@ export default class NewAccount extends Component {
                   placeholder="Credit interest rate"
                   onChange={this.handleChange}
                   disabled={!this.state.interest}
+                  onFocus={this.handleFocus}
                 />
               </InputGroup>
               <FormControl.Feedback />
@@ -328,6 +335,7 @@ export default class NewAccount extends Component {
                   placeholder="Debit interest rate"
                   onChange={this.handleChange}
                   disabled={!this.state.interest}
+                  onFocus={this.handleFocus}
                 />
               </InputGroup>
               <FormControl.Feedback />
