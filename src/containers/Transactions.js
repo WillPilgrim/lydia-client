@@ -21,7 +21,6 @@ export default class Transactions extends Component {
     super(props);
     this.gridApi = [];
     this.state = {
-//      components: { datePicker: getDatePicker() },
       isLoading: true,
       columnDefs: [
         {
@@ -44,8 +43,8 @@ export default class Transactions extends Component {
           field: "crAmount",
           type: "numericColumn",
           editable: this.rowEditable,
-          cellEditor: 'agTextCellEditor',
-          cellEditorParams: { useFormatter: true},
+          cellEditor: "agTextCellEditor",
+          cellEditorParams: { useFormatter: true },
           valueParser: this.amountParser,
           valueFormatter: this.amountFormatter
         },
@@ -54,8 +53,8 @@ export default class Transactions extends Component {
           field: "dbAmount",
           editable: this.rowEditable,
           type: "numericColumn",
-          cellEditor: 'agTextCellEditor',
-          cellEditorParams: { useFormatter: true},
+          cellEditor: "agTextCellEditor",
+          cellEditorParams: { useFormatter: true },
           valueParser: this.amountParser,
           valueFormatter: this.amountFormatter
         },
@@ -90,14 +89,15 @@ export default class Transactions extends Component {
   }
 
   onAmountChanged = params => {
-    if (isNaN(params.newValue)) this.gridApi[this.props.currentAccId].stopEditing(true);
-  }
+    if (isNaN(params.newValue))
+      this.gridApi[this.props.currentAccId].stopEditing(true);
+  };
 
-   amountParser = params => {
-     let val = Number(params.newValue);
-     if (isNaN(val)) return params.oldValue
-     else return Math.floor(val * 100)
-   }
+  amountParser = params => {
+    let val = Number(params.newValue);
+    if (isNaN(val)) return params.oldValue;
+    else return Math.floor(val * 100);
+  };
 
   amountFormatter = params => {
     let val = parseInt(params.value, 10) / 100;
@@ -116,7 +116,7 @@ export default class Transactions extends Component {
     if (!params.node.data.autogen) return { "font-style": "italic" };
   };
 
-  rowEditable = node => node.data.transactionId !== 0
+  rowEditable = node => node.data.transactionId !== 0;
 
   handleRecalculate = () => {
     let transAcc = calculate(
@@ -125,8 +125,8 @@ export default class Transactions extends Component {
       this.props.transAcc
     );
     this.props.setTransactions(transAcc);
-    this.props.setSaveRequired(true)
-    this.props.setRecalcRequired(false)
+    this.props.setSaveRequired(true);
+    this.props.setRecalcRequired(false);
   };
 
   handleSave = () => {
@@ -155,8 +155,8 @@ export default class Transactions extends Component {
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
         this.props.setTransactions(transAcc);
         this.props.setCurrentAccId(currentAccId);
-        this.props.setSaveRequired(false)
-        this.props.setRecalcRequired(false)
+        this.props.setSaveRequired(false);
+        this.props.setRecalcRequired(false);
       })
       .catch(err => {
         if (err.statusCode === 403) {
@@ -169,8 +169,8 @@ export default class Transactions extends Component {
           if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
           this.props.setCurrentAccId(currentAccId);
           this.props.setTransactions(transAcc);
-          this.props.setSaveRequired(false)
-          this.props.setRecalcRequired(false)
+          this.props.setSaveRequired(false);
+          this.props.setRecalcRequired(false);
         } else console.log(err);
       });
   };
@@ -181,32 +181,36 @@ export default class Transactions extends Component {
 
   handleDelete = () => {
     let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
-    let transAcc = this.props.transAcc;
-    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
-    let data = nodes[0].data;
-    acc.trans = acc.trans.filter(x => x.transactionId !== data.transactionId);
-    nodes[0].setData(data);
-    this.props.setTransactions(transAcc);
-    let params = { rowNodes: nodes };
-    this.gridApi[this.props.currentAccId].refreshCells(params);
+    if (nodes.length) {
+      let transAcc = this.props.transAcc;
+      let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+      let data = nodes[0].data;
+      acc.trans = acc.trans.filter(x => x.transactionId !== data.transactionId);
+      nodes[0].setData(data);
+      this.props.setTransactions(transAcc);
+      let params = { rowNodes: nodes };
+      this.gridApi[this.props.currentAccId].refreshCells(params);
+    }
   };
 
   handleManual = () => {
     let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
-    let transAcc = this.props.transAcc;
-    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
-    let data = nodes[0].data;
-    let transToUpdate = acc.trans.find(
-      x => x.transactionId === data.transactionId
-    );
-    data.autogen = null;
-    transToUpdate.autogen = null;
-    nodes[0].setData(data);
-    this.props.setTransactions(transAcc);
-    this.props.setRecalcRequired(true)
-    this.props.setSaveRequired(true)
-    let params = { rowNodes: nodes };
-    this.gridApi[this.props.currentAccId].refreshCells(params);
+    if (nodes.length) {
+      let transAcc = this.props.transAcc;
+      let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+      let data = nodes[0].data;
+      let transToUpdate = acc.trans.find(
+        x => x.transactionId === data.transactionId
+      );
+      data.autogen = null;
+      transToUpdate.autogen = null;
+      nodes[0].setData(data);
+      this.props.setTransactions(transAcc);
+      this.props.setRecalcRequired(true);
+      this.props.setSaveRequired(true);
+      let params = { rowNodes: nodes };
+      this.gridApi[this.props.currentAccId].refreshCells(params);
+    }
   };
 
   updateRow = node => {
@@ -221,8 +225,8 @@ export default class Transactions extends Component {
     transToUpdate.crAmount = data.crAmount;
     transToUpdate.dbAmount = data.dbAmount;
     this.props.setTransactions(transAcc);
-    this.props.setRecalcRequired(true)
-    this.props.setSaveRequired(true)
+    this.props.setRecalcRequired(true);
+    this.props.setSaveRequired(true);
   };
 
   render() {
@@ -327,9 +331,17 @@ export default class Transactions extends Component {
                 <Button onClick={this.handleDelete}>Delete</Button>
                 <Button onClick={this.handleManual}>Manual</Button>
                 <Button onClick={this.handleLoad}>Load</Button>
-                <Button onClick={this.handleSave}>Save</Button>
+                <Button
+                  bsStyle={this.props.saveRequired ? "warning" : "default"}
+                  onClick={this.handleSave}
+                >
+                  Save
+                </Button>
               </ButtonGroup>
-              <Button bsStyle={this.props.recalcRequired ? "success" : "primary"} onClick={this.handleRecalculate}>
+              <Button
+                bsStyle={this.props.recalcRequired ? "warning" : "success"}
+                onClick={this.handleRecalculate}
+              >
                 Recalculate
               </Button>
             </ButtonToolbar>

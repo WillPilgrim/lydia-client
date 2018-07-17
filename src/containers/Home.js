@@ -30,7 +30,9 @@ export default class Home extends Component {
     this.props.history.push(event.currentTarget.getAttribute("href"));
   }
 
-  renderAccountsList(accounts) {
+  balanceFormatter = value => (parseInt(value, 10) / 100).toFixed(2)
+
+  renderAccountsList(accounts, transAcc) {
     let acclist = [{}]
     if (accounts) acclist = acclist.concat(accounts)
     return acclist.map(
@@ -42,7 +44,7 @@ export default class Home extends Component {
               onClick={this.handleAccountClick}
               header={account.description.trim().split("\n")[0]}
             >
-              {"Created: " + new Date(account.createdAt).toLocaleString()}
+              {"Balance: " + (transAcc ? this.balanceFormatter(transAcc.find(x => x.accountId === account.accountId).currentBal) : "")}
             </ListGroupItem>
           : <ListGroupItem
               key="new"
@@ -78,7 +80,7 @@ export default class Home extends Component {
       <div className="accounts">
         <PageHeader>Your Accounts</PageHeader>
         <ListGroup>
-          {!this.state.isLoading && this.renderAccountsList(this.props.accounts)}
+          {!this.state.isLoading && this.renderAccountsList(this.props.accounts, this.props.transAcc)}
         </ListGroup>
       </div>
     );
