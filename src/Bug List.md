@@ -1,0 +1,13 @@
+Bugs
+====
+
+2018-07-17  Adding new account causes TypeError: Cannot read property 'currentBal' of undefined. 
+            Account list exists in transAcc but new account doesn't
+2018-07-17  Creating new account with interest with 'First Applied Date' of 2018-08-15 creates first interest debit on 2018-09-15
+2018-07-17  Selecting Opening Balance when updating an account should select whole amount, not just put the cursor at the end
+2018-07-17  Save button highlight not going away when Save pressed
+2018-07-17  Inflation factor compulsory
+2018-07-17  List management for templates is clunky and heavy handed. Needs filtering by account.
+2018-07-17  When modifying a template, Recalculate required is indicated but transaction list shows already recalculated
+2018-07-17  Can't create credit card payoff transactions! - Credit card template already exists for account 'AMEXSean'
+2018-07-17  Ubank opening balance (amount) is 120310.999999 instead of 120311

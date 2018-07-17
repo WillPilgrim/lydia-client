@@ -35,6 +35,7 @@ export default class Home extends Component {
   renderAccountsList(accounts, transAcc) {
     let acclist = [{}]
     if (accounts) acclist = acclist.concat(accounts)
+    console.log(transAcc)
     return acclist.map(
       (account, i) =>
         i !== 0
