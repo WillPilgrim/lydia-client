@@ -12,4 +12,4 @@ Bugs
 - [x] 2018-07-17  When modifying a template, Recalculate required is indicated but transaction list shows already recalculated - could not recreate
 - [x] 2018-07-17  Can't create credit card payoff transactions! - Credit card template already exists for account 'AMEXSean'
 - [x] 2018-07-17  Ubank opening balance (amount) is 120310.999999 instead of 120311
-- [ ] 2018-07-18  Manual interest payments getting automatically modified - probably need to set type to 'manual'
+- [x] 2018-07-18  Manual interest payments getting automatically modified - probably need to set type to 'manual'

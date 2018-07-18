@@ -20,6 +20,7 @@ export default class Transactions extends Component {
   constructor(props) {
     super(props);
     this.gridApi = [];
+    let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1245,255)
     this.state = {
       isLoading: true,
       columnDefs: [
@@ -36,12 +37,13 @@ export default class Transactions extends Component {
           headerName: "Description",
           field: "description",
           editable: this.rowEditable,
-          width: 400
+          width: descriptionWidth
         },
         {
           headerName: "Credit",
           field: "crAmount",
           type: "numericColumn",
+          width: 110,
           editable: this.rowEditable,
           cellEditor: "agTextCellEditor",
           cellEditorParams: { useFormatter: true },
@@ -50,6 +52,7 @@ export default class Transactions extends Component {
         },
         {
           headerName: "Debit",
+          width: 110,
           field: "dbAmount",
           editable: this.rowEditable,
           type: "numericColumn",
@@ -61,6 +64,7 @@ export default class Transactions extends Component {
         {
           headerName: "Balance",
           field: "balance",
+          width: 115,
           type: "numericColumn",
           valueFormatter: this.balanceFormatter,
           cellStyle: params => {
@@ -189,6 +193,8 @@ export default class Transactions extends Component {
       acc.trans = acc.trans.filter(x => x.transactionId !== data.transactionId);
       nodes[0].setData(data);
       this.props.setTransactions(transAcc);
+      this.props.setRecalcRequired(true);
+      this.props.setSaveRequired(true);
       let params = { rowNodes: nodes };
       this.gridApi[this.props.currentAccId].refreshCells(params);
     }
@@ -205,6 +211,7 @@ export default class Transactions extends Component {
       );
       data.autogen = null;
       transToUpdate.autogen = null;
+      transToUpdate.type = "manual"
       nodes[0].setData(data);
       this.props.setTransactions(transAcc);
       this.props.setRecalcRequired(true);
@@ -234,6 +241,12 @@ export default class Transactions extends Component {
     let h =
       Math.max(document.documentElement.clientHeight, window.innerHeight || 0) -
       280;
+      // let v =
+      // Math.max(document.documentElement.clientWidth, window.innerWidth || 0) -
+      // 1245;
+      // if (v<200) v=250
+      // console.log('v=',v)
+      // this.state.columnDefs[1].width = v
     let divStyle = { boxSizing: "border-box", height: `${h}px` };
     let data = [];
     let currAcc;
@@ -293,6 +306,7 @@ export default class Transactions extends Component {
                   onCellEditingStopped={this.updateRow}
                   rowDeselection={true}
                   deltaRowDataMode={true}
+                  enableColResize={true}
                   components={this.state.components}
                   getRowNodeId={data => data.transactionId}
                   getRowStyle={this.getRowStyle}
@@ -316,8 +330,8 @@ export default class Transactions extends Component {
                         },
                         ...currAcc.trans
                       ];
-
                     params.api.setRowData(data);
+
                   }}
                 />
               </div>
@@ -325,8 +339,7 @@ export default class Transactions extends Component {
           ))}
         </Tabs>
         <div className="row">
-          <div className="col-sm-6" />
-          <div className="col-sm-6">
+          <div className="col-sm-12">
             <ButtonToolbar id="buttons" className="pull-right">
               <ButtonGroup>
                 <Button onClick={this.handleDelete}>Delete</Button>
