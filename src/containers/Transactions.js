@@ -241,12 +241,6 @@ export default class Transactions extends Component {
     let h =
       Math.max(document.documentElement.clientHeight, window.innerHeight || 0) -
       280;
-      // let v =
-      // Math.max(document.documentElement.clientWidth, window.innerWidth || 0) -
-      // 1245;
-      // if (v<200) v=250
-      // console.log('v=',v)
-      // this.state.columnDefs[1].width = v
     let divStyle = { boxSizing: "border-box", height: `${h}px` };
     let data = [];
     let currAcc;

@@ -135,8 +135,6 @@ let processNormal = (transactions, templates) => {
 let processSpecials = (transactions, templates) => {
   // 1. Process all credit card accounts
 
-  //let today = Moment();
-
   templates.filter(t => t.templateType === "CC").forEach(template => {
     let account = transactions.find(
       acc => acc.accountId === template.accountFromId
@@ -150,15 +148,6 @@ let processSpecials = (transactions, templates) => {
     let periodEndDay = template.periodLastDay;
     let periodType = template.periodType;
     let periodCnt = template.periodCnt;
-
-    // transactions.filter(account => account.type === "CC").forEach(account => {
-    //   let payDay = account.payDay;
-    //   let startDate = Moment(account.openingDate).date(payDay); // set initial date to first period on the payment date
-    //   let transDate = Moment(startDate);
-    //   let endDate = Moment(account.closingDate);
-    //   let periodEndDay = account.periodEndDay;
-    //   let periodType = account.ccPeriodType;
-    //   let periodCnt = account.ccPeriodCnt;
 
     let payFromAccount = transactions.find(
       acc => acc.accountId === account.payFromAccId
@@ -201,7 +190,6 @@ let processSpecials = (transactions, templates) => {
     let periodCnt = account.periodCnt;
 
     while (transDate.isSameOrBefore(endDate, "day")) {
-      transDate = transDate.add(periodCnt, periodType);
       if (transDate.isAfter(today, "day")) {
         let newTrans = {
           date: transDate.format(),
@@ -214,6 +202,7 @@ let processSpecials = (transactions, templates) => {
         account.trans.push(newTrans);
         account.dirty = true;
       }
+      transDate = transDate.add(periodCnt, periodType);
     }
     updateBalance(account, transactions);
   });
