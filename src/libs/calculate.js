@@ -137,7 +137,6 @@ let processSpecials = (transactions, templates, today) => {
       acc => acc.accountId === template.accountFromId
     );
     account.payFromAccId = template.accountToId;
-
     let startDate = Moment(template.startDate);
     let transDate = Moment(startDate);
     let endDate = Moment(template.endDate);
@@ -313,16 +312,13 @@ let updateBalance = (account, transactions, today) => {
       ...x,
       date: new Date(x.date).valueOf()
     }));
-    //     account.trans.sort(
-    // //      (a, b) => Moment(a.date).valueOf() - Moment(b.date).valueOf()
-    //       (a, b) => new Date(a.date) - new Date(b.date)
-    //     );
+
     //console.timeEnd("Sort time");
     //console.time("Sort time 2");
     newarray.sort((a, b) => a.date - b.date);
     //console.timeEnd("Sort time 2");
     account.trans = newarray;
-    account.trans.forEach(x => x.date = new Date(x.date).toISOString().split('T')[0])
+    account.trans.forEach(x => x.date = Moment(x.date).format('YYYY-MM-DD'))
 
     let runningBalance = account.amount;
     let balanceToday = runningBalance;
