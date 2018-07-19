@@ -1,3 +1,5 @@
+import Moment from "moment";
+
 export const uuid = () => {
     let dt = new Date().getTime();
     let uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -7,3 +9,5 @@ export const uuid = () => {
     });
     return uuid;
   }
+
+  export const today = Moment().startOf('date')

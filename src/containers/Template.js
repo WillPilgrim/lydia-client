@@ -11,6 +11,7 @@ import LoaderButton from "../components/LoaderButton";
 import "./Template.css";
 import DatePicker from "react-16-bootstrap-date-picker";
 import Moment from "moment";
+import { today } from "../libs/utilities";
 
 export default class Template extends Component {
   constructor(props) {
@@ -22,8 +23,8 @@ export default class Template extends Component {
       template: null,
       description: "",
       amount: 0,
-      startDate: Moment().format(),
-      endDate: Moment()
+      startDate: today.format(),
+      endDate: today
         .add(10, "y")
         .format(),
       accountFromId: "",
@@ -172,12 +173,12 @@ export default class Template extends Component {
         inflation: this.state.template.inflation,
 
         description: this.state.description,
-        amount: parseFloat(this.state.amount100).toFixed(2) * 100,
-        startDate: Moment(this.state.startDate).format(),
+        amount: Math.floor(parseFloat(this.state.amount100).toFixed(2) * 100),
+        startDate: Moment(this.state.startDate).startOf('date').format(),
         endDate:
           this.state.templateType === "Zero"
-            ? Moment(this.state.startDate).format()
-            : Moment(this.state.endDate).format(),
+            ? Moment(this.state.startDate).startOf('date').format()
+            : Moment(this.state.endDate).startOf('date').format(),
         templateType: this.state.templateType,
         periodType: this.state.periodType,
         periodCnt:

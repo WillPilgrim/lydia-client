@@ -8,6 +8,7 @@ import LoaderButton from "../components/LoaderButton";
 import "./Accounts.css";
 import Moment from "moment";
 import DatePicker from "react-16-bootstrap-date-picker";
+import { today } from "../libs/utilities";
 
 export default class Accounts extends Component {
   constructor(props) {
@@ -18,9 +19,9 @@ export default class Accounts extends Component {
       isLoading: null,
       isDeleting: null,
       description: "",
-      openingDate: Moment().format(),
-      intFirstAppliedDate: Moment().format(),
-      closingDate: Moment()
+      openingDate: today.format(),
+      intFirstAppliedDate: today.format(),
+      closingDate: today
         .add(10, "y")
         .format(), // default closing date to 10 years from now
       accName: "",
@@ -127,7 +128,7 @@ export default class Accounts extends Component {
 
   getOpeningDateValidationState() {
     if (this.state.openingDate === null) return "error";
-    if (Moment(this.state.openingDate).isAfter(Moment().add(30, "y")))
+    if (Moment(this.state.openingDate).isAfter(today.add(30, "y"),'day'))
       return "error";
     return "success";
   }
@@ -135,21 +136,11 @@ export default class Accounts extends Component {
   getFirstAppliedDateValidationState() {
     if (!this.state.interest) return "warning";
     if (this.state.intFirstAppliedDate === null) return "error";
-    if (Moment(this.state.intFirstAppliedDate).isAfter(Moment().add(30, "y")))
+    if (Moment(this.state.intFirstAppliedDate).isAfter(today.add(30, "y"),"day"))
       return "error";
-    if (
-      Moment(this.state.intFirstAppliedDate).isBefore(
-        Moment(this.state.openingDate),
-        "day"
-      )
-    )
+    if (Moment(this.state.intFirstAppliedDate).isBefore(Moment(this.state.openingDate),"day"))
       return "error";
-    if (
-      Moment(this.state.intFirstAppliedDate).isAfter(
-        Moment(this.state.closingDate),
-        "day"
-      )
-    )
+    if (Moment(this.state.intFirstAppliedDate).isAfter(Moment(this.state.closingDate),"day"))
       return "error";
     return "success";
   }
@@ -157,14 +148,9 @@ export default class Accounts extends Component {
   getClosingDateValidationState() {
     if (this.state.closingDate === null) return "warning";
     if (this.state.openingDate === null) return "warning";
-    if (
-      Moment(this.state.closingDate).isBefore(
-        Moment(this.state.openingDate),
-        "day"
-      )
-    )
+    if (Moment(this.state.closingDate).isBefore(Moment(this.state.openingDate),"day"))
       return "error";
-    if (Moment(this.state.closingDate).isAfter(Moment().add(30, "y")))
+    if (Moment(this.state.closingDate).isAfter(today.add(30, "y"),"day"))
       return "error";
     return "success";
   }
@@ -238,15 +224,15 @@ export default class Accounts extends Component {
       let acc = {
         accName: this.state.accName,
         description: this.state.description,
-        openingDate: Moment(this.state.openingDate).format(),
-        closingDate: Moment(this.state.closingDate).format(),
-        amount: parseFloat(this.state.amount100).toFixed(2) * 100,
+        openingDate: Moment(this.state.openingDate).startOf('date').format(),
+        closingDate: Moment(this.state.closingDate).startOf('date').format(),
+        amount: Math.floor(parseFloat(this.state.amount100).toFixed(2) * 100),
         crRate: this.state.interest ? parseFloat(this.state.crRate).toFixed(2) : 0,
         dbRate: this.state.interest ? parseFloat(this.state.dbRate).toFixed(2) : 0,
         interest: this.state.interest,
         periodType: this.state.interest ? this.state.periodType : "M",
         periodCnt: this.state.interest ? parseInt(this.state.periodCnt, 10) : 1,
-        intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).format()
+        intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).startOf('date').format()
       }
       await this.saveAccount(acc);
       await this.props.refreshAccounts();

@@ -4,34 +4,32 @@ import { testTransactions } from "../TestData/TestTrans";
 
 const testData = false;
 const timings = false;
-const today = Moment();
 
-export const calculate = (accounts, templates, transAcc) => {
+export const calculate = (accounts, templates, transAcc, today ) => {
   if (timings) console.time("Recalculation Total");
   // 1. Remove future transactions
   if (timings) console.time("deleteFutureAllTransactions");
-  let transactions = deleteFutureAllTransactions(accounts, transAcc);
+  let transactions = deleteFutureAllTransactions(accounts, transAcc, today);
   if (timings) console.timeEnd("deleteFutureAllTransactions");
   // 2. Process normal template transactions
   if (timings) console.time("processNormal");
-  processNormal(transactions, templates);
+  processNormal(transactions, templates, today);
   if (timings) console.timeEnd("processNormal");
   // 3. Calculate special template transactions
   if (timings) console.time("processSpecials");
-  processSpecials(transactions, templates);
+  processSpecials(transactions, templates, today);
   if (timings) console.timeEnd("processSpecials");
   // 4. Update transaction balances
   if (timings) console.time("updateBalances");
-  updateBalances(transactions);
+  updateBalances(transactions, today);
   if (timings) console.timeEnd("updateBalances");
   if (timings) console.timeEnd("Recalculation Total");
   return transactions;
 };
 
-export const deleteFutureAllTransactions = (accounts, transAcc) =>
+export const deleteFutureAllTransactions = (accounts, transAcc, today) =>
   accounts.map(account => {
     // ToDo: need to verify evey account in transAcc exists in accs
-    //let today = Moment();
     let ta = transAcc.find(x => x.accountId === account.accountId); // find corresponding transAcc entry for this account
     let newTrans =[];
     if (testData) {
@@ -51,11 +49,10 @@ export const deleteFutureAllTransactions = (accounts, transAcc) =>
     return newAccount;
   });
 
-let processNormal = (transactions, templates) => {
+let processNormal = (transactions, templates, today) => {
   // Hardcode inflation rate for now
 
   const inflation = 0.03;
-  //let today = Moment();
 
   templates
     .filter(
@@ -95,9 +92,9 @@ let processNormal = (transactions, templates) => {
           else crAmount = amount;
 
           let newTrans = {
-            date: transDate.format(),
+            date: transDate.startOf('date').format(),
             description: template.description,
-            autogen: transDate.format(),
+            autogen: transDate.startOf('date').format(),
             transactionId: uuid(),
             dbAmount: dbAmount,
             crAmount: crAmount,
@@ -117,9 +114,9 @@ let processNormal = (transactions, templates) => {
             let partnerDesc = template.description;
             if (template.partnerDesc) partnerDesc = template.partnerDesc;
             accountTo.trans.push({
-              date: partnerDate.format(),
+              date: partnerDate.startOf('date').format(),
               description: partnerDesc,
-              autogen: partnerDate.format(),
+              autogen: partnerDate.startOf('date').format(),
               transactionId: uuid(),
               dbAmount: crAmount,
               crAmount: dbAmount
@@ -132,7 +129,7 @@ let processNormal = (transactions, templates) => {
     });
 };
 
-let processSpecials = (transactions, templates) => {
+let processSpecials = (transactions, templates, today) => {
   // 1. Process all credit card accounts
 
   templates.filter(t => t.templateType === "CC").forEach(template => {
@@ -157,8 +154,8 @@ let processSpecials = (transactions, templates) => {
       transDate = transDate.add(periodCnt, periodType);
       if (transDate.isAfter(today, "day")) {
         let newTrans = {
-          date: transDate.format(),
-          autogen: transDate.format(),
+          date: transDate.startOf('date').format(),
+          autogen: transDate.startOf('date').format(),
           transactionId: uuid(),
           crAmount: 0,
           dbAmount: 0,
@@ -192,8 +189,8 @@ let processSpecials = (transactions, templates) => {
     while (transDate.isSameOrBefore(endDate, "day")) {
       if (transDate.isAfter(today, "day")) {
         let newTrans = {
-          date: transDate.format(),
-          autogen: transDate.format(),
+          date: transDate.startOf('date').format(),
+          autogen: transDate.startOf('date').format(),
           transactionId: uuid(),
           crAmount: 0,
           dbAmount: 0,
@@ -247,8 +244,8 @@ let processSpecials = (transactions, templates) => {
             while (startDate.isSameOrBefore(endDate, "day")) {
               if (startDate.isAfter(today, "day")) {
                 account.trans.push({
-                  date: startDate.format(),
-                  autogen: startDate.format(),
+                  date: startDate.startOf('date').format(),
+                  autogen: startDate.startOf('date').format(),
                   transactionId: uuid(),
                   partnerAccId: special.partnerAccId,
                   dbAmount: 0,
@@ -263,8 +260,8 @@ let processSpecials = (transactions, templates) => {
             }
             if (insertEndMarker) {
               account.trans.push({
-                date: startDate.format(),
-                autogen: startDate.format(),
+                date: startDate.startOf('date').format(),
+                autogen: startDate.startOf('date').format(),
                 transactionId: uuid(),
                 dbAmount: 0,
                 crAmount: 0,
@@ -276,8 +273,8 @@ let processSpecials = (transactions, templates) => {
           case "Zero":
             if (startDate.isAfter(today, "day")) {
               account.trans.push({
-                date: startDate.format(),
-                autogen: startDate.format(),
+                date: startDate.startOf('date').format(),
+                autogen: startDate.startOf('date').format(),
                 transactionId: uuid(),
                 partnerAccId: special.partnerAccId,
                 dbAmount: 0,
@@ -300,12 +297,12 @@ let processSpecials = (transactions, templates) => {
   }
 };
 
-let updateBalances = transactions => {
+let updateBalances = (transactions, today) => {
   //	Sort each account and update balances
-  transactions.forEach(account => updateBalance(account, transactions));
+  transactions.forEach(account => updateBalance(account, transactions, today));
 };
 
-let updateBalance = (account, transactions) => {
+let updateBalance = (account, transactions, today) => {
   //	Sort given account and update balances
 
   if (account.dirty) {
@@ -327,7 +324,6 @@ let updateBalance = (account, transactions) => {
     account.trans = newarray;
     account.trans.forEach(x => x.date = new Date(x.date).toISOString().split('T')[0])
 
-    //let today = Moment();
     let runningBalance = account.amount;
     let balanceToday = runningBalance;
     if (Moment(account.openingDate).isAfter(today, "day")) balanceToday = 0;
@@ -402,8 +398,8 @@ let updateBalance = (account, transactions) => {
 
               if (ccPartnerAcc) {
                 ccPartnerAcc.trans.push({
-                  date: lineDate.format(),
-                  autogen: lineDate.format(),
+                  date: lineDate.startOf('date').format(),
+                  autogen: lineDate.startOf('date').format(),
                   transactionId: uuid(),
                   dbAmount: -ccBalance,
                   crAmount: 0,

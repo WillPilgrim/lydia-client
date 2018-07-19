@@ -14,7 +14,7 @@ import { Storage } from "aws-amplify";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid/dist/styles/ag-grid.css";
 import "ag-grid/dist/styles/ag-theme-bootstrap.css";
-import { uuid } from "../libs/utilities";
+import { today } from "../libs/utilities";
 
 export default class Transactions extends Component {
   constructor(props) {
@@ -126,7 +126,8 @@ export default class Transactions extends Component {
     let transAcc = calculate(
       this.props.accounts,
       this.props.templates,
-      this.props.transAcc
+      this.props.transAcc,
+      today
     );
     this.props.setTransactions(transAcc);
     this.props.setSaveRequired(true);
@@ -154,7 +155,8 @@ export default class Transactions extends Component {
         transAcc = calculate(
           this.props.accounts,
           this.props.templates,
-          JSON.parse(res)
+          JSON.parse(res),
+          today
         );
         let currentAccId = 0;
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
@@ -168,7 +170,8 @@ export default class Transactions extends Component {
           transAcc = calculate(
             this.props.accounts,
             this.props.templates,
-            transAcc
+            transAcc,
+            today
           );
           let currentAccId = 0;
           if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
