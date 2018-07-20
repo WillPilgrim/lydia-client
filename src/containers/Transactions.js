@@ -25,6 +25,11 @@ export default class Transactions extends Component {
       isLoading: true,
       columnDefs: [
         {
+          headerName: "",
+          field: "reconciled",
+          cellRenderer: this.reconciledRenderer,
+          width: 50
+        },        {
           headerName: "Date",
           field: "date",
           filter: "agDateColumnFilter",
@@ -109,15 +114,19 @@ export default class Transactions extends Component {
     return "";
   };
 
+  reconciledRenderer = params => {
+    return '<Button>&#9679</Button>' }
+
   balanceFormatter = params => (parseInt(params.value, 10) / 100).toFixed(2);
 
   dateFormatter = params => Moment(params.value).format("Do MMM YY");
 
   getRowStyle = params => {
-    if (params.node.rowIndex === 0) {
-      return { "font-weight": "bold" };
-    }
-    if (!params.node.data.autogen) return { "font-style": "italic" };
+    let rowStyle = {}
+    if (Moment(params.node.data.date).startOf("date").isSameOrBefore(today)) rowStyle = { "background-color" : "#D3D3D3"}
+    if (params.node.rowIndex === 0) rowStyle["font-weight"] = "bold"
+    if (!params.node.data.autogen) rowStyle["font-style"] = "italic"
+    return rowStyle
   };
 
   rowEditable = node => node.data.transactionId !== 0;
@@ -267,15 +276,7 @@ export default class Transactions extends Component {
     }
     if (this.gridApi[this.props.currentAccId])
       this.gridApi[this.props.currentAccId].setRowData(data);
-    // data = [
-    //   {
-    //     transactionId: 0,
-    //     date: currAcc.openingDate,
-    //     description: "Opening Balance",
-    //     balance: currAcc.amount
-    //   },
-    //  ...currAcc.trans
-    // ];
+
     return (
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
@@ -297,8 +298,6 @@ export default class Transactions extends Component {
                 <AgGridReact
                   headerHeight={30}
                   columnDefs={this.state.columnDefs}
-                  //               rowData={data}
-                  //               editType="fullRow"
                   rowSelection="single"
                   onCellEditingStopped={this.updateRow}
                   rowDeselection={true}

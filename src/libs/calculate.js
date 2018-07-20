@@ -92,6 +92,7 @@ let processNormal = (transactions, templates, today) => {
           else crAmount = amount;
 
           let newTrans = {
+            reconciled : Math.floor(Math.random()*2),
             date: transDate.startOf('date').format(),
             description: template.description,
             autogen: transDate.startOf('date').format(),
