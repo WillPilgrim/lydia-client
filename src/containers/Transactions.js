@@ -20,16 +20,18 @@ export default class Transactions extends Component {
   constructor(props) {
     super(props);
     this.gridApi = [];
-    let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1245,255)
+    let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,255)
     this.state = {
       isLoading: true,
       columnDefs: [
         {
           headerName: "",
           field: "reconciled",
-          cellRenderer: this.reconciledRenderer,
-          width: 50
-        },        {
+          width: 22,
+          cellStyle: {margin: "0px","padding":"0px",textAlign: "center","font-style":"normal" },
+          valueFormatter: this.reconciledFormatter,
+        },
+        {
           headerName: "Date",
           field: "date",
           filter: "agDateColumnFilter",
@@ -114,8 +116,12 @@ export default class Transactions extends Component {
     return "";
   };
 
-  reconciledRenderer = params => {
-    return '<Button>&#9679</Button>' }
+  reconciledFormatter = params => {
+    let unicode = "0020"
+    if (params.value === 1) unicode = "2713" 
+    if (params.value === 2) unicode = "2705" 
+    return String.fromCharCode(parseInt(unicode,16))
+  }
 
   balanceFormatter = params => (parseInt(params.value, 10) / 100).toFixed(2);
 
@@ -130,6 +136,25 @@ export default class Transactions extends Component {
   };
 
   rowEditable = node => node.data.transactionId !== 0;
+
+  onCellClicked = (node) => {
+    if (node.column.colId === "reconciled" && node.rowIndex > 0)
+      if (Moment(node.data.date).isSameOrBefore(today)){
+        let transAcc = this.props.transAcc;
+        let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+        let data = node.data;
+        let trans = acc.trans.find(x => x.transactionId === data.transactionId);
+        if (isNaN(trans.reconciled) || trans.reconciled === null ) trans.reconciled = 0
+        trans.reconciled++;
+        if (trans.reconciled ===3) trans.reconciled = 0
+        node.data.reconciled = trans.reconciled
+        this.props.setTransactions(transAcc);
+        this.props.setRecalcRequired(true);
+        this.props.setSaveRequired(true);
+        let params = { rowNodes: [node] };
+        this.gridApi[this.props.currentAccId].refreshCells(params);
+      }
+  }
 
   handleRecalculate = () => {
     let transAcc = calculate(
@@ -300,6 +325,7 @@ export default class Transactions extends Component {
                   columnDefs={this.state.columnDefs}
                   rowSelection="single"
                   onCellEditingStopped={this.updateRow}
+                  onCellClicked={this.onCellClicked}
                   rowDeselection={true}
                   deltaRowDataMode={true}
                   enableColResize={true}
