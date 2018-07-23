@@ -123,23 +123,23 @@ export default class Transactions extends Component {
     return String.fromCharCode(parseInt(unicode,16))
   }
 
-  balanceFormatter = params => (parseInt(params.value, 10) / 100).toFixed(2);
+  balanceFormatter = params => (parseInt(params.value, 10) / 100).toFixed(2)
 
-  dateFormatter = params => Moment(params.value).format("Do MMM YY");
+  dateFormatter = params => Moment(params.value).format("Do MMM YY")
 
   getRowStyle = params => {
     let rowStyle = {}
-    if (Moment(params.node.data.date).startOf("date").isSameOrBefore(today)) rowStyle = { "background-color" : "#D3D3D3"}
+    if (Moment(params.node.data.date).startOf("date").isSameOrBefore(today, "day")) rowStyle = { "background-color" : "#D3D3D3"}
     if (params.node.rowIndex === 0) rowStyle["font-weight"] = "bold"
     if (!params.node.data.autogen) rowStyle["font-style"] = "italic"
     return rowStyle
-  };
+  }
 
-  rowEditable = node => node.data.transactionId !== 0;
-
+   rowEditable = node => node.data.transactionId !== 0 && ((Moment(node.data.date).isSameOrBefore(today, "day")) || (!node.data.autogen))
+ 
   onCellClicked = (node) => {
     if (node.column.colId === "reconciled" && node.rowIndex > 0)
-      if (Moment(node.data.date).isSameOrBefore(today)){
+      if (Moment(node.data.date).isSameOrBefore(today, "day")){
         let transAcc = this.props.transAcc;
         let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
         let data = node.data;
@@ -149,7 +149,6 @@ export default class Transactions extends Component {
         if (trans.reconciled ===3) trans.reconciled = 0
         node.data.reconciled = trans.reconciled
         this.props.setTransactions(transAcc);
-        this.props.setRecalcRequired(true);
         this.props.setSaveRequired(true);
         let params = { rowNodes: [node] };
         this.gridApi[this.props.currentAccId].refreshCells(params);
@@ -259,20 +258,23 @@ export default class Transactions extends Component {
   };
 
   updateRow = node => {
-    let transAcc = this.props.transAcc;
-    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
-    let data = node.data;
+    let transAcc = this.props.transAcc
+    let acc = transAcc.find(x => x.accountId === this.props.currentAccId)
+    let data = node.data
+    if (Moment(data.date).isAfter(today)) data.reconciled = 0
     let transToUpdate = acc.trans.find(
       x => x.transactionId === data.transactionId
-    );
-    transToUpdate.description = data.description;
-    transToUpdate.date = data.date;
-    transToUpdate.crAmount = data.crAmount;
-    transToUpdate.dbAmount = data.dbAmount;
-    this.props.setTransactions(transAcc);
-    this.props.setRecalcRequired(true);
-    this.props.setSaveRequired(true);
-  };
+    )
+    transToUpdate.description = data.description
+    transToUpdate.date = data.date
+    transToUpdate.reconciled = data.reconciled
+    transToUpdate.crAmount = data.crAmount
+    transToUpdate.dbAmount = data.dbAmount
+    this.props.setTransactions(transAcc)
+    this.props.setRecalcRequired(true)
+    this.props.setSaveRequired(true)
+    this.gridApi[this.props.currentAccId].redrawRows()
+  }
 
   render() {
     let h =

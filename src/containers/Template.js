@@ -24,7 +24,7 @@ export default class Template extends Component {
       description: "",
       amount: 0,
       startDate: today.format(),
-      endDate: today
+      endDate: today.clone()
         .add(10, "y")
         .format(),
       accountFromId: "",

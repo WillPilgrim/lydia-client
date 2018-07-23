@@ -23,7 +23,7 @@ export default class NewAccount extends Component {
       description: "",
       openingDate: today.format(),
       intFirstAppliedDate: today.format(),
-      closingDate: today
+      closingDate: today.clone()
         .add(10, "y")
         .format(), // default closing date to 10 years from now
       accName: "",
@@ -85,7 +85,7 @@ export default class NewAccount extends Component {
 
   getOpeningDateValidationState() {
     if (this.state.openingDate === null) return "error";
-    if (Moment(this.state.openingDate).isAfter(today.add(30, "y")))
+    if (Moment(this.state.openingDate).isAfter(today.clone().add(30, "y")))
       return "error";
     return "success";
   }
@@ -93,7 +93,7 @@ export default class NewAccount extends Component {
   getFirstAppliedDateValidationState() {
     if (!this.state.interest) return "warning";
     if (this.state.intFirstAppliedDate === null) return "error";
-    if (Moment(this.state.intFirstAppliedDate).isAfter(today.add(30, "y"),"day"))
+    if (Moment(this.state.intFirstAppliedDate).isAfter(today.clone().add(30, "y"),"day"))
       return "error";
     if (Moment(this.state.intFirstAppliedDate).isBefore(Moment(this.state.openingDate),"day"))
       return "error";
@@ -107,7 +107,7 @@ export default class NewAccount extends Component {
     if (this.state.openingDate === null) return "warning";
     if (Moment(this.state.closingDate).isBefore(Moment(this.state.openingDate),"day"))
       return "error";
-    if (Moment(this.state.closingDate).isAfter(today.add(30, "y"),"day"))
+    if (Moment(this.state.closingDate).isAfter(today.clone().add(30, "y"),"day"))
       return "error";
     return "success";
   }
