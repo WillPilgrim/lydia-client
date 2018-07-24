@@ -3,7 +3,7 @@ import { uuid } from "./utilities";
 import { testTransactions } from "../TestData/TestTrans";
 
 const testData = false;
-const timings = false;
+const timings = true;
 
 export const calculate = (accounts, templates, transAcc, today ) => {
   if (timings) console.time("Recalculation Total");
@@ -303,20 +303,24 @@ let updateBalances = (transactions, today) => {
 
 let updateBalance = (account, transactions, today) => {
   //	Sort given account and update balances
+  const sortTimings = false
 
   if (account.dirty) {
-    //console.time(`updateBalance for ${account.accName}`);
     // Sort all of the transactions by date
-    //console.time("Sort time");
     let newarray = account.trans.map(x => ({
       ...x,
       date: new Date(x.date).valueOf()
     }));
-
-    //console.timeEnd("Sort time");
-    //console.time("Sort time 2");
-    newarray.sort((a, b) => a.date - b.date);
-    //console.timeEnd("Sort time 2");
+    if (sortTimings) console.time(`Sort time for ${account.accName}`);
+ //   newarray.sort((a, b) => a.date - b.date);
+    newarray.sort((a, b) => {
+      let diff = a.date - b.date
+      if (diff < 0) return -1
+      if (diff > 0) return 1
+      if (a.description > b.description) return 1
+      return -1
+    });
+    if (sortTimings) console.timeEnd(`Sort time for ${account.accName}`);
     account.trans = newarray;
     account.trans.forEach(x => x.date = Moment(x.date).format('YYYY-MM-DD'))
 

@@ -9,7 +9,7 @@ import {
 } from "react-bootstrap";
 import "./Transactions.css";
 import Moment from "moment";
-import { calculate } from "../libs/calculate";
+import { calculate, deleteFutureAllTransactions } from "../libs/calculate";
 import { Storage } from "aws-amplify";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid/dist/styles/ag-grid.css";
@@ -168,9 +168,15 @@ export default class Transactions extends Component {
   };
 
   handleSave = () => {
-    let dataToSave = this.props.transAcc;
-    let key = "data.txt";
-    Storage.put(key, JSON.stringify(dataToSave), {
+    // let key = "data.txt";
+    // let dataToSave = this.props.transAcc;
+    // let strToSave = JSON.stringify(dataToSave)
+    // let transAcc = this.props.transAcc
+    let transAcc = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,today)
+    let key = "data2.txt";
+    let dataToSave = [this.props.accounts,this.props.templates,transAcc,today.format()]
+    let strToSave = JSON.stringify(dataToSave)
+    Storage.put(key, strToSave, {
       level: "private",
       contentType: "application/json"
     })
@@ -180,17 +186,21 @@ export default class Transactions extends Component {
   };
 
   handleLoad = () => {
-    let key = "data.txt";
+    // let key = "data.txt";
+    let key = "data2.txt";
     let transAcc = [];
+
     Storage.get(key, { level: "private", download: true })
       .then(result => {
         let res = new TextDecoder("utf-8").decode(result.Body);
-        transAcc = calculate(
-          this.props.accounts,
-          this.props.templates,
-          JSON.parse(res),
-          today
-        );
+        let dataToRestore = JSON.parse(res)
+        transAcc = calculate(...dataToRestore)
+        // transAcc = calculate(
+        //   this.props.accounts,
+        //   this.props.templates,
+        //   JSON.parse(res),
+        //   today
+        // );
         let currentAccId = 0;
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
         this.props.setTransactions(transAcc);
