@@ -186,21 +186,21 @@ export default class Transactions extends Component {
   };
 
   handleLoad = () => {
-    // let key = "data.txt";
-    let key = "data2.txt";
+     let key = "data.txt";
+    // let key = "data2.txt";
     let transAcc = [];
 
     Storage.get(key, { level: "private", download: true })
       .then(result => {
         let res = new TextDecoder("utf-8").decode(result.Body);
         let dataToRestore = JSON.parse(res)
-        transAcc = calculate(...dataToRestore)
-        // transAcc = calculate(
-        //   this.props.accounts,
-        //   this.props.templates,
-        //   JSON.parse(res),
-        //   today
-        // );
+    //    transAcc = calculate(...dataToRestore)
+        transAcc = calculate(
+          this.props.accounts,
+          this.props.templates,
+          JSON.parse(res),
+          today
+        );
         let currentAccId = 0;
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
         this.props.setTransactions(transAcc);
