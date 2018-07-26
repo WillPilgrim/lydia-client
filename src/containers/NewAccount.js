@@ -116,7 +116,7 @@ export default class NewAccount extends Component {
     if (this.state.amount100.length === 0) return "error";
     const regex = /^(-|\+)?[0-9]+(\.[0-9]{1,2})?$/;
     if (!regex.test(this.state.amount100)) return "error";
-    let amount = parseFloat(this.state.amount100).toFixed(2) * 100;
+    let amount = Math.round(parseFloat(this.state.amount100).toFixed(2) * 100);
     if (isNaN(amount)) return "error";
     if (amount > 99999999 || amount < -99999999) return "error";
     return "success";
@@ -183,7 +183,7 @@ export default class NewAccount extends Component {
         description: this.state.description,
         openingDate: Moment(this.state.openingDate).startOf('date').format(),
         closingDate: Moment(this.state.closingDate).startOf('date').format(),
-        amount: Math.floor(parseFloat(this.state.amount100) * 100),
+        amount: Math.round(parseFloat(this.state.amount100) * 100),
         crRate: this.state.interest ? parseFloat(this.state.crRate).toFixed(2) : 0,
         dbRate: this.state.interest ? parseFloat(this.state.dbRate).toFixed(2) : 0,
         interest: this.state.interest,

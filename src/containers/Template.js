@@ -173,7 +173,7 @@ export default class Template extends Component {
         inflation: this.state.template.inflation,
 
         description: this.state.description,
-        amount: Math.floor(parseFloat(this.state.amount100).toFixed(2) * 100),
+        amount: Math.round(parseFloat(this.state.amount100).toFixed(2) * 100),
         startDate: Moment(this.state.startDate).startOf('date').format(),
         endDate:
           this.state.templateType === "Zero"

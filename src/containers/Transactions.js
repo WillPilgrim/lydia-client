@@ -107,7 +107,7 @@ export default class Transactions extends Component {
   amountParser = params => {
     let val = Number(params.newValue);
     if (isNaN(val)) return params.oldValue;
-    else return Math.floor(val * 100);
+    else return Math.round(val * 100);
   };
 
   amountFormatter = params => {
