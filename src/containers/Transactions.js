@@ -14,7 +14,7 @@ import { Storage } from "aws-amplify";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid/dist/styles/ag-grid.css";
 import "ag-grid/dist/styles/ag-theme-bootstrap.css";
-import { today } from "../libs/utilities";
+import { today, uuid } from "../libs/utilities";
 
 export default class Transactions extends Component {
   constructor(props) {
@@ -161,11 +161,11 @@ export default class Transactions extends Component {
       this.props.templates,
       this.props.transAcc,
       today
-    );
-    this.props.setTransactions(transAcc);
-    this.props.setSaveRequired(true);
-    this.props.setRecalcRequired(false);
-  };
+    )
+    this.props.setTransactions(transAcc)
+    this.props.setSaveRequired(true)
+    this.props.setRecalcRequired(false)
+  }
 
   handleSave = () => {
     // let key = "data.txt";
@@ -183,7 +183,7 @@ export default class Transactions extends Component {
       .then(result => {this.props.setSaveRequired(false);
       alert("Transactions saved successfully")})
       .catch(err => alert(err));
-  };
+  }
 
   handleLoad = () => {
     // let key = "data.txt";
@@ -224,11 +224,11 @@ export default class Transactions extends Component {
           this.props.setRecalcRequired(false);
         } else console.log(err);
       });
-  };
+  }
 
   handleTabSelect = eventKey => {
-    this.props.setCurrentAccId(eventKey);
-  };
+    this.props.setCurrentAccId(eventKey)
+  }
 
   handleDelete = () => {
     let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
@@ -265,7 +265,37 @@ export default class Transactions extends Component {
       let params = { rowNodes: nodes };
       this.gridApi[this.props.currentAccId].refreshCells(params);
     }
-  };
+  }
+
+  handleDuplicate = () => {
+    let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
+    if (nodes.length) {
+      let data = nodes[0].data
+      let newNode = {
+        date: data.date,
+        autogen: null,
+        type: "manual",
+        transactionId: uuid(),
+        dbAmount: data.dbAmount,
+        crAmount: data.crAmount,
+        description: data.description
+      }
+      let transAcc = this.props.transAcc
+      let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+      acc.trans = acc.trans.push(data)
+      transAcc = calculate(
+        this.props.accounts,
+        this.props.templates,
+        transAcc,
+        today
+      )
+      this.props.setTransactions(transAcc)
+      this.props.setSaveRequired(true)
+      this.props.setRecalcRequired(false)
+      }
+  }
+
+
 
   updateRow = node => {
     let transAcc = this.props.transAcc
@@ -376,6 +406,7 @@ export default class Transactions extends Component {
           <div className="col-sm-12">
             <ButtonToolbar id="buttons" className="pull-right">
               <ButtonGroup>
+                <Button onClick={this.handleDuplicate}>Duplicate</Button>
                 <Button onClick={this.handleDelete}>Delete</Button>
                 <Button onClick={this.handleManual}>Manual</Button>
                 <Button onClick={this.handleLoad}>Load</Button>
