@@ -135,7 +135,7 @@ export default class Transactions extends Component {
     return rowStyle
   }
 
-   rowEditable = node => node.data.transactionId !== 0 && ((Moment(node.data.date).isSameOrBefore(today, "day")) || (!node.data.autogen))
+  rowEditable = node => node.data.transactionId !== 0 && ((Moment(node.data.date).isSameOrBefore(today, "day")) || (!node.data.autogen))
  
   onCellClicked = (node) => {
     if (node.column.colId === "reconciled" && node.rowIndex > 0)
