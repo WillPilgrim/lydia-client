@@ -282,7 +282,7 @@ export default class Transactions extends Component {
       }
       let transAcc = this.props.transAcc
       let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
-      acc.trans = acc.trans.push(data)
+      acc.trans.push(newNode)
       transAcc = calculate(
         this.props.accounts,
         this.props.templates,
@@ -294,8 +294,6 @@ export default class Transactions extends Component {
       this.props.setRecalcRequired(false)
       }
   }
-
-
 
   updateRow = node => {
     let transAcc = this.props.transAcc
