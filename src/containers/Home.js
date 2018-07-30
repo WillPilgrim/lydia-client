@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
-import { PageHeader, ListGroup, ListGroupItem } from "react-bootstrap";
+import { PageHeader, ListGroup, ListGroupItem, Button, ButtonToolbar, ButtonGroup, } from "react-bootstrap";
 import "./Home.css";
 
 export default class Home extends Component {
@@ -25,12 +25,18 @@ export default class Home extends Component {
     this.setState({ isLoading: false });
   }
 
+  balanceFormatter = value => (parseInt(value, 10) / 100).toFixed(2)
+
   handleAccountClick = event => {
     event.preventDefault();
     this.props.history.push(event.currentTarget.getAttribute("href"));
   }
 
-  balanceFormatter = value => (parseInt(value, 10) / 100).toFixed(2)
+  handleSortClick = async (i,dir,event) => {
+    event.preventDefault()
+    this.props.moveAccounts(i, dir)
+    this.props.history.push("/");
+  }
 
   renderAccountsList(accounts, transAcc) {
     let acclist = [{}]
@@ -38,15 +44,28 @@ export default class Home extends Component {
     return acclist.map(
       (account, i) =>
         i !== 0
-          ? <ListGroupItem
-              key={account.accountId}
-              href={`/accounts/${account.accountId}`}
-              onClick={this.handleAccountClick}
-              header={account.description.trim().split("\n")[0]}
-            >
-              {"Balance: " + (transAcc ? this.balanceFormatter(transAcc.find(x => x.accountId === account.accountId).currentBal) : "")}
-            </ListGroupItem>
-          : <ListGroupItem
+          ? <div className="row" key={account.accountId}>
+              <div className="col-sm-11">
+                <ListGroupItem
+                  key={account.accountId}
+                  href={`/accounts/${account.accountId}`}
+                  onClick={this.handleAccountClick}
+                  header={account.description.trim().split("\n")[0]}
+                >
+                  {"Balance: " + (transAcc ? this.balanceFormatter(transAcc.find(x => x.accountId === account.accountId).currentBal) : "")}
+                </ListGroupItem>
+              </div>
+              <div className="col-sm-1">
+              <ButtonToolbar id="buttons">
+              <ButtonGroup vertical block>
+                <Button onClick={(e) => this.handleSortClick(i,"U",e)} disabled={i===1}>&#x2B06;</Button>
+                <Button onClick={(e) => this.handleSortClick(i,"D",e)} disabled={i===acclist.length-1}>&#x2B07;</Button>
+              </ButtonGroup>
+            </ButtonToolbar>
+              </div>
+            </div>
+          : <div className="row" key="new">
+          <div className="col-sm-11"><ListGroupItem
               key="new"
               href="/accounts/new"
               onClick={this.handleAccountClick}
@@ -54,7 +73,7 @@ export default class Home extends Component {
               <h4>
                 <b>{"\uFF0B"}</b> Create a new account
               </h4>
-            </ListGroupItem>
+            </ListGroupItem></div></div>
     );
   }
 

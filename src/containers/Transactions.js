@@ -20,7 +20,7 @@ export default class Transactions extends Component {
   constructor(props) {
     super(props);
     this.gridApi = [];
-    let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,255)
+    let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234)
     this.state = {
       isLoading: true,
       columnDefs: [
@@ -257,7 +257,9 @@ export default class Transactions extends Component {
       );
       data.autogen = null;
       transToUpdate.autogen = null;
-      transToUpdate.type = "manual"
+      //if (transToUpdate.type === "manual" && (transToUpdate.description === "Interest Debit" || transToUpdate.description === "Interest Debit") ) transToUpdate.type = "interest"
+      //else
+       transToUpdate.type = "manual"
       nodes[0].setData(data);
       this.props.setTransactions(transAcc);
       this.props.setRecalcRequired(true);

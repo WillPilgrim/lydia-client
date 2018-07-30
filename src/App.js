@@ -72,10 +72,38 @@ class App extends Component {
   };
 
   refreshAccounts = async () => {
-    const accounts = await this.getAccounts();
+    const accounts = await this.getAccounts()
+    this.sortAndSetAccounts(accounts);
+  };
+
+  sortAndSetAccounts = accounts => {
+    accounts.sort((a, b) => {
+      const as  = a.sortOrder ? a.sortOrder : 1
+      const bs = b.sortOrder ? b.sortOrder : 1
+      return as-bs
+    });
     this.setState({ accounts });
     if (accounts.length) this.setCurrentAccId(accounts[0].accountId);
-  };
+  }
+
+  moveAccounts = async (i, dir) => {
+    const accounts = this.state.accounts
+    const fromAcc = accounts[i-1]
+    const toAcc = accounts[dir === "U"?i-2:i]
+    const fromSort = fromAcc.sortOrder
+    const toSort = toAcc.sortOrder
+    fromAcc.sortOrder = toSort;
+    toAcc.sortOrder = fromSort;
+    await this.saveAccount(fromAcc);
+    await this.saveAccount(toAcc);
+    this.sortAndSetAccounts(accounts);
+  }
+
+  saveAccount(account) {
+    return API.put("accounts", `/accounts/${account.accountId}`, {
+      body: account
+    });
+  }
 
   setTransactions = transAcc => this.setState({ transAcc })
 
@@ -98,6 +126,7 @@ class App extends Component {
       accounts: this.state.accounts,
       templates: this.state.templates,
       refreshAccounts: this.refreshAccounts,
+      moveAccounts: this.moveAccounts,
       refreshTemplates: this.refreshTemplates,
       currentAccId: this.state.currentAccId,
       setCurrentAccId: this.setCurrentAccId,
