@@ -5,7 +5,7 @@ import { testTransactions } from "../TestData/TestTrans";
 const testData = false;
 const timings = true;
 
-export const calculate = (accounts, templates, transAcc, today ) => {
+export const calculate = (accounts, templates, transAcc, today) => {
   if (timings) console.time("Recalculation Total");
   // 1. Remove future transactions
   if (timings) console.time("deleteFutureAllTransactions");
@@ -31,9 +31,11 @@ export const deleteFutureAllTransactions = (accounts, transAcc, today) =>
   accounts.map(account => {
     // ToDo: need to verify evey account in transAcc exists in accs
     let ta = transAcc.find(x => x.accountId === account.accountId); // find corresponding transAcc entry for this account
-    let newTrans =[];
+    let newTrans = [];
     if (testData) {
-      let testAcc = testTransactions.find(tt => tt.accountId === account.accountId);
+      let testAcc = testTransactions.find(
+        tt => tt.accountId === account.accountId
+      );
       if (testAcc) newTrans = testAcc.trans;
     }
     let newAccount = { trans: ta ? ta.trans : newTrans, ...account }; // Build new account from Dynamo account plus trans
@@ -92,9 +94,9 @@ let processNormal = (transactions, templates, today) => {
           else crAmount = amount;
 
           let newTrans = {
-            date: transDate.startOf('date').format(),
+            date: transDate.startOf("date").format(),
             description: template.description,
-            autogen: transDate.startOf('date').format(),
+            autogen: transDate.startOf("date").format(),
             transactionId: uuid(),
             dbAmount: dbAmount,
             crAmount: crAmount,
@@ -114,9 +116,9 @@ let processNormal = (transactions, templates, today) => {
             let partnerDesc = template.description;
             if (template.partnerDesc) partnerDesc = template.partnerDesc;
             accountTo.trans.push({
-              date: partnerDate.startOf('date').format(),
+              date: partnerDate.startOf("date").format(),
               description: partnerDesc,
-              autogen: partnerDate.startOf('date').format(),
+              autogen: partnerDate.startOf("date").format(),
               transactionId: uuid(),
               dbAmount: crAmount,
               crAmount: dbAmount
@@ -153,8 +155,8 @@ let processSpecials = (transactions, templates, today) => {
       transDate = transDate.add(periodCnt, periodType);
       if (transDate.isAfter(today, "day")) {
         let newTrans = {
-          date: transDate.startOf('date').format(),
-          autogen: transDate.startOf('date').format(),
+          date: transDate.startOf("date").format(),
+          autogen: transDate.startOf("date").format(),
           transactionId: uuid(),
           crAmount: 0,
           dbAmount: 0,
@@ -188,8 +190,8 @@ let processSpecials = (transactions, templates, today) => {
     while (transDate.isSameOrBefore(endDate, "day")) {
       if (transDate.isAfter(today, "day")) {
         let newTrans = {
-          date: transDate.startOf('date').format(),
-          autogen: transDate.startOf('date').format(),
+          date: transDate.startOf("date").format(),
+          autogen: transDate.startOf("date").format(),
           transactionId: uuid(),
           crAmount: 0,
           dbAmount: 0,
@@ -222,78 +224,153 @@ let processSpecials = (transactions, templates, today) => {
       });
     });
 
-  let completed = 0;
-  while (completed < specials.length) {
-    specials.filter(special => special.active).forEach(special => {
-      let accId = special.accountId;
+  let createSpecials = special => {
+    let accId = special.accountId;
 
-      // Only process this special if no active account minimises to this one
-      if (
-        !specials.find(
-          special => special.partnerAccId === accId && special.active
-        )
-      ) {
-        let startDate = Moment(special.startDate);
-        let endDate = Moment(special.endDate);
-        let account = transactions.find(acc => acc.accountId === accId);
+    // Only process this special if no active account minimises to this one
+    if (
+      !specials.find(
+        special => special.partnerAccId === accId && special.active
+      )
+    ) {
+      let startDate = Moment(special.startDate);
+      let endDate = Moment(special.endDate);
+      let account = transactions.find(acc => acc.accountId === accId);
 
-        switch (special.type) {
-          case "Minimise":
-            let insertEndMarker = false;
-            while (startDate.isSameOrBefore(endDate, "day")) {
-              if (startDate.isAfter(today, "day")) {
-                account.trans.push({
-                  date: startDate.startOf('date').format(),
-                  autogen: startDate.startOf('date').format(),
-                  transactionId: uuid(),
-                  partnerAccId: special.partnerAccId,
-                  dbAmount: 0,
-                  crAmount: 0,
-                  minBalance: special.amount,
-                  type: special.type
-                });
-                account.dirty = true;
-                insertEndMarker = true;
-              }
-              startDate = startDate.add(special.periodCnt, special.periodType);
-            }
-            if (insertEndMarker) {
-              account.trans.push({
-                date: startDate.startOf('date').format(),
-                autogen: startDate.startOf('date').format(),
-                transactionId: uuid(),
-                dbAmount: 0,
-                crAmount: 0,
-                type: "PeriodEndMarker"
-              });
-            }
-            break;
-
-          case "Zero":
+      switch (special.type) {
+        case "Minimise":
+          let insertEndMarker = false;
+          while (startDate.isSameOrBefore(endDate, "day")) {
             if (startDate.isAfter(today, "day")) {
               account.trans.push({
-                date: startDate.startOf('date').format(),
-                autogen: startDate.startOf('date').format(),
+                date: startDate.startOf("date").format(),
+                autogen: startDate.startOf("date").format(),
                 transactionId: uuid(),
                 partnerAccId: special.partnerAccId,
                 dbAmount: 0,
                 crAmount: 0,
+                minBalance: special.amount,
                 type: special.type
               });
               account.dirty = true;
+              insertEndMarker = true;
             }
-            break;
-          default:
-            break;
-        }
+            startDate = startDate.add(special.periodCnt, special.periodType);
+          }
+          if (insertEndMarker) {
+            account.trans.push({
+              date: startDate.startOf("date").format(),
+              autogen: startDate.startOf("date").format(),
+              transactionId: uuid(),
+              dbAmount: 0,
+              crAmount: 0,
+              type: "PeriodEndMarker"
+            });
+          }
+          break;
 
-        updateBalance(account, transactions, today); // ensure account ready to process
-
-        completed++;
-        specials.active = false;
+        case "Zero":
+          if (startDate.isAfter(today, "day")) {
+            account.trans.push({
+              date: startDate.startOf("date").format(),
+              autogen: startDate.startOf("date").format(),
+              transactionId: uuid(),
+              partnerAccId: special.partnerAccId,
+              dbAmount: 0,
+              crAmount: 0,
+              type: special.type
+            });
+            account.dirty = true;
+          }
+          break;
+        default:
+          break;
       }
-    });
-  }
+
+      updateBalance(account, transactions, today); // ensure account ready to process
+
+      completed++;
+      specials.active = false;
+    }
+  };
+
+  let completed = 0;
+  while (completed < specials.length) {
+    specials.filter(special => special.active).forEach(createSpecials)}
+
+
+  // let completed = 0;
+  // while (completed < specials.length) {
+  //   specials.filter(special => special.active).forEach(special => {
+  //     let accId = special.accountId;
+
+  //     // Only process this special if no active account minimises to this one
+  //     if (
+  //       !specials.find(
+  //         special => special.partnerAccId === accId && special.active
+  //       )
+  //     ) {
+  //       let startDate = Moment(special.startDate);
+  //       let endDate = Moment(special.endDate);
+  //       let account = transactions.find(acc => acc.accountId === accId);
+
+  //       switch (special.type) {
+  //         case "Minimise":
+  //           let insertEndMarker = false;
+  //           while (startDate.isSameOrBefore(endDate, "day")) {
+  //             if (startDate.isAfter(today, "day")) {
+  //               account.trans.push({
+  //                 date: startDate.startOf("date").format(),
+  //                 autogen: startDate.startOf("date").format(),
+  //                 transactionId: uuid(),
+  //                 partnerAccId: special.partnerAccId,
+  //                 dbAmount: 0,
+  //                 crAmount: 0,
+  //                 minBalance: special.amount,
+  //                 type: special.type
+  //               });
+  //               account.dirty = true;
+  //               insertEndMarker = true;
+  //             }
+  //             startDate = startDate.add(special.periodCnt, special.periodType);
+  //           }
+  //           if (insertEndMarker) {
+  //             account.trans.push({
+  //               date: startDate.startOf("date").format(),
+  //               autogen: startDate.startOf("date").format(),
+  //               transactionId: uuid(),
+  //               dbAmount: 0,
+  //               crAmount: 0,
+  //               type: "PeriodEndMarker"
+  //             });
+  //           }
+  //           break;
+
+  //         case "Zero":
+  //           if (startDate.isAfter(today, "day")) {
+  //             account.trans.push({
+  //               date: startDate.startOf("date").format(),
+  //               autogen: startDate.startOf("date").format(),
+  //               transactionId: uuid(),
+  //               partnerAccId: special.partnerAccId,
+  //               dbAmount: 0,
+  //               crAmount: 0,
+  //               type: special.type
+  //             });
+  //             account.dirty = true;
+  //           }
+  //           break;
+  //         default:
+  //           break;
+  //       }
+
+  //       updateBalance(account, transactions); // ensure account ready to process
+
+  //       completed++;
+  //       specials.active = false;
+  //     }
+  //   }
+   // );}
 };
 
 let updateBalances = (transactions, today) => {
@@ -303,7 +380,7 @@ let updateBalances = (transactions, today) => {
 
 let updateBalance = (account, transactions, today) => {
   //	Sort given account and update balances
-  const sortTimings = false
+  const sortTimings = false;
 
   if (account.dirty) {
     // Sort all of the transactions by date
@@ -312,17 +389,17 @@ let updateBalance = (account, transactions, today) => {
       date: new Date(x.date).valueOf()
     }));
     if (sortTimings) console.time(`Sort time for ${account.accName}`);
- //   newarray.sort((a, b) => a.date - b.date);
+    //   newarray.sort((a, b) => a.date - b.date);
     newarray.sort((a, b) => {
-      let diff = a.date - b.date
-      if (diff < 0) return -1
-      if (diff > 0) return 1
-      if (a.description > b.description) return 1
-      return -1
+      let diff = a.date - b.date;
+      if (diff < 0) return -1;
+      if (diff > 0) return 1;
+      if (a.description > b.description) return 1;
+      return -1;
     });
     if (sortTimings) console.timeEnd(`Sort time for ${account.accName}`);
     account.trans = newarray;
-    account.trans.forEach(x => x.date = Moment(x.date).format('YYYY-MM-DD'))
+    account.trans.forEach(x => (x.date = Moment(x.date).format("YYYY-MM-DD")));
 
     let runningBalance = account.amount;
     let balanceToday = runningBalance;
@@ -363,13 +440,14 @@ let updateBalance = (account, transactions, today) => {
     let crRateToday = crRate;
     let dbRateToday = dbRate;
 
-    let intFirstAppliedDate = Moment(account.intFirstAppliedDate); // Set first applied date
+    let intFirstAppliedDate = Moment(account.intFirstAppliedDate).startOf("date"); // Set first applied date
     // Find first date interest is to be calculated from
-    let firstBaseInterestDate = intFirstAppliedDate.subtract(
+
+    let firstBaseInterestDate = Moment(intFirstAppliedDate).startOf("date").subtract(
       account.periodCnt,
       account.periodType
     );
-    if (firstBaseInterestDate.isBefore(account.openingDate, "day"))
+    if (firstBaseInterestDate.isBefore(Moment(account.openingDate), "day"))
       firstBaseInterestDate = Moment(account.openingDate);
     let prevInterestDate = Moment(firstBaseInterestDate);
     //  =======================
@@ -411,8 +489,8 @@ let updateBalance = (account, transactions, today) => {
 
               if (ccPartnerAcc) {
                 ccPartnerAcc.trans.push({
-                  date: lineDate.startOf('date').format(),
-                  autogen: lineDate.startOf('date').format(),
+                  date: lineDate.startOf("date").format(),
+                  autogen: lineDate.startOf("date").format(),
                   transactionId: uuid(),
                   dbAmount: -ccBalance,
                   crAmount: 0,
@@ -555,7 +633,8 @@ let updateBalance = (account, transactions, today) => {
                 daysDiff
               ) -
             runningBalance;
-          totalInterest += lineInterest;
+  //     if (account.accName === "Mortgage") console.log('date=',lineDate,' lineInterest=',lineInterest,' runningBalance=',runningBalance, 'crRate=',crRate, 'dbRate=',dbRate,'daysDiff=',daysDiff)
+            totalInterest += lineInterest;
           tr.interest = lineInterest;
 
           // Add accumulated interest between interest debit/credit entries

@@ -189,7 +189,8 @@ export default class NewAccount extends Component {
         interest: this.state.interest,
         periodType: this.state.interest ? this.state.periodType : "M",
         periodCnt: this.state.interest ? parseInt(this.state.periodCnt, 10) : 1,
-        intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).startOf('date').format()
+        intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).startOf('date').format(),
+        sortOrder: this.props.accounts.length + 1
 
       });
       this.props.setTransactions(null)
