@@ -172,7 +172,7 @@ let processSpecials = (transactions, templates, today) => {
       }
     }
 
-    updateBalance(account, transactions);
+    updateBalance(account, transactions, today);
     account.ccDates.length = 0; // clear credit card dates array
   });
 
@@ -200,7 +200,7 @@ let processSpecials = (transactions, templates, today) => {
       }
       transDate = transDate.add(periodCnt, periodType);
     }
-    updateBalance(account, transactions);
+    updateBalance(account, transactions, today);
   });
 
   // 3. Process dynamic transfer template types
@@ -287,7 +287,7 @@ let processSpecials = (transactions, templates, today) => {
             break;
         }
 
-        updateBalance(account, transactions); // ensure account ready to process
+        updateBalance(account, transactions, today); // ensure account ready to process
 
         completed++;
         specials.active = false;
@@ -373,6 +373,19 @@ let updateBalance = (account, transactions, today) => {
       firstBaseInterestDate = Moment(account.openingDate);
     let prevInterestDate = Moment(firstBaseInterestDate);
     //  =======================
+
+// // Debugging info for interest bug...
+// if (account.accName === "Mortgage") {
+// console.log('********************************')
+// console.log('Interest problem debugging info')
+// console.log('********************************')
+// console.log(`account=${account.accName} today=${today} ` )
+// console.log(`dbRate=${dbRate} crRate=${crRate}`)
+
+// console.log('********************************')
+
+
+// }
 
     // Use an old school loop so it can be manipulated when
     // doing 'Minimise' transactions

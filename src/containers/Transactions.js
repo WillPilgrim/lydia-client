@@ -201,6 +201,12 @@ export default class Transactions extends Component {
         //   JSON.parse(res),
         //   today
         // );
+        let transAcc = calculate(
+          this.props.accounts,
+          this.props.templates,
+          transAcc,
+          today
+        )
         let currentAccId = 0;
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
         this.props.setTransactions(transAcc);
