@@ -1,4 +1,4 @@
-Bugs
+Bugs!
 ====
 
 - [x] 2018-07-17  Adding new account causes TypeError: Cannot read property 'currentBal' of undefined. 
