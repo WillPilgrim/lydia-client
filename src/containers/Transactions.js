@@ -201,7 +201,7 @@ export default class Transactions extends Component {
         //   JSON.parse(res),
         //   today
         // );
-        let transAcc = calculate(
+        transAcc = calculate(
           this.props.accounts,
           this.props.templates,
           transAcc,
