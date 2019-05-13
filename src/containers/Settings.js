@@ -4,6 +4,9 @@ import { Elements, StripeProvider } from "react-stripe-elements";
 import BillingForm from "../components/BillingForm";
 import config from "../config";
 import "./Settings.css";
+import { LinkContainer } from "react-router-bootstrap";
+import LoaderButton from "../components/LoaderButton";
+import { ControlLabel } from "react-bootstrap";
 
 export default class Settings extends Component {
   constructor(props) {
@@ -45,6 +48,22 @@ export default class Settings extends Component {
   render() {
     return (
       <div className="Settings">
+        <ControlLabel>Security</ControlLabel>
+        <LinkContainer to="/settings/email">
+          <LoaderButton
+            block
+            bsSize="large"
+            text="Change Email"
+          />
+        </LinkContainer>
+        <LinkContainer to="/settings/password">
+          <LoaderButton
+            block
+            bsSize="large"
+            text="Change Password"
+        />
+        </LinkContainer>      
+        <hr />
         <StripeProvider apiKey={config.STRIPE_KEY}>
           <Elements>
             <BillingForm
