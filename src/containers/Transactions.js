@@ -12,8 +12,8 @@ import Moment from "moment";
 import { calculate, deleteFutureAllTransactions } from "../libs/calculate";
 import { Storage } from "aws-amplify";
 import { AgGridReact } from "ag-grid-react";
-import "ag-grid/dist/styles/ag-grid.css";
-import "ag-grid/dist/styles/ag-theme-bootstrap.css";
+import "ag-grid-community/dist/styles/ag-grid.css";
+import "ag-grid-community/dist/styles/ag-theme-bootstrap.css";
 import { today, uuid } from "../libs/utilities";
 
 export default class Transactions extends Component {

@@ -6,8 +6,8 @@ import {
 } from "react-bootstrap";
 import "./Templates.css";
 import { AgGridReact } from "ag-grid-react";
-import "ag-grid/dist/styles/ag-grid.css";
-import "ag-grid/dist/styles/ag-theme-bootstrap.css";
+import "ag-grid-community/dist/styles/ag-grid.css";
+import "ag-grid-community/dist/styles/ag-theme-bootstrap.css";
 import Moment from "moment";
 
 export default class Templates extends Component {

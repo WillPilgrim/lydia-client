@@ -13,11 +13,13 @@ import Settings from "./containers/Settings";
 import Templates from "./containers/Templates";
 import Template from "./containers/Template";
 import Transactions from "./containers/Transactions";
+import ResetPassword from "./containers/ResetPassword";
 
 export default ({ childProps }) =>
   <Switch>
     <AppliedRoute path="/" exact component={Home} props={childProps} />
     <UnauthenticatedRoute path="/login" exact component={Login} props={childProps} />
+    <UnauthenticatedRoute path="/login/reset" exact component={ResetPassword} props={childProps} />
     <UnauthenticatedRoute path="/signup" exact component={Signup} props={childProps} />
     <AuthenticatedRoute path="/settings" exact component={Settings} props={childProps} />
     <AuthenticatedRoute path="/accounts/new" exact component={NewAccount} props={childProps} />
