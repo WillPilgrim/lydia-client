@@ -35,16 +35,34 @@ export default class Transactions extends Component {
           headerName: "Date",
           field: "date",
           filter: "agDateColumnFilter",
+          filterParams: {
+            comparator: function(filterLocalDateAtMidnight, cellValue) {
+              var dateParts = cellValue.split("-");
+              var day = Number(dateParts[2]);
+              var month = Number(dateParts[1]) - 1;
+              var year = Number(dateParts[0]);
+              var cellDate = new Date(year, month, day);
+              if (cellDate < filterLocalDateAtMidnight) {
+                return -1;
+              } else if (cellDate > filterLocalDateAtMidnight) {
+                return 1;
+              } else {
+                return 0;
+              }
+            }
+          },
           width: 110,
           valueFormatter: this.dateFormatter,
           cellStyle: { textAlign: "right" },
-          editable: this.rowEditable
+          editable: this.rowEditable,
+          cellEditor: 'popupText'
         },
         {
           headerName: "Description",
           field: "description",
           editable: this.rowEditable,
-          width: descriptionWidth
+          width: descriptionWidth,
+          cellEditor: 'popupText'
         },
         {
           headerName: "Credit",
@@ -52,7 +70,7 @@ export default class Transactions extends Component {
           type: "numericColumn",
           width: 110,
           editable: this.rowEditable,
-          cellEditor: "agTextCellEditor",
+          cellEditor: "popupText",
           cellEditorParams: { useFormatter: true },
           valueParser: this.amountParser,
           valueFormatter: this.amountFormatter
@@ -63,7 +81,7 @@ export default class Transactions extends Component {
           field: "dbAmount",
           editable: this.rowEditable,
           type: "numericColumn",
-          cellEditor: "agTextCellEditor",
+          cellEditor: "popupText",
           cellEditorParams: { useFormatter: true },
           valueParser: this.amountParser,
           valueFormatter: this.amountFormatter
