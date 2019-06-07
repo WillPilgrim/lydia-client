@@ -23,6 +23,10 @@ export default class Transactions extends Component {
     let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234)
     this.state = {
       isLoading: true,
+      defaultColDef : 
+      {
+        resizable : true
+      },
       columnDefs: [
         {
           headerName: "",
@@ -37,11 +41,11 @@ export default class Transactions extends Component {
           filter: "agDateColumnFilter",
           filterParams: {
             comparator: function(filterLocalDateAtMidnight, cellValue) {
-              var dateParts = cellValue.split("-");
-              var day = Number(dateParts[2]);
-              var month = Number(dateParts[1]) - 1;
-              var year = Number(dateParts[0]);
-              var cellDate = new Date(year, month, day);
+              let dateParts = cellValue.split("-");
+              let day = Number(dateParts[2]);
+              let month = Number(dateParts[1]) - 1;
+              let year = Number(dateParts[0]);
+              let cellDate = new Date(year, month, day);
               if (cellDate < filterLocalDateAtMidnight) {
                 return -1;
               } else if (cellDate > filterLocalDateAtMidnight) {
@@ -55,14 +59,15 @@ export default class Transactions extends Component {
           valueFormatter: this.dateFormatter,
           cellStyle: { textAlign: "right" },
           editable: this.rowEditable,
-          cellEditor: 'popupText'
+          cellEditor: "agTextCellEditor"
         },
         {
           headerName: "Description",
           field: "description",
           editable: this.rowEditable,
           width: descriptionWidth,
-          cellEditor: 'popupText'
+          filter: "agTextColumnFilter",
+          cellEditor: "agTextCellEditor"
         },
         {
           headerName: "Credit",
@@ -70,10 +75,30 @@ export default class Transactions extends Component {
           type: "numericColumn",
           width: 110,
           editable: this.rowEditable,
-          cellEditor: "popupText",
-          cellEditorParams: { useFormatter: true },
           valueParser: this.amountParser,
-          valueFormatter: this.amountFormatter
+          valueFormatter: this.amountFormatter,
+          filter: "agNumberColumnFilter",
+          filterParams: {
+            filterOptions: [
+              {
+                  displayKey: 'equals',
+                  displayName: 'Equals',
+                  test: function(filterValue, cellValue) {
+                    let temp = parseInt(cellValue, 10) / 100;
+                      return temp === filterValue;
+                  }
+              },
+              {
+                  displayKey: 'greaterThanWithNulls',
+                  displayName: 'Greater Than with Nulls',
+                  test: function(filterValue, cellValue) {
+                      return cellValue == null || cellValue > filterValue;
+                  }
+              }
+            ]
+          },
+          cellEditorParams: { useFormatter: true },
+          cellEditor: "agTextCellEditor"
         },
         {
           headerName: "Debit",
@@ -81,10 +106,12 @@ export default class Transactions extends Component {
           field: "dbAmount",
           editable: this.rowEditable,
           type: "numericColumn",
-          cellEditor: "popupText",
-          cellEditorParams: { useFormatter: true },
           valueParser: this.amountParser,
-          valueFormatter: this.amountFormatter
+          valueFormatter: this.amountFormatter,
+          filter: "agNumberColumnFilter",
+          cellEditorParams: { useFormatter: true },
+          cellEditor: "agTextCellEditor"
+
         },
         {
           headerName: "Balance",
@@ -389,12 +416,12 @@ export default class Transactions extends Component {
                 <AgGridReact
                   headerHeight={30}
                   columnDefs={this.state.columnDefs}
+                  defaultColDef={this.state.defaultColDef}
                   rowSelection="single"
                   onCellEditingStopped={this.updateRow}
                   onCellClicked={this.onCellClicked}
                   rowDeselection={true}
                   deltaRowDataMode={true}
-                  enableColResize={true}
                   components={this.state.components}
                   getRowNodeId={data => data.transactionId}
                   getRowStyle={this.getRowStyle}
