@@ -17,6 +17,12 @@ export default class Templates extends Component {
     this.state = {
       isLoading: true,
       templates: [],
+      defaultColDef : 
+      {
+        resizable : true,
+        filter: true,
+        sortable: true
+      },
       columnDefs: [
         {
           headerName: "Account",
@@ -33,18 +39,24 @@ export default class Templates extends Component {
           field: "amount",
           width: 120,
           type: "numericColumn",
+          filter: "agNumberColumnFilter",
+          filterParams: this.amountFilterOptions,
           valueFormatter: this.amountFormatter
         },
         {
           headerName: "Start Date",
           field: "startDate",
           width: 140,
+          filter: "agDateColumnFilter",
+          filterParams: this.dateFilterOptions,
           valueFormatter: this.dateFormatter
         },
         {
           headerName: "End Date",
           field: "endDate",
           width: 140,
+          filter: "agDateColumnFilter",
+          filterParams: this.dateFilterOptions,
           valueFormatter: this.dateFormatter
         },
         {
@@ -67,6 +79,53 @@ export default class Templates extends Component {
       ]
     };
   }
+
+  dateFilterOptions = { 
+      comparator: function(filterLocalDateAtMidnight, cellValue) {
+        let dateParts = cellValue.substring(0,10).split("-");
+        let day = Number(dateParts[2]);
+        let month = Number(dateParts[1]) - 1;
+        let year = Number(dateParts[0]);
+        let cellDate = new Date(year, month, day);
+        if (cellDate < filterLocalDateAtMidnight) {
+          return -1;
+        } else if (cellDate > filterLocalDateAtMidnight) {
+          return 1;
+        } else {
+          return 0;
+        }
+      }
+  }
+
+  amountFilterOptions = { 
+    filterOptions: [
+      {
+        displayKey: 'equals',
+        displayName: 'Equals',
+        test: function(filterValue, cellValue) {
+          let temp = parseInt(cellValue, 10) / 100;
+            return temp === filterValue;
+        }
+      },
+      {
+        displayKey: 'lessthan',
+        displayName: 'Less than',
+        test: function(filterValue, cellValue) {
+          let temp = parseInt(cellValue, 10) / 100;
+            return temp < filterValue;
+        }
+      },
+      {
+        displayKey: 'greaterthan',
+        displayName: 'Greater than',
+        test: function(filterValue, cellValue) {
+          let temp = parseInt(cellValue, 10) / 100;
+            return temp > filterValue;
+        }
+      }
+    ]
+  }
+
 
   async componentDidMount() {
     if (!this.props.isAuthenticated) {
@@ -184,12 +243,10 @@ export default class Templates extends Component {
 
         <div id="tempGrid" style={divStyle} className="ag-theme-bootstrap">
           <AgGridReact
-            enableSorting={true}
-            enableFilter={true}
             columnDefs={this.state.columnDefs}
+            defaultColDef={this.state.defaultColDef}
             rowData={this.state.templates}
             rowDeselection={true}
-            enableColResize={true}
             rowSelection="single"
             onGridReady={params => (this.gridApi = params.api)}
           />

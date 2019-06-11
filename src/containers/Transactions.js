@@ -78,25 +78,7 @@ export default class Transactions extends Component {
           valueParser: this.amountParser,
           valueFormatter: this.amountFormatter,
           filter: "agNumberColumnFilter",
-          filterParams: {
-            filterOptions: [
-              {
-                  displayKey: 'equals',
-                  displayName: 'Equals',
-                  test: function(filterValue, cellValue) {
-                    let temp = parseInt(cellValue, 10) / 100;
-                      return temp === filterValue;
-                  }
-              },
-              {
-                  displayKey: 'greaterThanWithNulls',
-                  displayName: 'Greater Than with Nulls',
-                  test: function(filterValue, cellValue) {
-                      return cellValue == null || cellValue > filterValue;
-                  }
-              }
-            ]
-          },
+          filterParams: this.amountFilterOptions,
           cellEditorParams: { useFormatter: true },
           cellEditor: "agTextCellEditor"
         },
@@ -109,6 +91,7 @@ export default class Transactions extends Component {
           valueParser: this.amountParser,
           valueFormatter: this.amountFormatter,
           filter: "agNumberColumnFilter",
+          filterParams: this.amountFilterOptions,
           cellEditorParams: { useFormatter: true },
           cellEditor: "agTextCellEditor"
 
@@ -119,6 +102,8 @@ export default class Transactions extends Component {
           width: 115,
           type: "numericColumn",
           valueFormatter: this.balanceFormatter,
+          filter: "agNumberColumnFilter",
+          filterParams: this.amountFilterOptions,
           cellStyle: params => {
             if (params.value < 0) {
               return { color: "red" };
@@ -129,6 +114,35 @@ export default class Transactions extends Component {
         }
       ]
     };
+  }
+
+  amountFilterOptions = { 
+    filterOptions: [
+      {
+        displayKey: 'equals',
+        displayName: 'Equals',
+        test: function(filterValue, cellValue) {
+          let temp = parseInt(cellValue, 10) / 100;
+            return temp === filterValue;
+        }
+      },
+      {
+        displayKey: 'lessthan',
+        displayName: 'Less than',
+        test: function(filterValue, cellValue) {
+          let temp = parseInt(cellValue, 10) / 100;
+            return temp < filterValue;
+        }
+      },
+      {
+        displayKey: 'greaterthan',
+        displayName: 'Greater than',
+        test: function(filterValue, cellValue) {
+          let temp = parseInt(cellValue, 10) / 100;
+            return temp > filterValue;
+        }
+      }
+    ]
   }
 
   async componentDidMount() {
