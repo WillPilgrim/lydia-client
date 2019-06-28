@@ -362,6 +362,30 @@ export default class Transactions extends Component {
       }
   }
 
+  handleAdd = () => {
+    let newNode = {
+      date: today,
+      autogen: null,
+      type: "manual",
+      transactionId: uuid(),
+      dbAmount: 0,
+      crAmount: 0,
+      description: "New Item"
+    }
+    let transAcc = this.props.transAcc
+    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+    acc.trans.push(newNode)
+    transAcc = calculate(
+      this.props.accounts,
+      this.props.templates,
+      transAcc,
+      today
+    )
+    this.props.setTransactions(transAcc)
+    this.props.setSaveRequired(true)
+    this.props.setRecalcRequired(false)
+  }
+
   updateRow = node => {
     let transAcc = this.props.transAcc
     let acc = transAcc.find(x => x.accountId === this.props.currentAccId)
@@ -471,6 +495,7 @@ export default class Transactions extends Component {
           <div className="col-sm-12">
             <ButtonToolbar id="buttons" className="pull-right">
               <ButtonGroup>
+                <Button onClick={this.handleAdd}>Add</Button>
                 <Button onClick={this.handleDuplicate}>Duplicate</Button>
                 <Button onClick={this.handleDelete}>Delete</Button>
                 <Button onClick={this.handleManual}>Manual</Button>
