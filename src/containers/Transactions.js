@@ -203,10 +203,11 @@ export default class Transactions extends Component {
     if (Moment(params.node.data.date).startOf("date").isSameOrBefore(today, "day")) rowStyle = { "background-color" : "#D3D3D3"}
     if (params.node.rowIndex === 0) rowStyle["font-weight"] = "bold"
     if (!params.node.data.autogen) rowStyle["font-style"] = "italic"
+    if (params.node.data.newRate) rowStyle["color"] = "#0000FF"
     return rowStyle
   }
 
-  rowEditable = node => node.data.transactionId !== 0 && ((Moment(node.data.date).isSameOrBefore(today, "day")) || (!node.data.autogen))
+  rowEditable = node => node.data.transactionId !== 0 && ((Moment(node.data.date).isSameOrBefore(today, "day")) || (!node.data.autogen)) &&  (!node.data.newRate)
  
   onCellClicked = (node) => {
     if (node.column.colId === "reconciled" && node.rowIndex > 0)

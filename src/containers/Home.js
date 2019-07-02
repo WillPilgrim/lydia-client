@@ -25,7 +25,20 @@ export default class Home extends Component {
     this.setState({ isLoading: false });
   }
 
-  balanceFormatter = value => (parseInt(value, 10) / 100).toFixed(2)
+  lineFormatter = (transAcc, account) => {
+    let line = "Balance: "
+    if (transAcc) {
+      let lineAcc = transAcc.find(x => x.accountId === account.accountId)
+      line += (parseInt(lineAcc.currentBal, 10) / 100).toFixed(2)
+      if (lineAcc.interest) {
+        if (lineAcc.currentCrRate > 0)
+          line += ', Credit Rate: ' + (lineAcc.currentCrRate).toFixed(2) + "%"
+        if (lineAcc.currentDbRate > 0)
+          line += ', Debit Rate: ' + (lineAcc.currentDbRate).toFixed(2) + "%"
+      }
+    }
+    return line
+  }
 
   handleAccountClick = event => {
     event.preventDefault();
@@ -52,7 +65,7 @@ export default class Home extends Component {
                   onClick={this.handleAccountClick}
                   header={account.description.trim().split("\n")[0]}
                 >
-                  {"Balance: " + (transAcc ? this.balanceFormatter(transAcc.find(x => x.accountId === account.accountId).currentBal) : "")}
+                  {this.lineFormatter(transAcc,account)}
                 </ListGroupItem>
               </div>
               <div className="col-sm-1">

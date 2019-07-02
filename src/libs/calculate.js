@@ -362,6 +362,8 @@ let updateBalance = (account, transactions, today) => {
     //  Interest related set up
     //  =======================
     let totalInterest = 0;
+    // The calculation rates default to the rates specified on the account
+    // They are only changed by rate change transactions with the 'newRate' and 'credit' properties
     let dbRate = account.interest ? account.dbRate / 100 : 0;
     let crRate = account.interest ? account.crRate / 100 : 0;
     let crRateToday = crRate;
@@ -569,8 +571,8 @@ if (account.accName === "Mortgage" && debug) {
           if (tr.type === "interest") {
             if (lineDate.isAfter(today, "day")) {
               totalInterest = Math.floor(totalInterest);
-              tr.dbRate = dbRate;
-              tr.crRate = crRate;
+              // tr.dbRate = dbRate;
+              // tr.crRate = crRate;
               // Check if an interest debit/credit line is needed.
               // Note must make sure its not the first entry because there is no previous entry.
               // In this case, we'll just have an Interest Debit line of 0
@@ -591,14 +593,13 @@ if (account.accName === "Mortgage" && debug) {
                   tr.description = "Interest Debit";
                 }
               }
-            } else {
-              crRate = tr.crRate;
-              dbRate = tr.dbRate;
+            // } else {
+            //   crRate = tr.crRate;
+            //   dbRate = tr.dbRate;
             }
             totalInterest = 0;
           }
         }
-
         //  Get current rate from rate change entry
         if (tr.newRate !== undefined) {
           if (tr.credit) crRate = tr.newRate;
