@@ -4,6 +4,7 @@ import { testTransactions } from "../TestData/TestTrans";
 
 const testData = false;
 const timings = true;
+const debug = false;
 
 export const calculate = (accounts, templates, transAcc, today) => {
   if (timings) console.time("Recalculation Total");
@@ -297,80 +298,6 @@ let processSpecials = (transactions, templates, today) => {
   let completed = 0;
   while (completed < specials.length) {
     specials.filter(special => special.active).forEach(createSpecials)}
-
-
-  // let completed = 0;
-  // while (completed < specials.length) {
-  //   specials.filter(special => special.active).forEach(special => {
-  //     let accId = special.accountId;
-
-  //     // Only process this special if no active account minimises to this one
-  //     if (
-  //       !specials.find(
-  //         special => special.partnerAccId === accId && special.active
-  //       )
-  //     ) {
-  //       let startDate = Moment(special.startDate);
-  //       let endDate = Moment(special.endDate);
-  //       let account = transactions.find(acc => acc.accountId === accId);
-
-  //       switch (special.type) {
-  //         case "Minimise":
-  //           let insertEndMarker = false;
-  //           while (startDate.isSameOrBefore(endDate, "day")) {
-  //             if (startDate.isAfter(today, "day")) {
-  //               account.trans.push({
-  //                 date: startDate.startOf("date").format(),
-  //                 autogen: startDate.startOf("date").format(),
-  //                 transactionId: uuid(),
-  //                 partnerAccId: special.partnerAccId,
-  //                 dbAmount: 0,
-  //                 crAmount: 0,
-  //                 minBalance: special.amount,
-  //                 type: special.type
-  //               });
-  //               account.dirty = true;
-  //               insertEndMarker = true;
-  //             }
-  //             startDate = startDate.add(special.periodCnt, special.periodType);
-  //           }
-  //           if (insertEndMarker) {
-  //             account.trans.push({
-  //               date: startDate.startOf("date").format(),
-  //               autogen: startDate.startOf("date").format(),
-  //               transactionId: uuid(),
-  //               dbAmount: 0,
-  //               crAmount: 0,
-  //               type: "PeriodEndMarker"
-  //             });
-  //           }
-  //           break;
-
-  //         case "Zero":
-  //           if (startDate.isAfter(today, "day")) {
-  //             account.trans.push({
-  //               date: startDate.startOf("date").format(),
-  //               autogen: startDate.startOf("date").format(),
-  //               transactionId: uuid(),
-  //               partnerAccId: special.partnerAccId,
-  //               dbAmount: 0,
-  //               crAmount: 0,
-  //               type: special.type
-  //             });
-  //             account.dirty = true;
-  //           }
-  //           break;
-  //         default:
-  //           break;
-  //       }
-
-  //       updateBalance(account, transactions); // ensure account ready to process
-
-  //       completed++;
-  //       specials.active = false;
-  //     }
-  //   }
-   // );}
 };
 
 let updateBalances = (transactions, today) => {
@@ -452,18 +379,16 @@ let updateBalance = (account, transactions, today) => {
     let prevInterestDate = Moment(firstBaseInterestDate);
     //  =======================
 
-// // Debugging info for interest bug...
-// if (account.accName === "Mortgage") {
-// console.log('********************************')
-// console.log('Interest problem debugging info')
-// console.log('********************************')
-// console.log(`account=${account.accName} today=${today} ` )
-// console.log(`dbRate=${dbRate} crRate=${crRate}`)
+// Debugging info for interest bug...
+if (account.accName === "Mortgage" && debug) {
+  console.log('********************************')
+  console.log('Interest problem debugging info')
+  console.log('********************************')
+  console.log(`account=${account.accName} today=${today} ` )
+  console.log(`dbRate=${dbRate} crRate=${crRate}`)
 
-// console.log('********************************')
-
-
-// }
+  console.log('********************************')
+}
 
     // Use an old school loop so it can be manipulated when
     // doing 'Minimise' transactions
@@ -633,8 +558,11 @@ let updateBalance = (account, transactions, today) => {
                 daysDiff
               ) -
             runningBalance;
-  //     if (account.accName === "Mortgage") console.log('date=',lineDate,' lineInterest=',lineInterest,' runningBalance=',runningBalance, 'crRate=',crRate, 'dbRate=',dbRate,'daysDiff=',daysDiff)
-            totalInterest += lineInterest;
+          if (account.accName === "Mortgage" && debug) {
+            console.log('lineDate=',lineDate,' lineInterest=',lineInterest,' runningBalance=',runningBalance, ' crRate=',crRate, ' dbRate=',dbRate,' daysDiff=',daysDiff,' totalInterest=',totalInterest)
+            console.log('tr=',tr)
+          }
+          totalInterest += lineInterest;
           tr.interest = lineInterest;
 
           // Add accumulated interest between interest debit/credit entries
@@ -643,7 +571,10 @@ let updateBalance = (account, transactions, today) => {
               totalInterest = Math.floor(totalInterest);
               tr.dbRate = dbRate;
               tr.crRate = crRate;
-              if (totalInterest === 0) {
+              // Check if an interest debit/credit line is needed.
+              // Note must make sure its not the first entry because there is no previous entry.
+              // In this case, we'll just have an Interest Debit line of 0
+              if (totalInterest === 0 && trIndex > 0) {
                 account.trans.splice(trIndex, 1);
                 trIndex--;
                 tr = account.trans[trIndex];

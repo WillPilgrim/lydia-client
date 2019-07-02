@@ -5,7 +5,13 @@ import {
   ButtonToolbar,
   ButtonGroup,
   Tabs,
-  Tab
+  Tab,
+  Modal,
+  InputGroup,
+  FormControl,
+  FormGroup,
+  Checkbox,
+  ControlLabel
 } from "react-bootstrap";
 import "./Transactions.css";
 import Moment from "moment";
@@ -15,6 +21,8 @@ import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-bootstrap.css";
 import { today, uuid } from "../libs/utilities";
+import DatePicker from "react-16-bootstrap-date-picker";
+
 
 export default class Transactions extends Component {
   constructor(props) {
@@ -22,6 +30,10 @@ export default class Transactions extends Component {
     this.gridApi = [];
     let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234)
     this.state = {
+      intFirstAppliedDate: today.format(),
+      newRateCredit: false,
+      newRateValue: 0,
+      showInterest: false,
       isLoading: true,
       defaultColDef : 
       {
@@ -303,11 +315,23 @@ export default class Transactions extends Component {
       let data = nodes[0].data;
       acc.trans = acc.trans.filter(x => x.transactionId !== data.transactionId);
       nodes[0].setData(data);
-      this.props.setTransactions(transAcc);
-      this.props.setRecalcRequired(true);
-      this.props.setSaveRequired(true);
-      let params = { rowNodes: nodes };
-      this.gridApi[this.props.currentAccId].refreshCells(params);
+
+      transAcc = calculate(
+        this.props.accounts,
+        this.props.templates,
+        transAcc,
+        today
+      )
+      this.props.setTransactions(transAcc)
+      this.props.setSaveRequired(true)
+      this.props.setRecalcRequired(false)
+
+
+      // this.props.setTransactions(transAcc);
+      // this.props.setRecalcRequired(true);
+      // this.props.setSaveRequired(true);
+      // let params = { rowNodes: nodes };
+      // this.gridApi[this.props.currentAccId].refreshCells(params);
     }
   };
 
@@ -386,6 +410,45 @@ export default class Transactions extends Component {
     this.props.setRecalcRequired(false)
   }
 
+  handleInterestCommit = () => {
+    let newRate = parseFloat(this.state.newRateValue).toFixed(2);
+    let desc;
+    if (this.state.newRateCredit) desc = " New credit rate: " + newRate + "%"
+    else desc = " New debit rate: " + newRate + "%"
+    let newNode = {
+      date: Moment(this.state.intFirstAppliedDate).startOf('date').format(),
+      autogen: null,
+      type: "manual",
+      transactionId: uuid(),
+      newRate: newRate / 100,
+      credit: this.state.newRateCredit,
+      description: desc,
+      dbAmount: 0,
+      crAmount: 0
+    }
+    let transAcc = this.props.transAcc
+    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+    acc.trans.push(newNode)
+    transAcc = calculate(
+      this.props.accounts,
+      this.props.templates,
+      transAcc,
+      today
+    )
+    this.props.setTransactions(transAcc)
+    this.props.setSaveRequired(true)
+    this.props.setRecalcRequired(false)
+    this.setState( {showInterest: false});
+  }
+
+  handleInterestShow = () => {
+    this.setState( {showInterest: true});
+  }
+
+  handleInterestClose = () => {
+    this.setState( {showInterest: false});
+  }
+
   updateRow = node => {
     let transAcc = this.props.transAcc
     let acc = transAcc.find(x => x.accountId === this.props.currentAccId)
@@ -405,6 +468,59 @@ export default class Transactions extends Component {
     this.gridApi[this.props.currentAccId].redrawRows()
   }
 
+  validateForm() {
+    return (
+      this.getNewRateValidationState() !== "error" &&
+      this.getFirstAppliedDateValidationState() !== "error"
+    )
+  }
+
+  getNewRateValidationState() {
+    const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
+    if (!regex.test(this.state.newRateValue)) return "error";
+    let amount = parseFloat(this.state.newRateValue).toFixed(2);
+    if (isNaN(amount)) return "error";
+    if (amount > 99.99) return "error";
+    return "success";
+  }
+
+  getFirstAppliedDateValidationState() {
+    if (this.state.intFirstAppliedDate === null) return "error";
+    if (Moment(this.state.intFirstAppliedDate).isAfter(today.clone().add(30, "y"),"day"))
+      return "error";
+    let transAcc = this.props.transAcc
+    if (transAcc) {
+      let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+      if (Moment(this.state.intFirstAppliedDate).isBefore(Moment(acc.openingDate),"day"))
+        return "error";
+      if (Moment(this.state.intFirstAppliedDate).isAfter(Moment(acc.closingDate),"day"))
+        return "error";
+    }
+    return "success";
+  }
+
+  handleFirstAppliedDateChange = value => {
+    this.setState({
+      intFirstAppliedDate: value
+    });
+  };
+
+  handleInterestTypeChange = event => {
+    this.setState({
+      newRateCredit: event.target.checked
+    });
+  };
+
+  handleFocus = event => {
+    event.target.select();
+  }
+
+  handleChange = event => {
+    this.setState({
+      [event.target.id]: event.target.value
+    });
+  };
+
   render() {
     let h =
       Math.max(document.documentElement.clientHeight, window.innerHeight || 0) -
@@ -412,6 +528,7 @@ export default class Transactions extends Component {
     let divStyle = { boxSizing: "border-box", height: `${h}px` };
     let data = [];
     let currAcc;
+    let interestAcc = false;
     if (this.props.transAcc)
       currAcc = this.props.transAcc.find(
         x => x.accountId === this.props.currentAccId
@@ -429,6 +546,7 @@ export default class Transactions extends Component {
         let newitem = { ...x };
         data.push(newitem);
       });
+      interestAcc = currAcc.interest;
     }
     if (this.gridApi[this.props.currentAccId])
       this.gridApi[this.props.currentAccId].setRowData(data);
@@ -436,6 +554,57 @@ export default class Transactions extends Component {
     return (
       <div className="transactions">
         <PageHeader>Transactions</PageHeader>
+
+        <Modal show={this.state.showInterest} onHide={this.handleInterestClose}>
+          <Modal.Header closeButton>
+              <Modal.Title>Interest Rate Change</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+          <FormGroup
+              controlId="intFirstAppliedDate"
+              validationState={this.getFirstAppliedDateValidationState()}
+            >
+              <ControlLabel>Start Date</ControlLabel>
+              <DatePicker
+                id="intFirstAppliedDate"
+                value={this.state.intFirstAppliedDate}
+                placeholder="Date"
+                onChange={this.handleFirstAppliedDateChange}
+                autoComplete="off"
+              />
+            </FormGroup>
+            <FormGroup
+              controlId="newRateValue"
+              validationState={this.getNewRateValidationState()}
+            >
+              <ControlLabel>Interest Rate</ControlLabel>
+              <InputGroup>
+                <InputGroup.Addon>%</InputGroup.Addon>
+                <FormControl
+                  type="text"
+                  value={this.state.newRateValue}
+                  placeholder="Rate"
+                  onChange={this.handleChange}
+                  onFocus={this.handleFocus}
+                />
+              </InputGroup>
+              <FormControl.Feedback />
+            </FormGroup>
+            <FormGroup controlId="newRateCredit" validationState="success">
+              <Checkbox
+                checked={this.state.newRateCredit}
+                onChange={this.handleInterestTypeChange}
+              >
+                Credit Interest
+              </Checkbox>
+            </FormGroup>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button onClick={this.handleInterestClose}>Close</Button>
+            <Button disabled={!this.validateForm()} bsStyle="primary" onClick={this.handleInterestCommit}>Add</Button>
+          </Modal.Footer>
+        </Modal>
+
 
         <Tabs
           defaultActiveKey={1}
@@ -495,6 +664,7 @@ export default class Transactions extends Component {
           <div className="col-sm-12">
             <ButtonToolbar id="buttons" className="pull-right">
               <ButtonGroup>
+                <Button disabled={!interestAcc} onClick={this.handleInterestShow}>Interest</Button>
                 <Button onClick={this.handleAdd}>Add</Button>
                 <Button onClick={this.handleDuplicate}>Duplicate</Button>
                 <Button onClick={this.handleDelete}>Delete</Button>
