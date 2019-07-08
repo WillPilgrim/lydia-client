@@ -55,7 +55,7 @@ export const deleteFutureAllTransactions = (accounts, transAcc, today) =>
 let processNormal = (transactions, templates, today) => {
   // Hardcode inflation rate for now
 
-  const inflation = 0.03;
+  const inflationRate = 0.03;
 
   templates
     .filter(
@@ -65,7 +65,7 @@ let processNormal = (transactions, templates, today) => {
         t.templateType !== "Zero"
     )
     .forEach(template => {
-      let inflate = true; // hardcode for now...use template.inflate eventually
+      let inflate = template.inflation
       let startDate = Moment(template.startDate);
       let transDate = Moment(startDate);
       let endDate = Moment(template.endDate);
@@ -82,7 +82,7 @@ let processNormal = (transactions, templates, today) => {
           if (inflate) {
             let numYears = transDate.diff(startDate, "years");
             if (numYears < 0) numYears = 0;
-            amount = Math.floor(amount * Math.pow(1 + inflation, numYears));
+            amount = Math.floor(amount * Math.pow(1 + inflationRate, numYears));
           }
 
           let dbAmount = 0;

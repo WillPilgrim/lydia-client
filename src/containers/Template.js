@@ -5,6 +5,7 @@ import {
   FormControl,
   ControlLabel,
   InputGroup,
+  Checkbox,
   Col
 } from "react-bootstrap";
 import LoaderButton from "../components/LoaderButton";
@@ -34,6 +35,7 @@ export default class Template extends Component {
       periodCnt: 1,
       periodLastDay: 0,
       templateId: null,
+      inflation: true,
       new: ""
     };
   }
@@ -60,7 +62,8 @@ export default class Template extends Component {
         periodType,
         periodCnt,
         periodLastDay,
-        templateId
+        templateId,
+        inflation
       } = template;
       this.setState({
         accountFromId,
@@ -75,7 +78,8 @@ export default class Template extends Component {
         periodType,
         periodCnt,
         periodLastDay: periodLastDay ? periodLastDay : 0,
-        templateId
+        templateId,
+        inflation:inflation ? inflation : false
       });
     } catch (e) {
       alert(e);
@@ -117,6 +121,12 @@ export default class Template extends Component {
   handleChange = event => {
     this.setState({
       [event.target.id]: event.target.value
+    });
+  };
+
+  handleInflationChange = event => {
+    this.setState({
+      inflation: event.target.checked
     });
   };
 
@@ -170,7 +180,6 @@ export default class Template extends Component {
       const templ = {
         numPeriods: this.state.template.numPeriods,
         noEnd: this.state.template.noEnd,
-        inflation: this.state.template.inflation,
 
         description: this.state.description,
         amount: Math.round(parseFloat(this.state.amount100).toFixed(2) * 100),
@@ -190,7 +199,8 @@ export default class Template extends Component {
             ? parseInt(this.state.periodLastDay, 10)
             : 0,
         accountFromId: this.state.accountFromId,
-        accountToId: this.state.accountToId
+        accountToId: this.state.accountToId,
+        inflation: this.state.inflation
       };
       if (this.props.match.params.id === "new") {
         await this.createTemplate(templ);
@@ -459,6 +469,15 @@ export default class Template extends Component {
                   disabled={this.state.templateType !== "CC"}
                   onFocus={this.handleFocus}
                 />
+              </FormGroup>
+              <FormGroup controlId="inflation" validationState="success">
+                <ControlLabel>Inflation</ControlLabel>
+                <Checkbox
+                  checked={this.state.inflation}
+                  onChange={this.handleInflationChange}
+                >
+                  Apply annual inflation rate
+                </Checkbox>
               </FormGroup>
             </Col>
             <LoaderButton
