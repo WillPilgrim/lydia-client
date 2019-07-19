@@ -3,7 +3,7 @@ import { uuid } from "./utilities";
 import { testTransactions } from "../TestData/TestTrans";
 
 const testData = false;
-const timings = true;
+const timings = false;
 const debug = false;
 
 export const calculate = (accounts, templates, transAcc, today) => {
@@ -28,27 +28,82 @@ export const calculate = (accounts, templates, transAcc, today) => {
   return transactions;
 };
 
-export const deleteFutureAllTransactions = (accounts, transAcc, today) =>
+export const trim = (transAcc, trimDate) => {
+  transAcc.forEach(account => {
+    let startingBalance = account.starting.balance
+    let startingInterest = account.starting.interest
+    let startingIntRateDb = account.starting.dbRate
+    let startingIntRateCr = account.starting.crRate
+    let startingPayoffAmt = account.starting.payoffAmt
+    let lastTransBeforeTrimDate = trimDate
+    account.trans.forEach(trans => {
+      if (!Moment(trans.date).isAfter(trimDate,"day")) {
+        startingBalance = trans.balance
+        startingInterest = trans.periodInterest  // Uncredited/undebited accumulated interest
+        startingIntRateCr = trans.crRate * 100
+        startingIntRateDb = trans.dbRate * 100
+        if (trans.ccBalance) startingPayoffAmt = trans.ccBalance
+        lastTransBeforeTrimDate = trans.date
+      }
+    })
+    if (account.interest) {
+      let daysDiff = trimDate.diff(lastTransBeforeTrimDate, "days") + 1
+      startingInterest += (startingBalance > 0 ? startingIntRateCr : startingIntRateDb) / 36500 * startingBalance * daysDiff
+    }
+    account.starting.balance = startingBalance
+    account.starting.interest = startingInterest
+    account.starting.dbRate = startingIntRateDb
+    account.starting.crRate = startingIntRateCr
+    account.starting.payoffAmt = startingPayoffAmt
+    account.starting.date = Moment(trimDate).add(1, "d")
+    // Remove transactions before new starting date
+    account.trans = account.trans.filter(item => Moment(item.date).isAfter(trimDate, "day"))
+  })
+}
+
+// Returns a new 'transAcc' which is an array of accounts and associated transactions less any future auto trans
+export const deleteFutureAllTransactions = (accounts, transAcc, today, archive) =>
   accounts.map(account => {
     // ToDo: need to verify evey account in transAcc exists in accs
     let ta = transAcc.find(x => x.accountId === account.accountId); // find corresponding transAcc entry for this account
     let newTrans = [];
     if (testData) {
-      let testAcc = testTransactions.find(
-        tt => tt.accountId === account.accountId
-      );
+      let testAcc = testTransactions.find(tt => tt.accountId === account.accountId);
       if (testAcc) newTrans = testAcc.trans;
     }
-    let newAccount = { trans: ta ? ta.trans : newTrans, ...account }; // Build new account from Dynamo account plus trans
-    newAccount.trans = newAccount.trans.filter(
-      item => !Moment(item.autogen).isAfter(today, "day")
-    );
+    const newAccount = { trans: ta ? ta.trans : newTrans, starting: ta ? ta.starting : null, ...account }; // Build new account from Dynamo account plus trans
+    if (archive) {
+      newAccount.trans = newAccount.trans.filter(
+        item => !Moment(item.date).isAfter(today, "day")
+      )
+    }
+    else {
+      newAccount.trans = newAccount.trans.filter(
+        item => !Moment(item.autogen).isAfter(today, "day")
+      )
+    }
     // Initialise work variables
     newAccount.dirty = true;
     newAccount.currentBal = 0;
     newAccount.currentCrRate = 0;
     newAccount.currentDbRate = 0;
     newAccount.ccDates = [];
+
+    // Initialise account starting values if they do not already exist
+    if (!newAccount.starting) {
+      newAccount.starting = {} 
+      newAccount.starting.balance = account.amount
+      newAccount.starting.crRate = account.crRate
+      newAccount.starting.dbRate = account.dbRate
+      newAccount.starting.date = account.openingDate
+      newAccount.starting.interest = 0
+      // For credit cards, this is the amount needed to pay it off in the period before the start of this account.
+      // It's not the same as opening balance because there could be debts that are in between the period closing
+      // balance date and the account opening date. This is set to 0 for new accounts. When archiving, this will be
+      // set on the current account to the last amount due on the archived portion.
+      newAccount.starting.payoffAmt = account.amount   
+    }
+
     return newAccount;
   });
 
@@ -135,15 +190,17 @@ let processNormal = (transactions, templates, today) => {
 let processSpecials = (transactions, templates, today) => {
   // 1. Process all credit card accounts
 
+  // Loop through all credit card type templates
   templates.filter(t => t.templateType === "CC").forEach(template => {
+    // The template 'from' account is the credit card account
+    // The template 'to' account is where the funds to pay the credit card are coming from
     let account = transactions.find(
       acc => acc.accountId === template.accountFromId
     );
-    account.payFromAccId = template.accountToId;
-    let startDate = Moment(template.startDate);
-    let transDate = Moment(startDate);
+    account.payFromAccId = template.accountToId;  // Saving the account where the funds are coming from
+    let transDate = Moment(template.startDate);
+    let payDay = transDate.get("date");  // the day of the period that the payment is made
     let endDate = Moment(template.endDate);
-    let payDay = startDate.get("date");
     let periodEndDay = template.periodLastDay;
     let periodType = template.periodType;
     let periodCnt = template.periodCnt;
@@ -153,7 +210,8 @@ let processSpecials = (transactions, templates, today) => {
     );
 
     while (transDate.isSameOrBefore(endDate, "day")) {
-      transDate = transDate.add(periodCnt, periodType);
+      // Initial payment entry is 1 period after start date
+      transDate = transDate.add(periodCnt, periodType);  
       if (transDate.isAfter(today, "day")) {
         let newTrans = {
           date: transDate.startOf("date").format(),
@@ -171,7 +229,8 @@ let processSpecials = (transactions, templates, today) => {
         let periodEndDate = Moment(transDate).date(periodEndDay); // Set date to trans date with closing balance day
         if (payDay <= periodEndDay)
           periodEndDate = periodEndDate.subtract(periodCnt, periodType); // closing balance date must be in the past
-        account.ccDates.push(periodEndDate); // save dates for future calculation of closing statement balances
+        // add this period end date to the saved list of period end dates
+        account.ccDates.push(periodEndDate); // array corresponds with future credit card payment entries
       }
     }
 
@@ -328,9 +387,10 @@ let updateBalance = (account, transactions, today) => {
     account.trans = newarray;
     account.trans.forEach(x => (x.date = Moment(x.date).format("YYYY-MM-DD")));
 
-    let runningBalance = account.amount;
+    let runningBalance = account.starting.balance;
+    const openingDate = account.starting.date
     let balanceToday = runningBalance;
-    if (Moment(account.openingDate).isAfter(today, "day")) balanceToday = 0;
+    if (Moment(openingDate).isAfter(today, "day")) balanceToday = 0;
 
     //  Credit card related set up
     //  ==========================
@@ -354,43 +414,47 @@ let updateBalance = (account, transactions, today) => {
     let saveBal;
     let saveCrRate;
     let saveDbRate;
-    let saveTotalInt;
+    let savePeriodInt;
     let lowestBalForPeriod = 0;
     let minPeriodStartIndex = -1;
     //  =======================
 
     //  Interest related set up
     //  =======================
-    let totalInterest = 0;
+    let periodInterest = account.starting.interest;  // Any uncredited/undebited accumulated interest
     // The calculation rates default to the rates specified on the account
     // They are only changed by rate change transactions with the 'newRate' and 'credit' properties
-    let dbRate = account.interest ? account.dbRate / 100 : 0;
-    let crRate = account.interest ? account.crRate / 100 : 0;
+    let dbRate = account.interest ? account.starting.dbRate / 100 : 0;
+    let crRate = account.interest ? account.starting.crRate / 100 : 0;
+    // Default today's rates to starting rates 
     let crRateToday = crRate;
     let dbRateToday = dbRate;
 
-    let intFirstAppliedDate = Moment(account.intFirstAppliedDate).startOf("date"); // Set first applied date
     // Find first date interest is to be calculated from
-
-    let firstBaseInterestDate = Moment(intFirstAppliedDate).startOf("date").subtract(
+    let firstBaseInterestDate = Moment(account.intFirstAppliedDate).startOf("date").subtract(
       account.periodCnt,
       account.periodType
-    );
-    if (firstBaseInterestDate.isBefore(Moment(account.openingDate), "day"))
-      firstBaseInterestDate = Moment(account.openingDate);
+    )
+    if (firstBaseInterestDate.isBefore(Moment(openingDate), "day"))
+      firstBaseInterestDate = Moment(openingDate)
+    else
+      periodInterest = 0  // If start of interest calculation after account start date then no unaccumulated carryin interest
     let prevInterestDate = Moment(firstBaseInterestDate);
     //  =======================
 
-// Debugging info for interest bug...
-if (account.accName === "Mortgage" && debug) {
-  console.log('********************************')
-  console.log('Interest problem debugging info')
-  console.log('********************************')
-  console.log(`account=${account.accName} today=${today} ` )
-  console.log(`dbRate=${dbRate} crRate=${crRate}`)
-
-  console.log('********************************')
-}
+    // Debugging info for interest bug...
+    if (account.accName === "Mortgage" && debug) {
+      console.log('********************************')
+      console.log('Interest problem debugging info')
+      console.log('********************************')
+      console.log(`account=${account.accName} today=${today} ` )
+      console.log(`dbRate=${dbRate} crRate=${crRate}`)
+      console.log(`openingDate=${openingDate}`)
+      console.log(`intFirstAppliedDate=${account.intFirstAppliedDate}`)
+      console.log(`firstBaseInterestDate=${firstBaseInterestDate}`)
+      console.log(`periodInterest=${periodInterest}`)
+      console.log('********************************')
+    }
 
     // Use an old school loop so it can be manipulated when
     // doing 'Minimise' transactions
@@ -400,10 +464,18 @@ if (account.accName === "Mortgage" && debug) {
 
       if (ccIndex > -1) {
         // Calculate period closing balance
+        // Note: this can cause a problem if the current period end date is before
+        // the starting date. The amount calculated to pay off the credit card
+        // could include transactions that don't need to be paid yet.
+        // To fix this, a 'start of account' carried over repayment amount would need to be recorded.
+        // Probably not worth it as the current behaviour overestimates the payment, which is not too bad.
         if (lineDate.isAfter(periodEndDate, "day")) {
-          ccBalance = runningBalance;
+          if (periodEndDate.isBefore(account.starting.date,"day")) ccBalance = account.starting.payoffAmt
+          else ccBalance = runningBalance;
           ccIndex++;
           periodEndDate = Moment(account.ccDates[ccIndex]);
+          // Save the credit card period balance due on the previous line
+          if (trIndex > 0) account.trans[trIndex-1].ccBalance = ccBalance
         }
 
         // Check if this line is a credit card payment line
@@ -479,7 +551,7 @@ if (account.accName === "Mortgage" && debug) {
             saveBal = runningBalance; // remember current balance when we return here
             saveCrRate = crRate;
             saveDbRate = dbRate;
-            saveTotalInt = totalInterest;
+            savePeriodInt = periodInterest;
           } else {
             // remove final minimise end of period marker
             if (tr.type === "PeriodEndMarker") account.trans.splice(trIndex, 1);
@@ -541,63 +613,55 @@ if (account.accName === "Mortgage" && debug) {
             runningBalance = saveBal; // restore balance, rate and interest to start of period
             dbRate = saveDbRate;
             crRate = saveCrRate;
-            totalInterest = saveTotalInt;
+            periodInterest = savePeriodInt;
             minPeriodStartIndex = -1; // start looking for a new period
           }
         }
       }
 
       // interest rate calculations
+      let lineInterest = 0
       if (account.interest) {
-        if (lineDate.isAfter(firstBaseInterestDate, "day")) {
-          // calculate 'line interest' which is the interest calculated since the last line entry
+  //      if (lineDate.isAfter(firstBaseInterestDate, "day")) {
+        if (lineDate.isSameOrAfter(firstBaseInterestDate, "day")) {
           let daysDiff = lineDate.diff(prevInterestDate, "days");
           prevInterestDate = Moment(lineDate);
-          let lineInterest =
-            runningBalance *
-              Math.pow(
-                1 + (runningBalance > 0 ? crRate : dbRate) / 365.25,
-                daysDiff
-              ) -
-            runningBalance;
-          if (account.accName === "Mortgage" && debug) {
-            console.log('lineDate=',lineDate,' lineInterest=',lineInterest,' runningBalance=',runningBalance, ' crRate=',crRate, ' dbRate=',dbRate,' daysDiff=',daysDiff,' totalInterest=',totalInterest)
-            console.log('tr=',tr)
-          }
-          totalInterest += lineInterest;
-          tr.interest = lineInterest;
+
+          // Calculate interest since the last transaction
+//          lineInterest = runningBalance * Math.pow(1 + (runningBalance > 0 ? crRate : dbRate) / 365.25, daysDiff) - runningBalance;
+          lineInterest = (runningBalance > 0 ? crRate : dbRate) / 365 * runningBalance * daysDiff
+          // if (account.accName === "Mortgage" && debug) {
+          //   console.log('lineDate=',lineDate,' lineInterest=',lineInterest,' runningBalance=',runningBalance, ' crRate=',crRate, ' dbRate=',dbRate,' daysDiff=',daysDiff,' periodInterest=',periodInterest)
+          //   console.log('tr=',tr)
+          // }
+          periodInterest += lineInterest;
 
           // Add accumulated interest between interest debit/credit entries
           if (tr.type === "interest") {
             if (lineDate.isAfter(today, "day")) {
-              totalInterest = Math.floor(totalInterest);
-              // tr.dbRate = dbRate;
-              // tr.crRate = crRate;
+              periodInterest = Math.floor(periodInterest);
               // Check if an interest debit/credit line is needed.
               // Note must make sure its not the first entry because there is no previous entry.
               // In this case, we'll just have an Interest Debit line of 0
-              if (totalInterest === 0 && trIndex > 0) {
+              if (periodInterest === 0 && trIndex > 0) {
                 account.trans.splice(trIndex, 1);
                 trIndex--;
                 tr = account.trans[trIndex];
                 runningBalance = tr.balance;
                 lineDate = Moment(tr.date);
               } else {
-                if (totalInterest > 0) {
+                if (periodInterest > 0) {
                   tr.dbAmount = 0;
-                  tr.crAmount = totalInterest;
+                  tr.crAmount = periodInterest;
                   tr.description = "Interest Credit";
                 } else {
                   tr.crAmount = 0;
-                  tr.dbAmount = -totalInterest;
+                  tr.dbAmount = -periodInterest;
                   tr.description = "Interest Debit";
                 }
               }
-            // } else {
-            //   crRate = tr.crRate;
-            //   dbRate = tr.dbRate;
             }
-            totalInterest = 0;
+            periodInterest = 0;   // Reset cumulative interest
           }
         }
         //  Get current rate from rate change entry
@@ -608,7 +672,13 @@ if (account.accName === "Mortgage" && debug) {
       }
 
       runningBalance += tr.crAmount - tr.dbAmount; // update line running balance
-      tr.balance = runningBalance;
+
+      // Update transaction details
+      tr.balance = runningBalance
+      tr.crRate = crRate
+      tr.dbRate = dbRate
+      tr.lineInterest = lineInterest
+      tr.periodInterest = periodInterest  // Uncredited/undebited accumulated interest
 
       // check lowest balance of 'Minimise' period
       if (runningBalance < lowestBalForPeriod)

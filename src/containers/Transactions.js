@@ -9,21 +9,25 @@ import {
 } from "react-bootstrap";
 import "./Transactions.css";
 import Moment from "moment";
-import { calculate, deleteFutureAllTransactions } from "../libs/calculate";
+import { calculate, deleteFutureAllTransactions, trim } from "../libs/calculate";
 import { Storage } from "aws-amplify";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-bootstrap.css";
 import { today, uuid } from "../libs/utilities";
 import InterestPopUp from "../components/InterestPopUp";
+import ArchivePopUp from "../components/ArchivePopUp";
 
 export default class Transactions extends Component {
   constructor(props) {
     super(props);
     this.gridApi = [];
+    this.debug = false
     let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234)
     this.state = {
       showInterest: false,
+      showArchive: false,
+      showTrim: false,
       isLoading: true,
       defaultColDef : 
       {
@@ -72,19 +76,6 @@ export default class Transactions extends Component {
           cellEditor: "agTextCellEditor"
         },
         {
-          headerName: "Credit",
-          field: "crAmount",
-          type: "numericColumn",
-          width: 110,
-          editable: this.rowEditable,
-          valueParser: this.amountParser,
-          valueFormatter: this.amountFormatter,
-          filter: "agNumberColumnFilter",
-          filterParams: this.amountFilterOptions,
-          cellEditorParams: { useFormatter: true },
-          cellEditor: "agTextCellEditor"
-        },
-        {
           headerName: "Debit",
           width: 110,
           field: "dbAmount",
@@ -97,6 +88,19 @@ export default class Transactions extends Component {
           cellEditorParams: { useFormatter: true },
           cellEditor: "agTextCellEditor"
 
+        },
+        {
+          headerName: "Credit",
+          field: "crAmount",
+          type: "numericColumn",
+          width: 110,
+          editable: this.rowEditable,
+          valueParser: this.amountParser,
+          valueFormatter: this.amountFormatter,
+          filter: "agNumberColumnFilter",
+          filterParams: this.amountFilterOptions,
+          cellEditorParams: { useFormatter: true },
+          cellEditor: "agTextCellEditor"
         },
         {
           headerName: "Balance",
@@ -113,7 +117,44 @@ export default class Transactions extends Component {
               return null;
             }
           }
+        },
+        {
+          headerName: "cr",
+          hide: !this.debug,
+          field: "crRate",
+          width: 80,
+          type: "numericColumn",
+          filter: "agNumberColumnFilter",
+          filterParams: this.amountFilterOptions       
+        },
+        {
+          headerName: "db",
+          hide: !this.debug,
+          field: "dbRate",
+          width: 80,
+          type: "numericColumn",
+          filter: "agNumberColumnFilter",
+          filterParams: this.amountFilterOptions
+        },
+        {
+          headerName: "period",
+          hide: !this.debug,
+          field: "periodInterest",
+          width: 110,
+          type: "numericColumn",
+          filter: "agNumberColumnFilter",
+          filterParams: this.amountFilterOptions       
+        },
+        {
+          headerName: "Line",
+          hide: !this.debug,
+          field: "lineInterest",
+          width: 110,
+          type: "numericColumn",
+          filter: "agNumberColumnFilter",
+          filterParams: this.amountFilterOptions       
         }
+
       ]
     };
   }
@@ -223,6 +264,7 @@ export default class Transactions extends Component {
       this.props.templates,
       this.props.transAcc,
       today
+ //     Moment("2019-04-10").startOf('date')
     )
     this.props.setTransactions(transAcc)
     this.props.setSaveRequired(true)
@@ -243,27 +285,25 @@ export default class Transactions extends Component {
       .catch(err => alert(err));
   }
 
-  handleLoad = () => {
-    let key = "data2.txt";
+  handleLoadArchive = () => {
+    let key = "Archive-2019-05-20.arc"
     let transAcc = [];
 
     Storage.get(key, { level: "private", download: true })
       .then(result => {
         let res = new TextDecoder("utf-8").decode(result.Body);
         let dataToRestore = JSON.parse(res)
-        transAcc = calculate(...dataToRestore)
-        transAcc = calculate(
-          this.props.accounts,
-          this.props.templates,
-          transAcc,
-          today
-        )
+        // Reconstruct data as of when it was saved including using the templates that existed then as well
+        // as the date at that time
+        transAcc = deleteFutureAllTransactions(dataToRestore[0],dataToRestore[2],dataToRestore[3])
+        // Now recalculate the data based on today's date and templates
         let currentAccId = 0;
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
         this.props.setTransactions(transAcc);
         this.props.setCurrentAccId(currentAccId);
         this.props.setSaveRequired(false);
         this.props.setRecalcRequired(false);
+        this.props.setArchive(true)
       })
       .catch(err => {
         if (err.statusCode === 403) {
@@ -279,6 +319,53 @@ export default class Transactions extends Component {
           this.props.setTransactions(transAcc);
           this.props.setSaveRequired(false);
           this.props.setRecalcRequired(false);
+          this.props.setArchive(true)
+        } else console.log(err);
+      });
+  }
+
+  handleLoad = () => {
+    let key = "data2.txt";
+//   let key = "Archive-2019-05-20.arc"
+    let transAcc = [];
+
+    Storage.get(key, { level: "private", download: true })
+      .then(result => {
+        let res = new TextDecoder("utf-8").decode(result.Body);
+        let dataToRestore = JSON.parse(res)
+        // Reconstruct data as of when it was saved including using the templates that existed then as well
+        // as the date at that time
+        transAcc = calculate(...dataToRestore)
+        // Now recalculate the data based on today's date and templates
+        transAcc = calculate(
+          this.props.accounts,
+          this.props.templates,
+          transAcc,
+          today
+        )
+        let currentAccId = 0;
+        if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
+        this.props.setTransactions(transAcc);
+        this.props.setCurrentAccId(currentAccId);
+        this.props.setSaveRequired(false);
+        this.props.setRecalcRequired(false);
+        this.props.setArchive(false)
+      })
+      .catch(err => {
+        if (err.statusCode === 403) {
+          transAcc = calculate(
+            this.props.accounts,
+            this.props.templates,
+            transAcc,
+            today
+          );
+          let currentAccId = 0;
+          if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
+          this.props.setCurrentAccId(currentAccId);
+          this.props.setTransactions(transAcc);
+          this.props.setSaveRequired(false);
+          this.props.setRecalcRequired(false);
+          this.props.setArchive(false)
         } else console.log(err);
       });
   }
@@ -412,12 +499,54 @@ export default class Transactions extends Component {
     this.setState( {showInterest: false});
   }
 
+  handleTrimCommit = (trimEndDate) => {
+    let transAcc = this.props.transAcc
+    let trimDate = Moment(trimEndDate).startOf('date')
+    trim(transAcc, trimDate)
+    this.props.setTransactions(transAcc)
+    this.props.setSaveRequired(true)
+    this.props.setRecalcRequired(true)
+    this.setState( {showTrim: false})
+  }
+
+  handleArchiveCommit = (archiveEndDate) => {
+    let endDate = Moment(archiveEndDate).startOf('date')
+    let archive = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,endDate,true)
+    let key = `Archive-${endDate.format("YYYY-MM-DD")}.arc`
+    let dataToSave = [this.props.accounts,[],archive,endDate.format()]
+    let strToSave = JSON.stringify(dataToSave)
+    Storage.put(key, strToSave, {
+      level: "private",
+      contentType: "application/json"
+    })
+      .then(result => {this.props.setSaveRequired(false);
+      alert("Archive saved successfully")})
+      .catch(err => alert(err));
+    this.setState( {showArchive: false});
+  }
+
   handleInterestShow = () => {
     this.setState( {showInterest: true});
   }
 
   handleInterestClose = () => {
     this.setState( {showInterest: false});
+  }
+
+  handleArchiveShow = () => {
+    this.setState( {showArchive: true});
+  }
+
+  handleArchiveClose = () => {
+    this.setState( {showArchive: false});
+  }
+
+  handleTrimShow = () => {
+    this.setState( {showTrim: true});
+  }
+
+  handleTrimClose = () => {
+    this.setState( {showTrim: false});
   }
 
   updateRow = node => {
@@ -455,9 +584,12 @@ export default class Transactions extends Component {
       data = [
         {
           transactionId: 0,
-          date: currAcc.openingDate,
-          description: "Opening Balance",
-          balance: currAcc.amount
+          // date: currAcc.openingDate,
+          // description: "Opening Balance",
+          // balance: currAcc.amount
+          date: currAcc.starting.date,
+          balance: currAcc.starting.balance,
+          description: "int="+currAcc.starting.interest + ", db="+currAcc.starting.dbRate+", cr="+currAcc.starting.crRate
         }
       ];
       currAcc.trans.forEach(x => {
@@ -471,7 +603,7 @@ export default class Transactions extends Component {
 
     return (
       <div className="transactions">
-        <PageHeader>Transactions</PageHeader>
+        <PageHeader>Transactions {this.props.archive?"- ARCHIVE":""}</PageHeader>
         <InterestPopUp
           showInterest={this.state.showInterest}
           onClose={this.handleInterestClose}
@@ -479,6 +611,22 @@ export default class Transactions extends Component {
           transAcc={this.props.transAcc}
           currentAccId={this.props.currentAccId}
         />
+        <ArchivePopUp
+          showArchive={this.state.showArchive}
+          type="Archive"
+          onClose={this.handleArchiveClose}
+          onSubmit={this.handleArchiveCommit}
+          transAcc={this.props.transAcc}
+          currentAccId={this.props.currentAccId}
+        />
+        <ArchivePopUp
+          showArchive={this.state.showTrim}
+          type="Trim"
+          onClose={this.handleTrimClose}
+          onSubmit={this.handleTrimCommit}
+          transAcc={this.props.transAcc}
+          currentAccId={this.props.currentAccId}
+        />        
         <Tabs
           defaultActiveKey={1}
           animation={false}
@@ -537,20 +685,25 @@ export default class Transactions extends Component {
           <div className="col-sm-12">
             <ButtonToolbar id="buttons" className="pull-right">
               <ButtonGroup>
-                <Button disabled={!interestAcc} onClick={this.handleInterestShow}>Interest</Button>
-                <Button onClick={this.handleAdd}>Add</Button>
-                <Button onClick={this.handleDuplicate}>Duplicate</Button>
-                <Button onClick={this.handleDelete}>Delete</Button>
-                <Button onClick={this.handleManual}>Manual</Button>
+                <Button onClick={this.handleLoadArchive}>Load Archive</Button>
+                <Button disabled={this.props.recalcRequired || this.props.saveRequired || this.props.archive} onClick={this.handleArchiveShow}>Archive</Button>
+                <Button disabled={this.props.recalcRequired || this.props.saveRequired || this.props.archive} onClick={this.handleTrimShow}>Trim</Button>
+                <Button disabled={!interestAcc || this.props.archive} onClick={this.handleInterestShow}>Interest</Button>
+                <Button onClick={this.handleAdd} disabled={this.props.archive}>Add</Button>
+                <Button onClick={this.handleDuplicate} disabled={this.props.archive}>Duplicate</Button>
+                <Button onClick={this.handleDelete} disabled={this.props.archive}>Delete</Button>
+                <Button onClick={this.handleManual} disabled={this.props.archive}>Manual</Button>
                 <Button onClick={this.handleLoad}>Load</Button>
                 <Button
                   bsStyle={this.props.saveRequired ? "warning" : "default"}
+                  disabled={this.props.archive}
                   onClick={this.handleSave}
                 >
                   Save
                 </Button>
               </ButtonGroup>
               <Button
+                disabled={this.props.archive}
                 bsStyle={this.props.recalcRequired ? "warning" : "success"}
                 onClick={this.handleRecalculate}
               >

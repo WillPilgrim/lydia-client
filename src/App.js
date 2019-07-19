@@ -20,7 +20,8 @@ class App extends Component {
       transAcc: null,
       templates: null,
       recalcRequired: false,
-      saveRequired: false
+      saveRequired: false,
+      archive: false
     };
   }
 
@@ -54,7 +55,8 @@ class App extends Component {
       transAcc: null,
       templates: null,
       recalcRequired: false,
-      saveRequired: false
+      saveRequired: false,
+      archive: false
     })
   }
 
@@ -113,6 +115,8 @@ class App extends Component {
 
   setSaveRequired = save => this.setState({saveRequired: save})
 
+  setArchive = archive => this.setState({archive})
+
   handleLogout = async event => {
     await Auth.signOut();
     this.clearState();
@@ -121,21 +125,23 @@ class App extends Component {
 
   render() {
     const childProps = {
-      isAuthenticated: this.state.isAuthenticated,
       userHasAuthenticated: this.userHasAuthenticated,
-      accounts: this.state.accounts,
-      templates: this.state.templates,
       refreshAccounts: this.refreshAccounts,
       moveAccounts: this.moveAccounts,
       refreshTemplates: this.refreshTemplates,
-      currentAccId: this.state.currentAccId,
       setCurrentAccId: this.setCurrentAccId,
       setTransactions: this.setTransactions,
       setRecalcRequired: this.setRecalcRequired,
       setSaveRequired: this.setSaveRequired,
+      setArchive: this.setArchive,
+      currentAccId: this.state.currentAccId,
+      isAuthenticated: this.state.isAuthenticated,
+      accounts: this.state.accounts,
+      templates: this.state.templates,
       transAcc: this.state.transAcc,
       recalcRequired: this.state.recalcRequired,
-      saveRequired: this.state.saveRequired
+      saveRequired: this.state.saveRequired,
+      archive: this.state.archive
     };
 
     return (
