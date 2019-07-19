@@ -30,34 +30,36 @@ export const calculate = (accounts, templates, transAcc, today) => {
 
 export const trim = (transAcc, trimDate) => {
   transAcc.forEach(account => {
-    let startingBalance = account.starting.balance
-    let startingInterest = account.starting.interest
-    let startingIntRateDb = account.starting.dbRate
-    let startingIntRateCr = account.starting.crRate
-    let startingPayoffAmt = account.starting.payoffAmt
-    let lastTransBeforeTrimDate = trimDate
-    account.trans.forEach(trans => {
-      if (!Moment(trans.date).isAfter(trimDate,"day")) {
-        startingBalance = trans.balance
-        startingInterest = trans.periodInterest  // Uncredited/undebited accumulated interest
-        startingIntRateCr = trans.crRate * 100
-        startingIntRateDb = trans.dbRate * 100
-        if (trans.ccBalance) startingPayoffAmt = trans.ccBalance
-        lastTransBeforeTrimDate = trans.date
+    if (Moment(trimDate).isSameOrAfter(account.starting.date)) {
+      let startingBalance = account.starting.balance
+      let startingInterest = account.starting.interest
+      let startingIntRateDb = account.starting.dbRate
+      let startingIntRateCr = account.starting.crRate
+      let startingPayoffAmt = account.starting.payoffAmt
+      let lastTransBeforeTrimDate = trimDate
+      account.trans.forEach(trans => {
+        if (!Moment(trans.date).isAfter(trimDate,"day")) {
+          startingBalance = trans.balance
+          startingInterest = trans.periodInterest  // Uncredited/undebited accumulated interest
+          startingIntRateCr = trans.crRate * 100
+          startingIntRateDb = trans.dbRate * 100
+          if (trans.ccBalance) startingPayoffAmt = trans.ccBalance
+          lastTransBeforeTrimDate = trans.date
+        }
+      })
+      if (account.interest) {
+        let daysDiff = trimDate.diff(lastTransBeforeTrimDate, "days") + 1
+        startingInterest += (startingBalance > 0 ? startingIntRateCr : startingIntRateDb) / 36500 * startingBalance * daysDiff
       }
-    })
-    if (account.interest) {
-      let daysDiff = trimDate.diff(lastTransBeforeTrimDate, "days") + 1
-      startingInterest += (startingBalance > 0 ? startingIntRateCr : startingIntRateDb) / 36500 * startingBalance * daysDiff
+      account.starting.balance = startingBalance
+      account.starting.interest = startingInterest
+      account.starting.dbRate = startingIntRateDb
+      account.starting.crRate = startingIntRateCr
+      account.starting.payoffAmt = startingPayoffAmt
+      account.starting.date = Moment(trimDate).add(1, "d")
+      // Remove transactions before new starting date
+      account.trans = account.trans.filter(item => Moment(item.date).isAfter(trimDate, "day"))
     }
-    account.starting.balance = startingBalance
-    account.starting.interest = startingInterest
-    account.starting.dbRate = startingIntRateDb
-    account.starting.crRate = startingIntRateCr
-    account.starting.payoffAmt = startingPayoffAmt
-    account.starting.date = Moment(trimDate).add(1, "d")
-    // Remove transactions before new starting date
-    account.trans = account.trans.filter(item => Moment(item.date).isAfter(trimDate, "day"))
   })
 }
 

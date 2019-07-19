@@ -29,14 +29,6 @@ class ArchivePopUp extends Component {
     if (this.state.archiveEndDate === null) return "error";
     if (Moment(this.state.archiveEndDate).isSameOrAfter(today,"day"))
       return "error";
-    let transAcc = this.props.transAcc
-    if (transAcc) {
-      let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
-      if (Moment(this.state.archiveEndDate).isBefore(Moment(acc.openingDate),"day"))
-        return "error";
-      if (Moment(this.state.archiveEndDate).isAfter(Moment(acc.closingDate),"day"))
-        return "error";
-    }
     return "success";
   }
 

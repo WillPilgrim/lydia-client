@@ -286,7 +286,7 @@ export default class Transactions extends Component {
   }
 
   handleLoadArchive = () => {
-    let key = "Archive-2019-05-20.arc"
+    let key = "archive.json"
     let transAcc = [];
 
     Storage.get(key, { level: "private", download: true })
@@ -307,19 +307,7 @@ export default class Transactions extends Component {
       })
       .catch(err => {
         if (err.statusCode === 403) {
-          transAcc = calculate(
-            this.props.accounts,
-            this.props.templates,
-            transAcc,
-            today
-          );
-          let currentAccId = 0;
-          if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
-          this.props.setCurrentAccId(currentAccId);
-          this.props.setTransactions(transAcc);
-          this.props.setSaveRequired(false);
-          this.props.setRecalcRequired(false);
-          this.props.setArchive(true)
+          alert("No archive found")
         } else console.log(err);
       });
   }
@@ -512,7 +500,8 @@ export default class Transactions extends Component {
   handleArchiveCommit = (archiveEndDate) => {
     let endDate = Moment(archiveEndDate).startOf('date')
     let archive = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,endDate,true)
-    let key = `Archive-${endDate.format("YYYY-MM-DD")}.arc`
+    //let key = `Archive-${endDate.format("YYYY-MM-DD")}.arc`
+    let key = 'archive.json'
     let dataToSave = [this.props.accounts,[],archive,endDate.format()]
     let strToSave = JSON.stringify(dataToSave)
     Storage.put(key, strToSave, {
