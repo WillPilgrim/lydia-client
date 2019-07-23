@@ -21,6 +21,7 @@ class App extends Component {
       templates: null,
       recalcRequired: false,
       saveRequired: false,
+      saveArchiveRequired: false,
       archive: false
     };
   }
@@ -56,6 +57,7 @@ class App extends Component {
       templates: null,
       recalcRequired: false,
       saveRequired: false,
+      saveArchiveRequired: false,
       archive: false
     })
   }
@@ -115,6 +117,8 @@ class App extends Component {
 
   setSaveRequired = save => this.setState({saveRequired: save})
 
+  setSaveArchiveRequired = save => this.setState({saveArchiveRequired: save})
+
   setArchive = archive => this.setState({archive})
 
   handleLogout = async event => {
@@ -133,6 +137,7 @@ class App extends Component {
       setTransactions: this.setTransactions,
       setRecalcRequired: this.setRecalcRequired,
       setSaveRequired: this.setSaveRequired,
+      setSaveArchiveRequired: this.setSaveArchiveRequired,
       setArchive: this.setArchive,
       currentAccId: this.state.currentAccId,
       isAuthenticated: this.state.isAuthenticated,
@@ -141,6 +146,7 @@ class App extends Component {
       transAcc: this.state.transAcc,
       recalcRequired: this.state.recalcRequired,
       saveRequired: this.state.saveRequired,
+      saveArchiveRequired: this.state.saveArchiveRequired,
       archive: this.state.archive
     };
 

@@ -9,7 +9,7 @@ import {
 } from "react-bootstrap";
 import "./Transactions.css";
 import Moment from "moment";
-import { calculate, deleteFutureAllTransactions, trim } from "../libs/calculate";
+import { calculate, deleteFutureAllTransactions, trim, archiveRebalance } from "../libs/calculate";
 import { Storage } from "aws-amplify";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/dist/styles/ag-grid.css";
@@ -29,6 +29,7 @@ export default class Transactions extends Component {
       showArchive: false,
       showTrim: false,
       isLoading: true,
+      archiveDate: null,
       defaultColDef : 
       {
         resizable : true
@@ -252,22 +253,32 @@ export default class Transactions extends Component {
         if (trans.reconciled ===3) trans.reconciled = 0
         node.data.reconciled = trans.reconciled
         this.props.setTransactions(transAcc);
-        this.props.setSaveRequired(true);
+        if (this.props.archive) this.props.setSaveArchiveRequired(true)
+        else this.props.setSaveRequired(true)
         let params = { rowNodes: [node] };
         this.gridApi[this.props.currentAccId].refreshCells(params);
       }
   }
 
   handleRecalculate = () => {
-    let transAcc = calculate(
-      this.props.accounts,
-      this.props.templates,
-      this.props.transAcc,
-      today
- //     Moment("2019-04-10").startOf('date')
-    )
+    let transAcc
+    if (this.props.archive) {
+      transAcc = archiveRebalance(
+        this.props.transAcc,
+        today
+      )
+      this.props.setSaveArchiveRequired(true)
+    }
+    else {
+      transAcc = calculate(
+        this.props.accounts,
+        this.props.templates,
+        this.props.transAcc,
+        today
+      )
+       this.props.setSaveRequired(true)
+    }
     this.props.setTransactions(transAcc)
-    this.props.setSaveRequired(true)
     this.props.setRecalcRequired(false)
   }
 
@@ -283,33 +294,6 @@ export default class Transactions extends Component {
       .then(result => {this.props.setSaveRequired(false);
       alert("Transactions saved successfully")})
       .catch(err => alert(err));
-  }
-
-  handleLoadArchive = () => {
-    let key = "archive.json"
-    let transAcc = [];
-
-    Storage.get(key, { level: "private", download: true })
-      .then(result => {
-        let res = new TextDecoder("utf-8").decode(result.Body);
-        let dataToRestore = JSON.parse(res)
-        // Reconstruct data as of when it was saved including using the templates that existed then as well
-        // as the date at that time
-        transAcc = deleteFutureAllTransactions(dataToRestore[0],dataToRestore[2],dataToRestore[3])
-        // Now recalculate the data based on today's date and templates
-        let currentAccId = 0;
-        if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
-        this.props.setTransactions(transAcc);
-        this.props.setCurrentAccId(currentAccId);
-        this.props.setSaveRequired(false);
-        this.props.setRecalcRequired(false);
-        this.props.setArchive(true)
-      })
-      .catch(err => {
-        if (err.statusCode === 403) {
-          alert("No archive found")
-        } else console.log(err);
-      });
   }
 
   handleLoad = () => {
@@ -335,7 +319,8 @@ export default class Transactions extends Component {
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
         this.props.setTransactions(transAcc);
         this.props.setCurrentAccId(currentAccId);
-        this.props.setSaveRequired(false);
+        this.props.setSaveRequired(false)
+        this.props.setSaveArchiveRequired(false)
         this.props.setRecalcRequired(false);
         this.props.setArchive(false)
       })
@@ -351,7 +336,8 @@ export default class Transactions extends Component {
           if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
           this.props.setCurrentAccId(currentAccId);
           this.props.setTransactions(transAcc);
-          this.props.setSaveRequired(false);
+          this.props.setSaveRequired(false)
+          this.props.setSaveArchiveRequired(false)          
           this.props.setRecalcRequired(false);
           this.props.setArchive(false)
         } else console.log(err);
@@ -497,21 +483,58 @@ export default class Transactions extends Component {
     this.setState( {showTrim: false})
   }
 
+  handleLoadArchive = () => {
+    let key = "archive.json"
+    let transAcc = [];
+
+    Storage.get(key, { level: "private", download: true })
+      .then(result => {
+        let res = new TextDecoder("utf-8").decode(result.Body);
+        let dataToRestore = JSON.parse(res)
+        // Reconstruct data as of when it was saved including using the templates that existed then as well
+        // as the date at that time
+        transAcc = deleteFutureAllTransactions(dataToRestore[0],dataToRestore[2],dataToRestore[3])
+        // Now recalculate the data based on today's date and templates
+        this.setState( {archiveDate: dataToRestore[3]});
+        let currentAccId = 0;
+        if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
+        this.props.setTransactions(transAcc);
+        this.props.setCurrentAccId(currentAccId);
+        this.props.setSaveRequired(false)
+        this.props.setSaveArchiveRequired(false)
+        this.props.setRecalcRequired(false);
+        this.props.setArchive(true)
+      })
+      .catch(err => {
+        if (err.statusCode === 403) {
+          alert("No archive found")
+        } else console.log(err);
+      });
+  }
+
   handleArchiveCommit = (archiveEndDate) => {
     let endDate = Moment(archiveEndDate).startOf('date')
     let archive = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,endDate,true)
     //let key = `Archive-${endDate.format("YYYY-MM-DD")}.arc`
     let key = 'archive.json'
+    this.setState( {archiveDate: endDate.format()});
     let dataToSave = [this.props.accounts,[],archive,endDate.format()]
     let strToSave = JSON.stringify(dataToSave)
     Storage.put(key, strToSave, {
       level: "private",
       contentType: "application/json"
     })
-      .then(result => {this.props.setSaveRequired(false);
-      alert("Archive saved successfully")})
+      .then(result => {
+        this.props.setSaveRequired(false)
+        this.props.setSaveArchiveRequired(false)
+        alert("Archive saved successfully")
+    })
       .catch(err => alert(err));
     this.setState( {showArchive: false});
+  }
+
+  handleArchiveSave = () => {
+    this.handleArchiveCommit(this.state.archiveDate)
   }
 
   handleInterestShow = () => {
@@ -553,7 +576,10 @@ export default class Transactions extends Component {
     transToUpdate.dbAmount = data.dbAmount
     this.props.setTransactions(transAcc)
     this.props.setRecalcRequired(true)
-    this.props.setSaveRequired(true)
+    if (this.props.archive)
+      this.props.setSaveArchiveRequired(true)
+    else
+      this.props.setSaveRequired(true)
     this.gridApi[this.props.currentAccId].redrawRows()
   }
 
@@ -675,7 +701,10 @@ export default class Transactions extends Component {
             <ButtonToolbar id="buttons" className="pull-right">
               <ButtonGroup>
                 <Button onClick={this.handleLoadArchive}>Load Archive</Button>
-                <Button disabled={this.props.recalcRequired || this.props.saveRequired || this.props.archive} onClick={this.handleArchiveShow}>Archive</Button>
+                <Button disabled={this.props.recalcRequired || this.props.saveRequired} 
+                onClick={this.props.archive ? this.handleArchiveSave : this.handleArchiveShow}
+                bsStyle={this.props.saveArchiveRequired ? "warning" : "default"}
+                >{this.props.archive ? "Save" : "Archive"}</Button>
                 <Button disabled={this.props.recalcRequired || this.props.saveRequired || this.props.archive} onClick={this.handleTrimShow}>Trim</Button>
                 <Button disabled={!interestAcc || this.props.archive} onClick={this.handleInterestShow}>Interest</Button>
                 <Button onClick={this.handleAdd} disabled={this.props.archive}>Add</Button>
@@ -692,7 +721,7 @@ export default class Transactions extends Component {
                 </Button>
               </ButtonGroup>
               <Button
-                disabled={this.props.archive}
+//                disabled={this.props.archive}
                 bsStyle={this.props.recalcRequired ? "warning" : "success"}
                 onClick={this.handleRecalculate}
               >

@@ -1,3 +1,28 @@
+State data object structure
+===========================
+state = {
+    "accounts" : [account],
+    "today" : date
+}
+
+account = {
+    "transactions" : [transaction],
+    "starting" : starting
+}
+
+transaction = {
+
+}
+
+starting = {
+                "balance": 0,                           Opening balance for this instance of the structure
+                "date": "2019-05-13T00:00:00+08:00",    Start date for this instance
+                "crRate": 0,                            Opening credit interest rate
+                "dbRate": 0,                            Opening debit interest rate
+                "interest": 0,                          Accumulated unaccounted interest at start of account
+                "payoffAmt": 0
+}
+
     Static Items For account
     ========================
     Field               Example                                         Notes

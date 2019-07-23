@@ -1,32 +1,5 @@
 file management
 ===============
-- Add Trim button (only enabled if recalc not required and save not required)
-    - Select a trim date. Validate as for 'archive'
-    - Validate every transaction before and including trim date has been reconciled
-    - For each account
-        - Set new copy of transactions
-        - Loop through all transactions while trans date is <= trim date
-            - keep running interest amounts
-            - keep running balance
-            - keep accumulated interest - reset every interest payment
-            - keep last closing balance cc amount 
-        - update all starting values for account
-        - Loop through all transactions while trans date is <= trim date again
-            - remove transaction
-
-
-
-        - Remove all transactions up until trim date. 
-        - Accumulate any interest
-        - Update starting values for transAcc
-            - newAccount.starting.balance = {balance as at the end of the trim date}
-            - newAccount.starting.crRate = {credit interest at the end of the trim date}
-            - newAccount.starting.dbRate = {credit interest at the end of the trim date}
-            - newAccount.starting.date = {trim date + 1}
-            - newAccount.starting.interest = {cummulated interest to the point of the trim date since the last interest credit/debit}
-            - newAccount.starting.payoffAmt = {payoff amount for the credit card that is next due as at the trim date}
-        - flag account as requiring saving
-
 - Combine functions
     - Allow two functions to be combined to archive and update current file
     - Perhaps give a choice as to whether archiving happens at end of financial year or calendar year only
@@ -71,6 +44,12 @@ main
 
 miscellaneous
 =============
+- Structure:  Create one data structure for all data passed around the apps in props.
+    - Reading accounts will populate some of it
+    - Transaction generation will populate other parts
+    - Adding a new account will add the entry to the data structure
+    - Deleting an account will delete it from the data structure. If there are transactions, it will give a warning
+    - Accounts will be saved when archiving meaning that restoring an archive will have the point in time accounts
 - Need to persist sort orders, selected account, scroll position etc when storing current data
 - Put in a warning when Loading if data is 'dirty'
 - Need a better way to handle if no data.txt file exists in AWS S3

@@ -26,7 +26,16 @@ export const calculate = (accounts, templates, transAcc, today) => {
   if (timings) console.timeEnd("updateBalances");
   if (timings) console.timeEnd("Recalculation Total");
   return transactions;
-};
+}
+
+export const archiveRebalance = (transactions, today) => {
+  transactions.forEach(account => {
+    account.dirty = true
+  })
+
+  updateBalances(transactions, today)
+  return transactions
+}
 
 export const trim = (transAcc, trimDate) => {
   transAcc.forEach(account => {
@@ -361,12 +370,12 @@ let processSpecials = (transactions, templates, today) => {
     specials.filter(special => special.active).forEach(createSpecials)}
 };
 
-let updateBalances = (transactions, today) => {
+const updateBalances = (transactions, today) => {
   //	Sort each account and update balances
   transactions.forEach(account => updateBalance(account, transactions, today));
 };
 
-let updateBalance = (account, transactions, today) => {
+const updateBalance = (account, transactions, today) => {
   //	Sort given account and update balances
   const sortTimings = false;
 
