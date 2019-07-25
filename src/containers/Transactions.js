@@ -22,7 +22,7 @@ export default class Transactions extends Component {
   constructor(props) {
     super(props);
     this.gridApi = [];
-    this.debug = false
+    this.debug = true
     let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234)
     this.state = {
       showInterest: false,
@@ -250,13 +250,12 @@ export default class Transactions extends Component {
         let trans = acc.trans.find(x => x.transactionId === data.transactionId);
         if (isNaN(trans.reconciled) || trans.reconciled === null ) trans.reconciled = 0
         trans.reconciled++;
-        if (trans.reconciled ===3) trans.reconciled = 0
+        if (trans.reconciled === 3) trans.reconciled = 0
         node.data.reconciled = trans.reconciled
         this.props.setTransactions(transAcc);
         if (this.props.archive) this.props.setSaveArchiveRequired(true)
         else this.props.setSaveRequired(true)
-        let params = { rowNodes: [node] };
-        this.gridApi[this.props.currentAccId].refreshCells(params);
+        this.gridApi[this.props.currentAccId].refreshCells()
       }
   }
 
@@ -279,6 +278,7 @@ export default class Transactions extends Component {
        this.props.setSaveRequired(true)
     }
     this.props.setTransactions(transAcc)
+    transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
     this.props.setRecalcRequired(false)
   }
 
@@ -300,7 +300,6 @@ export default class Transactions extends Component {
     let key = "data2.txt";
 //   let key = "Archive-2019-05-20.arc"
     let transAcc = [];
-
     Storage.get(key, { level: "private", download: true })
       .then(result => {
         let res = new TextDecoder("utf-8").decode(result.Body);
@@ -317,8 +316,9 @@ export default class Transactions extends Component {
         )
         let currentAccId = 0;
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
+        this.selectAccount(currentAccId);
         this.props.setTransactions(transAcc);
-        this.props.setCurrentAccId(currentAccId);
+        transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
         this.props.setSaveRequired(false)
         this.props.setSaveArchiveRequired(false)
         this.props.setRecalcRequired(false);
@@ -334,8 +334,9 @@ export default class Transactions extends Component {
           );
           let currentAccId = 0;
           if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
-          this.props.setCurrentAccId(currentAccId);
+          this.selectAccount(currentAccId);
           this.props.setTransactions(transAcc);
+          transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
           this.props.setSaveRequired(false)
           this.props.setSaveArchiveRequired(false)          
           this.props.setRecalcRequired(false);
@@ -344,10 +345,64 @@ export default class Transactions extends Component {
       });
   }
 
-  handleTabSelect = eventKey => {
-    this.props.setCurrentAccId(eventKey)
+  insertDataIntoGrid = (account,api) => {
+    let data =[]
+    if (account) {
+      let desc = "Opening Balance"
+      if (account.interest)
+        desc = `Int=${(account.starting.interest / 100).toFixed(2)} db=${account.starting.dbRate} cr=${account.starting.crRate}`
+      data = [
+        {
+          transactionId: 0,
+          date: account.starting.date,
+          description: desc,
+          balance: account.starting.balance
+        },
+        ...account.trans
+      ]
+    }
+    if (api)
+      api.setRowData(data);
+  }
+  
+  insertDataIntoCurrentGrid = (transAcc) => {
+    let acc = transAcc.find(x => x.accountId === this.props.currentAccId)
+    this.insertDataIntoGrid(acc,this.gridApi[acc.accountId])
   }
 
+  handleDuplicate = () => {
+    let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
+    if (nodes.length) {
+      let data = nodes[0].data
+      let newNode = {
+        date: data.date,
+        autogen: null,
+        type: "manual",
+        transactionId: uuid(),
+        dbAmount: data.dbAmount,
+        crAmount: data.crAmount,
+        crRate: data.crRate,
+        dbRate: data.dbRate,
+        periodInterest: data.periodInterest,
+        lineInterest: data.lineInterest,
+        description: data.description
+      }
+      let transAcc = this.props.transAcc
+      let acc = transAcc.find(x => x.accountId === this.props.currentAccId)
+      acc.trans.push(newNode)
+      transAcc = calculate(
+        this.props.accounts,
+        this.props.templates,
+        transAcc,
+        today
+      )
+      this.props.setTransactions(transAcc)
+      this.insertDataIntoCurrentGrid(transAcc)
+      this.props.setSaveRequired(true)
+      this.props.setRecalcRequired(false)
+      }
+  }
+  
   handleDelete = () => {
     let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
     if (nodes.length) {
@@ -364,6 +419,7 @@ export default class Transactions extends Component {
         today
       )
       this.props.setTransactions(transAcc)
+      this.insertDataIntoCurrentGrid(transAcc)
       this.props.setSaveRequired(true)
       this.props.setRecalcRequired(false)
     }
@@ -390,34 +446,6 @@ export default class Transactions extends Component {
     }
   }
 
-  handleDuplicate = () => {
-    let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
-    if (nodes.length) {
-      let data = nodes[0].data
-      let newNode = {
-        date: data.date,
-        autogen: null,
-        type: "manual",
-        transactionId: uuid(),
-        dbAmount: data.dbAmount,
-        crAmount: data.crAmount,
-        description: data.description
-      }
-      let transAcc = this.props.transAcc
-      let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
-      acc.trans.push(newNode)
-      transAcc = calculate(
-        this.props.accounts,
-        this.props.templates,
-        transAcc,
-        today
-      )
-      this.props.setTransactions(transAcc)
-      this.props.setSaveRequired(true)
-      this.props.setRecalcRequired(false)
-      }
-  }
-
   handleAdd = () => {
     let newNode = {
       date: today,
@@ -438,6 +466,7 @@ export default class Transactions extends Component {
       today
     )
     this.props.setTransactions(transAcc)
+    this.insertDataIntoCurrentGrid(transAcc)
     this.props.setSaveRequired(true)
     this.props.setRecalcRequired(false)
   }
@@ -468,6 +497,7 @@ export default class Transactions extends Component {
       today
     )
     this.props.setTransactions(transAcc)
+    this.insertDataIntoCurrentGrid(transAcc)
     this.props.setSaveRequired(true)
     this.props.setRecalcRequired(false)
     this.setState( {showInterest: false});
@@ -478,6 +508,7 @@ export default class Transactions extends Component {
     let trimDate = Moment(trimEndDate).startOf('date')
     trim(transAcc, trimDate)
     this.props.setTransactions(transAcc)
+    transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
     this.props.setSaveRequired(true)
     this.props.setRecalcRequired(true)
     this.setState( {showTrim: false})
@@ -498,8 +529,9 @@ export default class Transactions extends Component {
         this.setState( {archiveDate: dataToRestore[3]});
         let currentAccId = 0;
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
-        this.props.setTransactions(transAcc);
-        this.props.setCurrentAccId(currentAccId);
+        this.props.setTransactions(transAcc)
+        transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
+        this.selectAccount(currentAccId);
         this.props.setSaveRequired(false)
         this.props.setSaveArchiveRequired(false)
         this.props.setRecalcRequired(false);
@@ -563,12 +595,10 @@ export default class Transactions extends Component {
 
   updateRow = node => {
     let transAcc = this.props.transAcc
-    let acc = transAcc.find(x => x.accountId === this.props.currentAccId)
+    let acc = transAcc.find(account => account.accountId === this.props.currentAccId)
     let data = node.data
     if (Moment(data.date).isAfter(today)) data.reconciled = 0
-    let transToUpdate = acc.trans.find(
-      x => x.transactionId === data.transactionId
-    )
+    let transToUpdate = acc.trans.find(transaction => transaction.transactionId === data.transactionId)
     transToUpdate.description = data.description
     transToUpdate.date = data.date
     transToUpdate.reconciled = data.reconciled
@@ -580,42 +610,23 @@ export default class Transactions extends Component {
       this.props.setSaveArchiveRequired(true)
     else
       this.props.setSaveRequired(true)
-    this.gridApi[this.props.currentAccId].redrawRows()
+    this.gridApi[this.props.currentAccId].refreshCells()
+  }
+
+  selectAccount = eventKey => {
+    this.props.setCurrentAccId(eventKey)
+    let interestAcc = false
+    let transAcc = this.props.transAcc
+    if (transAcc) {
+      let acc = transAcc.find(x => x.accountId === eventKey)
+      if (acc) interestAcc = acc.interest
+    }
+    this.setState({interestAcc})
   }
 
   render() {
-    let h =
-      Math.max(document.documentElement.clientHeight, window.innerHeight || 0) -
-      280;
+    let h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 280;
     let divStyle = { boxSizing: "border-box", height: `${h}px` };
-    let data = [];
-    let currAcc;
-    let interestAcc = false;
-    if (this.props.transAcc)
-      currAcc = this.props.transAcc.find(
-        x => x.accountId === this.props.currentAccId
-      );
-    if (currAcc) {
-      data = [
-        {
-          transactionId: 0,
-          // date: currAcc.openingDate,
-          // description: "Opening Balance",
-          // balance: currAcc.amount
-          date: currAcc.starting.date,
-          balance: currAcc.starting.balance,
-          description: "int="+currAcc.starting.interest + ", db="+currAcc.starting.dbRate+", cr="+currAcc.starting.crRate
-        }
-      ];
-      currAcc.trans.forEach(x => {
-        let newitem = { ...x };
-        data.push(newitem);
-      });
-      interestAcc = currAcc.interest;
-    }
-    if (this.gridApi[this.props.currentAccId])
-      this.gridApi[this.props.currentAccId].setRowData(data);
-
     return (
       <div className="transactions">
         <PageHeader>Transactions {this.props.archive?"- ARCHIVE":""}</PageHeader>
@@ -646,7 +657,7 @@ export default class Transactions extends Component {
           defaultActiveKey={1}
           animation={false}
           activeKey={this.props.currentAccId}
-          onSelect={this.handleTabSelect}
+          onSelect={this.selectAccount}
           id="trans-tab"
         >
           {this.props.accounts.map((x, index) => (
@@ -661,35 +672,21 @@ export default class Transactions extends Component {
                   columnDefs={this.state.columnDefs}
                   defaultColDef={this.state.defaultColDef}
                   rowSelection="single"
+                  rowBuffer={30}
                   onCellEditingStopped={this.updateRow}
                   onCellClicked={this.onCellClicked}
                   rowDeselection={true}
-                  deltaRowDataMode={true}
+                  deltaRowDataMode={false}
                   components={this.state.components}
                   getRowNodeId={data => data.transactionId}
                   getRowStyle={this.getRowStyle}
                   isRowSelectable={node => node.data.transactionId !== 0}
                   onGridReady={params => {
-                    this.gridApi[x.accountId] = params.api;
-
-                    let data = [];
+                    this.gridApi[x.accountId] = params.api
                     let currAcc;
                     if (this.props.transAcc)
-                      currAcc = this.props.transAcc.find(
-                        x => x.accountId === this.props.currentAccId
-                      );
-                    if (currAcc)
-                      data = [
-                        {
-                          transactionId: 0,
-                          date: currAcc.openingDate,
-                          description: "Opening Balance",
-                          balance: currAcc.amount
-                        },
-                        ...currAcc.trans
-                      ];
-                    params.api.setRowData(data);
-
+                      currAcc = this.props.transAcc.find(y => y.accountId === x.accountId)
+                    this.insertDataIntoGrid(currAcc,params.api)
                   }}
                 />
               </div>
@@ -706,7 +703,7 @@ export default class Transactions extends Component {
                 bsStyle={this.props.saveArchiveRequired ? "warning" : "default"}
                 >{this.props.archive ? "Save" : "Archive"}</Button>
                 <Button disabled={this.props.recalcRequired || this.props.saveRequired || this.props.archive} onClick={this.handleTrimShow}>Trim</Button>
-                <Button disabled={!interestAcc || this.props.archive} onClick={this.handleInterestShow}>Interest</Button>
+                <Button disabled={!this.state.interestAcc || this.props.archive} onClick={this.handleInterestShow}>Interest</Button>
                 <Button onClick={this.handleAdd} disabled={this.props.archive}>Add</Button>
                 <Button onClick={this.handleDuplicate} disabled={this.props.archive}>Duplicate</Button>
                 <Button onClick={this.handleDelete} disabled={this.props.archive}>Delete</Button>
