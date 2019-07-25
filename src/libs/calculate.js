@@ -1,7 +1,7 @@
 import Moment from "moment"
 import { uuid } from "./utilities"
 
-const timings = false
+const timings = true
 const beginning = Moment('1970-01-01')
 
 export const calculate = (accounts, templates, transAcc, today) => {
@@ -362,29 +362,9 @@ const updateBalances = (transactions, today) => {
 const updateBalance = (account, transactions, today) => {
   //	Sort given account and update balances
 
-  account.trans.forEach(tr => {
-    if (!tr.sortKey) tr.sortKey = Moment(tr.date).diff(beginning,'days')
-  })
-
   if (account.dirty) {
-    // Sort all of the transactions by date
-    // const newarray = account.trans.map(transaction => ({
-    //   ...transaction,
-    //     sortKey : Math.round(new Date(transaction.date) / 86400000)  // Use date value as a sort key
-    // }))
-    // if (sortTimings) console.time(`Sort time for ${account.accName}`)
-    // newarray.sort((a, b) => {
-    //   let diff = a.sortKey - b.sortKey
-    //   if (diff < 0) return -1
-    //   if (diff > 0) return 1
-    //   if (a.description > b.description) return 1
-    //   return -1
-    // })
-    // if (sortTimings) console.timeEnd(`Sort time for ${account.accName}`)
-    // account.trans = newarray
-    // account.trans.forEach(x => (x.date = Moment(x.date).format("YYYY-MM-DD")))
 
-    const sortTimings = true
+    const sortTimings = false
     if (sortTimings) console.time(`Sort time for ${account.accName}`)
     
     account.trans.sort((a, b) => {
