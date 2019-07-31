@@ -45,12 +45,3 @@ Notes on Transaction Load/Save
 3. Save transactions will do a special put to account row.
 4. Restore reloads just the transaction portion of the account.
 5. Put the transactions in accounts 'state' and pass it to 'transactions'. Use Context?
-
-
-Notes on Interest calculation method
-====================================
-- intCalcToDate to OpeningDate - 1
-- Loop thru all trans
---- If trans.date <> intCalcToDate
------ Calculate lineInt = (1 + currRate/365) ^ (trans.date - intCalcToDate) * runningBalance - runningBalance
------ intCalcToDate = trans.date

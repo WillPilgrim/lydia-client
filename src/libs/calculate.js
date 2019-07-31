@@ -1,8 +1,7 @@
 import Moment from "moment"
-import { uuid } from "./utilities"
+import { uuid, beginning } from "./utilities"
 
 const timings = true
-const beginning = Moment('1970-01-01')
 
 export const calculate = (accounts, templates, transAcc, today) => {
   if (timings) console.time("Recalculation Total")
@@ -139,10 +138,10 @@ const processNormal = (transactions, templates, today) => {
             crAmount = amount
 
           const newTrans = {
-            date: transDate.startOf("date").format(),
+            date: transDate.format("YYYY-MM-DD"),
             sortKey: transDate.diff(beginning,'days'),
             description: template.description,
-            autogen: transDate.startOf("date").format(),
+            autogen: transDate.format(),
             transactionId: uuid(),
             dbAmount: dbAmount,
             crAmount: crAmount,
@@ -163,10 +162,10 @@ const processNormal = (transactions, templates, today) => {
             if (template.partnerDesc)
               partnerDesc = template.partnerDesc
             accountTo.trans.push({
-              date: partnerDate.startOf("date").format(),
+              date: partnerDate.format("YYYY-MM-DD"),
               sortKey: partnerDate.diff(beginning,'days'),
               description: partnerDesc,
-              autogen: partnerDate.startOf("date").format(),
+              autogen: partnerDate.format(),
               transactionId: uuid(),
               dbAmount: crAmount,
               crAmount: dbAmount
@@ -201,9 +200,9 @@ const processSpecials = (transactions, templates, today) => {
       transDate = transDate.add(periodCnt, periodType)
       if (transDate.isAfter(today, "day")) {
         const newTrans = {
-          date: transDate.startOf("date").format(),
+          date: transDate.format("YYYY-MM-DD"),
           sortKey: transDate.diff(beginning,'days'),
-          autogen: transDate.startOf("date").format(),
+          autogen: transDate.format(),
           transactionId: uuid(),
           crAmount: 0,
           dbAmount: 0,
@@ -238,9 +237,9 @@ const processSpecials = (transactions, templates, today) => {
     while (transDate.isSameOrBefore(endDate, "day")) {
       if (transDate.isAfter(today, "day")) {
         const newTrans = {
-          date: transDate.startOf("date").format(),
+          date: transDate.format("YYYY-MM-DD"),
           sortKey: transDate.diff(beginning,'days'),
-          autogen: transDate.startOf("date").format(),
+          autogen: transDate.format(),
           transactionId: uuid(),
           crAmount: 0,
           dbAmount: 0,
@@ -292,9 +291,9 @@ const processSpecials = (transactions, templates, today) => {
           while (startDate.isSameOrBefore(endDate, "day")) {
             if (startDate.isAfter(today, "day")) {
               account.trans.push({
-                date: startDate.startOf("date").format(),
+                date: startDate.format("YYYY-MM-DD"),
                 sortKey: startDate.diff(beginning,'days'),
-                autogen: startDate.startOf("date").format(),
+                autogen: startDate.format(),
                 transactionId: uuid(),
                 partnerAccId: special.partnerAccId,
                 dbAmount: 0,
@@ -310,9 +309,9 @@ const processSpecials = (transactions, templates, today) => {
           // If any minimise entries inserted, insert an extra 'end marker' entry
           if (insertEndMarker) {
             account.trans.push({
-              date: startDate.startOf("date").format(),
+              date: startDate.format("YYYY-MM-DD"),
               sortKey: startDate.diff(beginning,'days'),
-              autogen: startDate.startOf("date").format(),
+              autogen: startDate.format(),
               transactionId: uuid(),
               dbAmount: 0,
               crAmount: 0,
@@ -325,9 +324,9 @@ const processSpecials = (transactions, templates, today) => {
           // Insert repeating 'zero' transaction entries for the range
           if (startDate.isAfter(today, "day")) {
             account.trans.push({
-              date: startDate.startOf("date").format(),
+              date: startDate.format("YYYY-MM-DD"),
               sortKey: startDate.diff(beginning,'days'),
-              autogen: startDate.startOf("date").format(),
+              autogen: startDate.format(),
               transactionId: uuid(),
               partnerAccId: special.partnerAccId,
               dbAmount: 0,
@@ -366,7 +365,6 @@ const updateBalance = (account, transactions, today) => {
 
     const sortTimings = false
     if (sortTimings) console.time(`Sort time for ${account.accName}`)
-    
     account.trans.sort((a, b) => {
         const diff = a.sortKey - b.sortKey
         if (diff < 0) return -1
@@ -419,7 +417,7 @@ const updateBalance = (account, transactions, today) => {
     let dbRateToday = dbRate
 
     // Find first date interest is to be calculated from
-    let firstBaseInterestDate = Moment(account.intFirstAppliedDate).startOf("date").subtract(account.periodCnt,account.periodType)
+    let firstBaseInterestDate = Moment(account.intFirstAppliedDate).subtract(account.periodCnt,account.periodType)
     if (firstBaseInterestDate.isBefore(Moment(openingDate), "day"))
       firstBaseInterestDate = Moment(openingDate)
     else
@@ -457,9 +455,9 @@ const updateBalance = (account, transactions, today) => {
 
               if (ccPartnerAcc) {
                 ccPartnerAcc.trans.push({
-                  date: lineDate.startOf("date").format(),
+                  date: lineDate.format("YYYY-MM-DD"),
                   sortKey: lineDate.diff(beginning,'days'),
-                  autogen: lineDate.startOf("date").format(),
+                  autogen: lineDate.format(),
                   transactionId: uuid(),
                   dbAmount: -ccBalance,
                   crAmount: 0,

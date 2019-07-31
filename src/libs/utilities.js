@@ -11,3 +11,4 @@ export const uuid = () => {
   }
 
   export const today = Moment().startOf('date')
+  export const beginning = Moment('1970-01-01')

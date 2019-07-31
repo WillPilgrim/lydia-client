@@ -17,6 +17,8 @@ file management
 
 accounts
 ========
+
+- Ensure archive load updates accounts with saved accounts - not dynamo accounts. This means doing a refreshAccounts when loading normal saving
 - move 'static' (non transaction processing) detail from transaction list grouping to accounts in dynamoDb
 - add an edit button to accounts list (replaces link on actual account list item)
 - modify account list item click to go to list of transactions for account

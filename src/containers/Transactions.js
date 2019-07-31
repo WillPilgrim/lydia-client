@@ -14,7 +14,7 @@ import { Storage } from "aws-amplify";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-bootstrap.css";
-import { today, uuid } from "../libs/utilities";
+import { today, uuid, beginning } from "../libs/utilities";
 import InterestPopUp from "../components/InterestPopUp";
 import ArchivePopUp from "../components/ArchivePopUp";
 
@@ -371,11 +371,15 @@ export default class Transactions extends Component {
   }
 
   handleDuplicate = () => {
-    let nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
+    const nodes = this.gridApi[this.props.currentAccId].getSelectedNodes();
     if (nodes.length) {
-      let data = nodes[0].data
+      const data = nodes[0].data
+      const newDate = Moment(data.date)
+      console.log(`Duplicate date=${newDate}`)
+
       let newNode = {
-        date: data.date,
+        date: newDate.format("YYYY-MM-DD"),
+        sortKey: newDate.diff(beginning,'days'),
         autogen: null,
         type: "manual",
         transactionId: uuid(),
@@ -448,7 +452,8 @@ export default class Transactions extends Component {
 
   handleAdd = () => {
     let newNode = {
-      date: today,
+      date: today.format("YYYY-MM-DD"),
+      sortKey: today.diff(beginning,'days'),
       autogen: null,
       type: "manual",
       transactionId: uuid(),
@@ -472,12 +477,14 @@ export default class Transactions extends Component {
   }
 
   handleInterestCommit = (newRateValue, newRateCredit, intFirstAppliedDate) => {
-    let newRate = parseFloat(newRateValue).toFixed(2);
-    let desc;
+    const newRate = parseFloat(newRateValue).toFixed(2)
+    let desc
     if (newRateCredit) desc = " New credit rate: " + newRate + "%"
     else desc = " New debit rate: " + newRate + "%"
-    let newNode = {
-      date: Moment(intFirstAppliedDate).startOf('date').format(),
+    const newDate = Moment(intFirstAppliedDate)
+    const newNode = {
+      date: newDate.format("YYYY-MM-DD"),
+      sortKey: newDate.diff(beginning,'days'),
       autogen: null,
       type: "manual",
       transactionId: uuid(),
@@ -488,7 +495,7 @@ export default class Transactions extends Component {
       crAmount: 0
     }
     let transAcc = this.props.transAcc
-    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+    const acc = transAcc.find(x => x.accountId === this.props.currentAccId)
     acc.trans.push(newNode)
     transAcc = calculate(
       this.props.accounts,
@@ -500,12 +507,12 @@ export default class Transactions extends Component {
     this.insertDataIntoCurrentGrid(transAcc)
     this.props.setSaveRequired(true)
     this.props.setRecalcRequired(false)
-    this.setState( {showInterest: false});
+    this.setState( {showInterest: false})
   }
 
   handleTrimCommit = (trimEndDate) => {
-    let transAcc = this.props.transAcc
-    let trimDate = Moment(trimEndDate).startOf('date')
+    const transAcc = this.props.transAcc
+    const trimDate = Moment(trimEndDate)
     trim(transAcc, trimDate)
     this.props.setTransactions(transAcc)
     transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
@@ -515,17 +522,14 @@ export default class Transactions extends Component {
   }
 
   handleLoadArchive = () => {
-    let key = "archive.json"
+    const key = "archive.json"
     let transAcc = [];
 
     Storage.get(key, { level: "private", download: true })
       .then(result => {
         let res = new TextDecoder("utf-8").decode(result.Body);
         let dataToRestore = JSON.parse(res)
-        // Reconstruct data as of when it was saved including using the templates that existed then as well
-        // as the date at that time
         transAcc = deleteFutureAllTransactions(dataToRestore[0],dataToRestore[2],dataToRestore[3])
-        // Now recalculate the data based on today's date and templates
         this.setState( {archiveDate: dataToRestore[3]});
         let currentAccId = 0;
         if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
@@ -545,10 +549,10 @@ export default class Transactions extends Component {
   }
 
   handleArchiveCommit = (archiveEndDate) => {
-    let endDate = Moment(archiveEndDate).startOf('date')
+    let endDate = Moment(archiveEndDate)
     let archive = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,endDate,true)
     //let key = `Archive-${endDate.format("YYYY-MM-DD")}.arc`
-    let key = 'archive.json'
+    const key = 'archive.json'
     this.setState( {archiveDate: endDate.format()});
     let dataToSave = [this.props.accounts,[],archive,endDate.format()]
     let strToSave = JSON.stringify(dataToSave)
@@ -594,13 +598,14 @@ export default class Transactions extends Component {
   }
 
   updateRow = node => {
-    let transAcc = this.props.transAcc
-    let acc = transAcc.find(account => account.accountId === this.props.currentAccId)
-    let data = node.data
+    const transAcc = this.props.transAcc
+    const acc = transAcc.find(account => account.accountId === this.props.currentAccId)
+    const data = node.data
     if (Moment(data.date).isAfter(today)) data.reconciled = 0
-    let transToUpdate = acc.trans.find(transaction => transaction.transactionId === data.transactionId)
+    const transToUpdate = acc.trans.find(transaction => transaction.transactionId === data.transactionId)
     transToUpdate.description = data.description
     transToUpdate.date = data.date
+    transToUpdate.sortKey = Moment(data.date).diff(beginning,'days')
     transToUpdate.reconciled = data.reconciled
     transToUpdate.crAmount = data.crAmount
     transToUpdate.dbAmount = data.dbAmount
