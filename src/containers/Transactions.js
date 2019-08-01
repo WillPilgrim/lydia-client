@@ -361,12 +361,14 @@ export default class Transactions extends Component {
         ...account.trans
       ]
     }
-    if (api)
-      api.setRowData(data);
+    if (api) {
+      api.setRowData(data)
+      api.refreshCells()
+    }
   }
   
   insertDataIntoCurrentGrid = (transAcc) => {
-    let acc = transAcc.find(x => x.accountId === this.props.currentAccId)
+    const acc = transAcc.find(x => x.accountId === this.props.currentAccId)
     this.insertDataIntoGrid(acc,this.gridApi[acc.accountId])
   }
 
@@ -375,7 +377,6 @@ export default class Transactions extends Component {
     if (nodes.length) {
       const data = nodes[0].data
       const newDate = Moment(data.date)
-      console.log(`Duplicate date=${newDate}`)
 
       let newNode = {
         date: newDate.format("YYYY-MM-DD"),
@@ -451,7 +452,7 @@ export default class Transactions extends Component {
   }
 
   handleAdd = () => {
-    let newNode = {
+    const newNode = {
       date: today.format("YYYY-MM-DD"),
       sortKey: today.diff(beginning,'days'),
       autogen: null,
@@ -462,7 +463,7 @@ export default class Transactions extends Component {
       description: "New Item"
     }
     let transAcc = this.props.transAcc
-    let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
+    const acc = transAcc.find(x => x.accountId === this.props.currentAccId);
     acc.trans.push(newNode)
     transAcc = calculate(
       this.props.accounts,
@@ -549,13 +550,13 @@ export default class Transactions extends Component {
   }
 
   handleArchiveCommit = (archiveEndDate) => {
-    let endDate = Moment(archiveEndDate)
-    let archive = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,endDate,true)
+    const endDate = Moment(archiveEndDate)
+    const archive = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,endDate,true)
     //let key = `Archive-${endDate.format("YYYY-MM-DD")}.arc`
     const key = 'archive.json'
     this.setState( {archiveDate: endDate.format()});
-    let dataToSave = [this.props.accounts,[],archive,endDate.format()]
-    let strToSave = JSON.stringify(dataToSave)
+    const dataToSave = [this.props.accounts,[],archive,endDate.format()]
+    const strToSave = JSON.stringify(dataToSave)
     Storage.put(key, strToSave, {
       level: "private",
       contentType: "application/json"
