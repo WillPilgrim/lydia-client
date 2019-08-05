@@ -29,7 +29,8 @@ export default class Transactions extends Component {
       showArchive: false,
       showTrim: false,
       isLoading: true,
-      archiveDate: null,
+      archiveFile: null,
+//      archiveDate: null,
       defaultColDef : 
       {
         resizable : true
@@ -522,31 +523,44 @@ export default class Transactions extends Component {
     this.setState( {showTrim: false})
   }
 
-  handleLoadArchive = () => {
+  handleArchiveLoad = () => {
     const key = "archive.json"
-    let transAcc = [];
+    let transAcc = []
 
     Storage.get(key, { level: "private", download: true })
       .then(result => {
-        let res = new TextDecoder("utf-8").decode(result.Body);
-        let dataToRestore = JSON.parse(res)
-        transAcc = deleteFutureAllTransactions(dataToRestore[0],dataToRestore[2],dataToRestore[3])
-        this.setState( {archiveDate: dataToRestore[3]});
-        let currentAccId = 0;
-        if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
+        const res = new TextDecoder("utf-8").decode(result.Body)
+        const dataToRestore = JSON.parse(res)
+//        transAcc = deleteFutureAllTransactions(dataToRestore[0],dataToRestore[2],dataToRestore[3])
+        console.log(dataToRestore)
+        if (!Array.isArray(dataToRestore[0])) {
+          console.log('Ultra New archive format')
+          transAcc = dataToRestore
+        } else if ((dataToRestore).length === 4) {
+          console.log('Old archive format')
+          transAcc = dataToRestore[2]
+//          this.setState( {archiveDate: dataToRestore[3]})
+        } else if ((dataToRestore).length === 2) {
+          console.log('New archive format')
+          transAcc = dataToRestore[0]
+//          this.setState( {archiveDate: dataToRestore[1]})
+        } else console.log('Invalid archive format!')
+
+        this.setState( {archiveFile: key})
+        let currentAccId = 0
+        if (transAcc.length > 0) currentAccId = transAcc[0].accountId
         this.props.setTransactions(transAcc)
         transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
-        this.selectAccount(currentAccId);
+        this.selectAccount(currentAccId)
         this.props.setSaveRequired(false)
         this.props.setSaveArchiveRequired(false)
-        this.props.setRecalcRequired(false);
+        this.props.setRecalcRequired(false)
         this.props.setArchive(true)
       })
       .catch(err => {
-        if (err.statusCode === 403) {
-          alert("No archive found")
-        } else console.log(err);
-      });
+        if (err.statusCode === 403) alert("No archive found")
+        else console.log(err)
+      })
   }
 
   handleArchiveCommit = (archiveEndDate) => {
@@ -554,9 +568,11 @@ export default class Transactions extends Component {
     const archive = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,endDate,true)
     //let key = `Archive-${endDate.format("YYYY-MM-DD")}.arc`
     const key = 'archive.json'
-    this.setState( {archiveDate: endDate.format()});
-    const dataToSave = [this.props.accounts,[],archive,endDate.format()]
-    const strToSave = JSON.stringify(dataToSave)
+    // this.setState( {archiveDate: endDate.format("YYYY-MM-DD")});
+    //const dataToSave = [this.props.accounts,[],archive,endDate.format()]
+    // const dataToSave = [archive,endDate.format("YYYY-MM-DD")]
+    // const strToSave = JSON.stringify(dataToSave)
+    const strToSave = JSON.stringify(archive)
     Storage.put(key, strToSave, {
       level: "private",
       contentType: "application/json"
@@ -567,35 +583,49 @@ export default class Transactions extends Component {
         alert("Archive saved successfully")
     })
       .catch(err => alert(err));
-    this.setState( {showArchive: false});
+    this.setState( {showArchive: false})
   }
 
   handleArchiveSave = () => {
-    this.handleArchiveCommit(this.state.archiveDate)
+    //const endDate = Moment(this.props.archiveDate)
+    const key = this.state.archiveFile
+    //const dataToSave = [this.props.transAcc,endDate.format("YYYY-MM-DD")]
+    //const strToSave = JSON.stringify(dataToSave)
+    const strToSave = JSON.stringify(this.props.transAcc)
+    Storage.put(key, strToSave, {
+      level: "private",
+      contentType: "application/json"
+    })
+      .then(result => {
+        this.props.setSaveRequired(false)
+        this.props.setSaveArchiveRequired(false)
+        alert("Archive saved successfully")
+    })
+      .catch(err => alert(err))
   }
 
   handleInterestShow = () => {
-    this.setState( {showInterest: true});
+    this.setState( {showInterest: true})
   }
 
   handleInterestClose = () => {
-    this.setState( {showInterest: false});
+    this.setState( {showInterest: false})
   }
 
   handleArchiveShow = () => {
-    this.setState( {showArchive: true});
+    this.setState( {showArchive: true})
   }
 
   handleArchiveClose = () => {
-    this.setState( {showArchive: false});
+    this.setState( {showArchive: false})
   }
 
   handleTrimShow = () => {
-    this.setState( {showTrim: true});
+    this.setState( {showTrim: true})
   }
 
   handleTrimClose = () => {
-    this.setState( {showTrim: false});
+    this.setState( {showTrim: false})
   }
 
   updateRow = node => {
@@ -666,7 +696,7 @@ export default class Transactions extends Component {
           onSelect={this.selectAccount}
           id="trans-tab"
         >
-          {this.props.accounts.map((x, index) => (
+          {this.props.transAcc ? this.props.transAcc.map((x, index) => (
             <Tab key={x.accountId} eventKey={x.accountId} title={x.accName}>
               <div
                 id="transGrid"
@@ -697,13 +727,14 @@ export default class Transactions extends Component {
                 />
               </div>
             </Tab>
-          ))}
+            )) : <div id="transGrid" style={divStyle} className="ag-theme-bootstrap"></div> 
+          }
         </Tabs>
         <div className="row">
           <div className="col-sm-12">
             <ButtonToolbar id="buttons" className="pull-right">
               <ButtonGroup>
-                <Button onClick={this.handleLoadArchive}>Load Archive</Button>
+                <Button onClick={this.handleArchiveLoad}>Load Archive</Button>
                 <Button disabled={this.props.recalcRequired || this.props.saveRequired} 
                 onClick={this.props.archive ? this.handleArchiveSave : this.handleArchiveShow}
                 bsStyle={this.props.saveArchiveRequired ? "warning" : "default"}

@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component } from "react"
 import {
     Modal,
     FormGroup,
@@ -7,21 +7,20 @@ import {
     Checkbox,
     Button,
     InputGroup
-  } from "react-bootstrap";
-//import "./InterestPopUp.css";
+  } from "react-bootstrap"
 import DatePicker from "react-16-bootstrap-date-picker"
 import Moment from "moment"
-import { today } from "../libs/utilities";
+import { today } from "../libs/utilities"
 
 class InterestPopUp extends Component {
   constructor(props) {
-    super(props);
+    super(props)
 
     this.state = {
       newRateValue: 0, 
       newRateCredit: false,
       intFirstAppliedDate: today.format()
-    };
+    }
   }
 
   validateForm() {
@@ -32,57 +31,49 @@ class InterestPopUp extends Component {
   }
 
   getNewRateValidationState() {
-    const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
-    if (!regex.test(this.state.newRateValue)) return "error";
-    let amount = parseFloat(this.state.newRateValue).toFixed(2);
-    if (isNaN(amount)) return "error";
-    if (amount > 99.99) return "error";
-    return "success";
+    const regex = /^[0-9]+(\.[0-9]{1,2})?$/
+    if (!regex.test(this.state.newRateValue)) return "error"
+    let amount = parseFloat(this.state.newRateValue).toFixed(2)
+    if (isNaN(amount)) return "error"
+    if (amount > 99.99) return "error"
+    return "success"
   }
 
   getFirstAppliedDateValidationState() {
-    if (this.state.intFirstAppliedDate === null) return "error";
-    if (Moment(this.state.intFirstAppliedDate).isAfter(today.clone().add(30, "y"),"day"))
-      return "error";
-    let transAcc = this.props.transAcc
+    if (this.state.intFirstAppliedDate === null) return "error"
+    if (Moment(this.state.intFirstAppliedDate).isAfter(today.clone().add(30, "y"),"day")) return "error"
+    const transAcc = this.props.transAcc
     if (transAcc) {
-      let acc = transAcc.find(x => x.accountId === this.props.currentAccId);
-      if (Moment(this.state.intFirstAppliedDate).isBefore(Moment(acc.openingDate),"day"))
-        return "error";
-      if (Moment(this.state.intFirstAppliedDate).isAfter(Moment(acc.closingDate),"day"))
-        return "error";
+      const acc = transAcc.find(x => x.accountId === this.props.currentAccId)
+      if (acc) {
+        if (Moment(this.state.intFirstAppliedDate).isBefore(Moment(acc.openingDate),"day")) return "error"
+        if (Moment(this.state.intFirstAppliedDate).isAfter(Moment(acc.closingDate),"day")) return "error"
+      }
     }
-    return "success";
+    return "success"
   }
 
   handleFirstAppliedDateChange = value => {
-    this.setState({
-      intFirstAppliedDate: value
-    });
-  };
+    this.setState({intFirstAppliedDate: value})
+  }
 
   handleInterestTypeChange = event => {
-    this.setState({
-      newRateCredit: event.target.checked
-    });
-  };
+    this.setState({newRateCredit: event.target.checked})
+  }
   
   handleFocus = event => {
-    event.target.select();
+    event.target.select()
   }
 
   handleChange = event => {
-    this.setState({
-      [event.target.id]: event.target.value
-    });
-  };
+    this.setState({[event.target.id]: event.target.value})
+  }
   
   handleAdd = () => {
-    this.props.onSubmit(this.state.newRateValue, this.state.newRateCredit, this.state.intFirstAppliedDate);
+    this.props.onSubmit(this.state.newRateValue, this.state.newRateCredit, this.state.intFirstAppliedDate)
   }
 
   render() {
-
     return (
         <Modal show={this.props.showInterest} onHide={this.props.onClose}>
             <Modal.Header closeButton>
@@ -133,8 +124,8 @@ class InterestPopUp extends Component {
             <Button disabled={!this.validateForm()} bsStyle="primary" onClick={this.handleAdd}>Add</Button>
             </Modal.Footer>
         </Modal>
-    );
+    )
   }
 }
 
-export default InterestPopUp;
+export default InterestPopUp

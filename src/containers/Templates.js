@@ -126,37 +126,32 @@ export default class Templates extends Component {
     ]
   }
 
-
   async componentDidMount() {
-    if (!this.props.isAuthenticated) {
-      return;
-    }
+    if (!this.props.isAuthenticated) return
     try {
-      const t1 = this.props.templates;
+      const t1 = this.props.templates
       const templates = t1.map(
-        ({ accountFromId: afid, accountToId: atid, ...rest }) => ({
-          accountFrom: this.props.accounts.find(x => x.accountId === afid)
-            .accName,
-          accountTo:
-            atid === "0"
-              ? ""
-              : this.props.accounts.find(x => x.accountId === atid).accName,
-          ...rest
-        })
-      );
-      this.setState({ templates });
+        ({ accountFromId: afid, accountToId: atid, ...rest }) => {
+          const  accountFrom = this.props.accounts.find(account => account.accountId === afid)
+          const  accountTo = this.props.accounts.find(account => account.accountId === atid)
+          return {
+            accountFrom: accountFrom ? accountFrom.accName : "",
+            accountTo: accountTo ? accountTo.accName : "",
+            ...rest}
+        }
+      )
+      this.setState({ templates })
     } catch (e) {
-      alert(e);
+        alert(e)
     }
-
-    this.setState({ isLoading: false });
+    this.setState({ isLoading: false })
   }
 
   amountFormatter = params => {
-    let val = parseInt(params.value, 10) / 100;
-    if (val) return val.toFixed(2);
-    return "";
-  };
+    const val = parseInt(params.value, 10) / 100
+    if (val) return val.toFixed(2)
+    return ""
+  }
 
   dateFormatter = params => Moment(params.value).format("Do MMM YY");
 

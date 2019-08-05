@@ -137,19 +137,21 @@ const processNormal = (transactions, templates, today) => {
           else 
             crAmount = amount
 
-          const newTrans = {
-            date: transDate.format("YYYY-MM-DD"),
-            sortKey: transDate.diff(beginning,'days'),
-            description: template.description,
-            autogen: transDate.format(),
-            transactionId: uuid(),
-            dbAmount: dbAmount,
-            crAmount: crAmount,
-            partnerAccId: template.accountToId,
-            type: template.templateType
+          if (account) {
+            const newTrans = {
+              date: transDate.format("YYYY-MM-DD"),
+              sortKey: transDate.diff(beginning,'days'),
+              description: template.description,
+              autogen: transDate.format(),
+              transactionId: uuid(),
+              dbAmount: dbAmount,
+              crAmount: crAmount,
+              partnerAccId: template.accountToId,
+              type: template.templateType
+            }
+            account.trans.push(newTrans)
+            account.dirty = true
           }
-          account.trans.push(newTrans)
-          account.dirty = true
 
           // Process partner account transaction
           if (accountTo) {
