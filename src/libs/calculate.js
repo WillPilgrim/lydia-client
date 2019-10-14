@@ -69,12 +69,19 @@ export const trim = (transAcc, trimDate) => {
 }
 
 // Returns a new 'transAcc' which is an array of accounts and associated transactions less any future auto trans
-export const deleteFutureAllTransactions = (accounts, transAcc, today, archive) =>
-  accounts.map(account => {
+export const deleteFutureAllTransactions = (accounts, transAcc, today, archive) => {
+  const newTransAcc = accounts.map(account => {
     // ToDo: need to verify every account in transAcc exists in accs
     const ta = transAcc.find(acc => acc.accountId === account.accountId) // find corresponding transAcc entry for this account
 
-    const newAccount = { trans: ta ? ta.trans : [], starting: ta ? ta.starting : null, ...account } // Build new account from Dynamo account plus trans
+    // Use Dynamo account details and initialise transactions, starting values and presentation information
+    const newAccount = { trans: [], starting: null, presentation: null, ...account }
+    if (ta) {  // If account already exists in transAcc, keep transaction array, starting fields and presentation information
+      newAccount.trans = ta.trans
+      newAccount.starting = ta.starting
+      newAccount.presentation = ta.presentation
+    }
+    //const newAccount = { trans: ta ? ta.trans : [], starting: ta ? ta.starting : null, presentation: ta ? ta.presentation : null, ...account } // Build new account from Dynamo account plus trans
     
     // filter out 'future' transactions. For archiving this is everything after 'today', otherwise everything auto generated after 'today'
     if (archive) 
@@ -103,8 +110,34 @@ export const deleteFutureAllTransactions = (accounts, transAcc, today, archive) 
       // set on the current account to the last amount due on the archived portion.
       newAccount.starting.payoffAmt = account.amount   
     }
+
+    // Initialise presentation information if it does not exist
+    if (!newAccount.presentation) {
+      newAccount.presentation = {}
+      newAccount.presentation.visible = true  // default to account being visible
+      newAccount.presentation.sortKey = accounts.length
+    }
+
     return newAccount
   })
+
+  // Need to sort accounts in transAcc and renumber sort value
+  newTransAcc.sort((a, b) => {
+    const diff = a.sortKey - b.sortKey
+    if (diff < 0) return -1
+    if (diff > 0) return 1
+    if (a.accName > b.accName) return 1
+    return -1
+  })
+
+  let sortKey = 1
+  newTransAcc.forEach(acc => {
+    acc.sortKey = sortKey
+    sortKey++
+  })
+
+  return newTransAcc
+}
 
 const processNormal = (transactions, templates, today) => {
 

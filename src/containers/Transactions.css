@@ -16,4 +16,11 @@
     font-size:20px;
  } 
 
+ .ag-header-group-cell-label {
+  /* justify-content: center; */
+  font-weight: 600;
+  font-size:20px;
+} 
+
+
  #buttons { padding-top: 5px}

@@ -164,6 +164,9 @@ class App extends Component {
               <Nav pullRight>
                 {this.state.isAuthenticated ? (
                   <Fragment>
+                    <LinkContainer to="/accounts">
+                      <NavItem>Accounts</NavItem>
+                    </LinkContainer>
                     <LinkContainer to="/transactions">
                       <NavItem>Transactions</NavItem>
                     </LinkContainer>

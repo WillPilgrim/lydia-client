@@ -2,6 +2,7 @@ import React from "react";
 import { Route, Switch } from "react-router-dom";
 import Home from "./containers/Home";
 import Accounts from "./containers/Accounts";
+import Account from "./containers/Account";
 import Login from "./containers/Login";
 import Signup from "./containers/Signup";
 import NewAccount from "./containers/NewAccount";
@@ -26,8 +27,9 @@ export default ({ childProps }) =>
     <AuthenticatedRoute path="/settings" exact component={Settings} props={childProps} />
     <AuthenticatedRoute path="/settings/password" exact component={ChangePassword} props={childProps} />
     <AuthenticatedRoute path="/settings/email" exact component={ChangeEmail} props={childProps} />
+    <AuthenticatedRoute path="/accounts" exact component={Accounts} props={childProps} />
     <AuthenticatedRoute path="/accounts/new" exact component={NewAccount} props={childProps} />
-    <AuthenticatedRoute path="/accounts/:id" exact component={Accounts} props={childProps} />
+    <AuthenticatedRoute path="/accounts/:id" exact component={Account} props={childProps} />
     <AuthenticatedRoute path="/templates/:id" exact component={Template} props={childProps} />
     <AuthenticatedRoute path="/templates" exact component={Templates} props={childProps} />
     <AuthenticatedRoute path="/transactions" exact component={Transactions} props={childProps} />

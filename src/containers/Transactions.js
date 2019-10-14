@@ -1,22 +1,16 @@
-import React, { Component } from "react";
-import {
-  PageHeader,
-  Button,
-  ButtonToolbar,
-  ButtonGroup,
-  Tabs,
-  Tab
-} from "react-bootstrap";
-import "./Transactions.css";
-import Moment from "moment";
-import { calculate, deleteFutureAllTransactions, trim, archiveRebalance } from "../libs/calculate";
+import React, { Component } from "react"
+import {PageHeader, Button, ButtonToolbar, ButtonGroup, Tabs, Tab} from "react-bootstrap"
+import "./Transactions.css"
+import Moment from "moment"
+import { calculate, deleteFutureAllTransactions, trim, archiveRebalance } from "../libs/calculate"
 import { Storage } from "aws-amplify";
-import { AgGridReact } from "ag-grid-react";
-import "ag-grid-community/dist/styles/ag-grid.css";
-import "ag-grid-community/dist/styles/ag-theme-bootstrap.css";
-import { today, uuid, beginning } from "../libs/utilities";
-import InterestPopUp from "../components/InterestPopUp";
-import ArchivePopUp from "../components/ArchivePopUp";
+import { AgGridReact } from "ag-grid-react"
+import "ag-grid-community/dist/styles/ag-grid.css"
+import "ag-grid-community/dist/styles/ag-theme-bootstrap.css"
+import { today, uuid, beginning } from "../libs/utilities"
+import InterestPopUp from "../components/InterestPopUp"
+import ArchivePopUp from "../components/ArchivePopUp"
+import Summary from "../components/Summary"
 
 export default class Transactions extends Component {
   constructor(props) {
@@ -696,6 +690,11 @@ export default class Transactions extends Component {
           onSelect={this.selectAccount}
           id="trans-tab"
         >
+          <Tab key={0} eventKey={0} title="Summary">
+            <Summary 
+              transAcc={this.props.transAcc}
+            />
+          </Tab>
           {this.props.transAcc ? this.props.transAcc.map((x, index) => (
             <Tab key={x.accountId} eventKey={x.accountId} title={x.accName}>
               <div
@@ -765,6 +764,6 @@ export default class Transactions extends Component {
           </div>
         </div>
       </div>
-    );
+    )
   }
 }
