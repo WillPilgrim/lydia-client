@@ -44,4 +44,4 @@ Notes on Transaction Load/Save
 2. Experiment with data compression
 3. Save transactions will do a special put to account row.
 4. Restore reloads just the transaction portion of the account.
-5. Put the transactions in accounts 'state' and pass it to 'transactions'. Use Context?
+5. Put the transactions in accounts 'state' and pass it to 'transactions'. Use Context??
