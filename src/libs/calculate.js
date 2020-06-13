@@ -552,7 +552,9 @@ const updateBalance = (account, transactions, today) => {
             saveCrRate = crRate
             saveDbRate = dbRate
             savePeriodInt = periodInterest
-          } else {
+          } 
+          else 
+          {
             // remove final minimise end of period marker
             if (tr.type === "PeriodEndMarker") account.trans.splice(trIndex, 1)
             trIndex = minPeriodStartIndex // go back to the beginning of the period
@@ -572,11 +574,28 @@ const updateBalance = (account, transactions, today) => {
 
             const minPartnerAcc = transactions.find(acc => acc.accountId === tr.partnerAccId)
 
+
+/*
+            date: lineDate.format("YYYY-MM-DD"),
+            sortKey: lineDate.diff(beginning,'days'),
+            autogen: lineDate.format(),
+            transactionId: uuid(),
+            dbAmount: -ccBalance,
+            crAmount: 0,
+            description: `To ${account.accName} for credit card payment`
+*/
+
+
+
             if (minPartnerAcc) {
+console.log(`tr.date=${tr.date}, beginning=${beginning}`)
               const newTrans = {
-                date: tr.date,
-                sortKey: tr.date.diff(beginning,'days'),
-                autogen: tr.date,
+                // date: tr.date,
+                // sortKey: tr.date.diff(beginning,'days'),
+                // autogen: tr.date,
+                date: lineDate,
+                sortKey: lineDate.diff(beginning,'days'),
+                autogen: lineDate,
                 transactionId: uuid(),
                 dbAmount: 0,
                 crAmount: 0
