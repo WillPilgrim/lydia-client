@@ -17,7 +17,7 @@ export default class Transactions extends Component {
     super(props);
     this.gridApi = [];
     this.debug = true
-    let descriptionWidth = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234)
+    let descriptionWidth = Math.min(Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234),654)
     this.state = {
       showInterest: false,
       showArchive: false,
