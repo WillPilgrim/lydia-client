@@ -7,7 +7,7 @@ export const calculate = (accounts, templates, transAcc, today) => {
   if (timings) console.time("Recalculation Total")
   // 1. Remove future transactions
   if (timings) console.time("deleteFutureAllTransactions")
-  let transactions = deleteFutureAllTransactions(accounts, transAcc, today)
+  let transactions = deleteFutureAllTransactions(accounts, transAcc, today, false)
   if (timings) console.timeEnd("deleteFutureAllTransactions")
   // 2. Process normal template transactions
   if (timings) console.time("processNormal")
@@ -69,9 +69,20 @@ export const trim = (transAcc, trimDate) => {
 }
 
 // Returns a new 'transAcc' which is an array of accounts and associated transactions less any future auto trans
+
+// accounts - list of DynamoDb accounts 
 export const deleteFutureAllTransactions = (accounts, transAcc, today, archive) => {
   const newTransAcc = accounts.map(account => {
     // ToDo: need to verify every account in transAcc exists in accs
+    if (!transAcc)
+    {
+      console.log('****** deleteFutureAllTransactions start ***************')
+      console.log(`transAcc is null! today=${today}, archive=${archive}, accounts:`)
+      console.log(accounts)
+      console.log(`newTransAcc:`)
+      console.log(newTransAcc)
+      console.log('****** deleteFutureAllTransactions end   ***************')
+    }
     const ta = transAcc.find(acc => acc.accountId === account.accountId) // find corresponding transAcc entry for this account
 
     // Use Dynamo account details and initialise transactions, starting values and presentation information
@@ -306,7 +317,7 @@ const processSpecials = (transactions, templates, today) => {
         periodCnt: template.periodCnt,
         type: template.templateType,
         amount: template.amount
-      })
+      }) 
     })
 
   // Define a function to process a special
@@ -385,7 +396,14 @@ const processSpecials = (transactions, templates, today) => {
   let completed = 0
   // Repeat until all of the specials in the array are processed
   while (completed < specials.length) {
-    specials.filter(special => special.active).forEach(createSpecial)}
+    let completedBeforeCreate = completed
+    specials.filter(special => special.active).forEach(createSpecial)
+    if (completedBeforeCreate === completed && completed < specials.length)   // No specials completed  - infinite loop problem
+    {
+      console.log(`*** Problem infinite loop with specials processing. Total specials=${specials.length}, processed so far=${completed}`)
+      break
+    }
+  }
 }
 
 const updateBalances = (transactions, today) => {
@@ -508,6 +526,8 @@ const updateBalance = (account, transactions, today) => {
       if (lineDate.isAfter(today, "day")) {
         // Zero account to/from partner (if provided)
         if (tr.type === "Zero") {
+          console.log('*************** Start Zero ******************************')
+          console.log(`tr.date=${tr.date} runningBalance=${runningBalance}`)
           if (runningBalance >= 0) {
             tr.crAmount = 0
             tr.dbAmount = runningBalance
@@ -519,11 +539,12 @@ const updateBalance = (account, transactions, today) => {
           }
 
           const zeroPartnerAcc = transactions.find(acc => acc.accountId === tr.partnerAccId)
+          console.log(`zeroPartnerAcc=${zeroPartnerAcc}`)
           if (zeroPartnerAcc) {
             const newTrans = {
-              date: tr.date,
-              sortKey: tr.date.diff(beginning,'days'),
-              autogen: tr.date,
+              date: lineDate.format("YYYY-MM-DD"),
+              sortKey: lineDate.diff(beginning,'days'),
+              autogen: lineDate,
               transactionId: uuid(),
               dbAmount: 0,
               crAmount: 0
@@ -540,6 +561,7 @@ const updateBalance = (account, transactions, today) => {
             zeroPartnerAcc.trans.push(newTrans)
             zeroPartnerAcc.dirty = true
           }
+          console.log('*************** End Zero   *******************************')
         }
 
         // Minimise types calculation process
@@ -593,7 +615,7 @@ console.log(`tr.date=${tr.date}, beginning=${beginning}`)
                 // date: tr.date,
                 // sortKey: tr.date.diff(beginning,'days'),
                 // autogen: tr.date,
-                date: lineDate,
+                date: lineDate.format("YYYY-MM-DD"),
                 sortKey: lineDate.diff(beginning,'days'),
                 autogen: lineDate,
                 transactionId: uuid(),

@@ -138,9 +138,19 @@ export default class Template extends Component {
   };
 
   handleStartDateChange = value => {
-    this.setState({
-      startDate: value
-    });
+    if (this.state.templateType === "Zero")
+    {
+      this.setState({
+        startDate: value,
+        endDate: value
+      });
+    }
+    else
+    {
+      this.setState({
+        startDate: value
+      });
+    }
   };
 
   handleEndDateChange = value => {

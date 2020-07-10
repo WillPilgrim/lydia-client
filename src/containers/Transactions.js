@@ -191,6 +191,16 @@ export default class Transactions extends Component {
     try {
       let transAcc = this.props.transAcc;
       if (!transAcc) this.handleLoad();
+      else
+      {
+        let currAccId = this.props.currentAccId;
+        if (currAccId)
+        {
+          let acc = transAcc.find(x => x.accountId === currAccId)
+          if (acc)
+            this.setState({interestAcc: acc.interest});
+        }
+      }
     } catch (e) {
       alert(e);
     }
@@ -278,7 +288,7 @@ export default class Transactions extends Component {
   }
 
   handleSave = () => {
-    let transAcc = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,today)
+    let transAcc = deleteFutureAllTransactions(this.props.accounts, this.props.transAcc,today, false)
     let key = "data2.txt";
     let dataToSave = [this.props.accounts,this.props.templates,transAcc,today.format()]
     let strToSave = JSON.stringify(dataToSave)
@@ -658,7 +668,8 @@ export default class Transactions extends Component {
     let h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 280;
     let divStyle = { boxSizing: "border-box", height: `${h}px` };
     return (
-      <div className="transactions">
+//      <div className="transactions" class="ag-theme-alpine-dark">
+      <div className="ag-theme-alpine-dark">
         <PageHeader>Transactions {this.props.archive?"- ARCHIVE":""}</PageHeader>
         <InterestPopUp
           showInterest={this.state.showInterest}

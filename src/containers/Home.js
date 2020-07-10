@@ -29,12 +29,14 @@ export default class Home extends Component {
     let line = "Balance: "
     if (transAcc) {
       let lineAcc = transAcc.find(x => x.accountId === account.accountId)
-      line += (parseInt(lineAcc.currentBal, 10) / 100).toFixed(2)
-      if (lineAcc.interest) {
-        if (lineAcc.currentCrRate > 0)
-          line += ', Credit Rate: ' + (lineAcc.currentCrRate).toFixed(2) + "%"
-        if (lineAcc.currentDbRate > 0)
-          line += ', Debit Rate: ' + (lineAcc.currentDbRate).toFixed(2) + "%"
+      if (lineAcc) {
+        line += (parseInt(lineAcc.currentBal, 10) / 100).toFixed(2)
+        if (lineAcc.interest) {
+          if (lineAcc.currentCrRate > 0)
+            line += ', Credit Rate: ' + (lineAcc.currentCrRate).toFixed(2) + "%"
+          if (lineAcc.currentDbRate > 0)
+            line += ', Debit Rate: ' + (lineAcc.currentDbRate).toFixed(2) + "%"
+        }
       }
     }
     return line

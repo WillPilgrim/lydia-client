@@ -193,7 +193,7 @@ export default class NewAccount extends Component {
         sortOrder: this.props.accounts.length + 1
 
       });
-      this.props.setTransactions(null)
+     // this.props.setTransactions(null)
       await this.props.refreshAccounts();
       this.props.setRecalcRequired(true)
       this.props.history.push("/");
