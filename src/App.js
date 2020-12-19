@@ -28,14 +28,23 @@ class App extends Component {
 
   async componentDidMount() {
     try {
-      if (await Auth.currentSession()) {
+      let session = await Auth.currentSession()
+      console.log('Session:')
+      console.log(session)
+      if (session) {
+        console.log('** > Before call to currentUserInfo')
         const { attributes } = await Auth.currentUserInfo();
+        console.log('** > After call to currentUserInfo')
         this.userHasAuthenticated(true, attributes.email);
       }
       await this.refreshAccounts();
       await this.refreshTemplates();
     } catch (e) {
       if (e !== "No current user") {
+        console.log('SOMETHING WRONG WITH SIGN IN - MAYBE REFRESH TOKEN EXPIRED')
+        console.log(e)
+        console.log('==========================================================')
+        // need to handle case where refresh token expired!
         alert(e);
       }
     }

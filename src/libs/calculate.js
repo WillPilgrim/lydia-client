@@ -478,11 +478,15 @@ const updateBalance = (account, transactions, today) => {
     let prevInterestDate = Moment(firstBaseInterestDate)
 
     // Use an old school loop so it can be manipulated when doing 'Minimise' transactions
+    console.log(`*** begin the loop for account ${account.accName} ***** account.trans.length=${account.trans.length}`)
     for (let trIndex = 0; trIndex < account.trans.length; trIndex++) {
       let tr = account.trans[trIndex]
       let lineDate = Moment(tr.date)
 
+console.log(`trIndex=${trIndex}, account.trans.length=${account.trans.length}, ${tr.transactionId}, tr.date=${tr.date}, tr.type=${tr.type}, tr.crAmount=${tr.crAmount}, tr.dbAmount=${tr.dbAmount}, runningBalance = ${runningBalance}`)
+
       if (ccIndex > -1) {
+console.log(`### ccIndex=${ccIndex}`)        
         // Calculate period closing balance
         // Note: this can cause a problem if the current period end date is before
         // the starting date. The amount calculated to pay off the credit card
@@ -526,7 +530,7 @@ const updateBalance = (account, transactions, today) => {
       if (lineDate.isAfter(today, "day")) {
         // Zero account to/from partner (if provided)
         if (tr.type === "Zero") {
-          console.log('*************** Start Zero ******************************')
+          console.log(`### Zero ###`)        
           console.log(`tr.date=${tr.date} runningBalance=${runningBalance}`)
           if (runningBalance >= 0) {
             tr.crAmount = 0
@@ -566,6 +570,8 @@ const updateBalance = (account, transactions, today) => {
 
         // Minimise types calculation process
         if (tr.type === "Minimise" || tr.type === "PeriodEndMarker") {
+          console.log(`### Minimise or PeriodEndMarker=${tr.type}`)        
+
           if (minPeriodStartIndex === -1) {
             // starting a new min period
             minPeriodStartIndex = trIndex
@@ -636,7 +642,10 @@ console.log(`tr.date=${tr.date}, beginning=${beginning}`)
                   newTrans.description = `Transfer from ${account.accName}`
                 }
               }
+              console.log(`Transfer pushed to ${minPartnerAcc.accName} cr=${newTrans.crAmount}, db=${newTrans.dbAmount}, id=${newTrans.transactionId}`)
+              console.log(`Size of partner array before push=${minPartnerAcc.trans.length}`)
               minPartnerAcc.trans.push(newTrans)
+              console.log(`Size of partner array after push=${minPartnerAcc.trans.length} from=${account.accName} to=${minPartnerAcc.accName}`)
               minPartnerAcc.dirty = true
             }
 
@@ -671,7 +680,8 @@ console.log(`tr.date=${tr.date}, beginning=${beginning}`)
                 account.trans.splice(trIndex, 1)
                 trIndex--
                 tr = account.trans[trIndex]
-                runningBalance = tr.balance
+                // Prepare to reprocess last entry
+                runningBalance = tr.balance - tr.crAmount + tr.dbAmount
                 lineDate = Moment(tr.date)
               } else {
                 if (periodInterest > 0) {
@@ -698,6 +708,7 @@ console.log(`tr.date=${tr.date}, beginning=${beginning}`)
       runningBalance += tr.crAmount - tr.dbAmount // update line running balance
 
       // Update transaction details
+// console.log(`${tr.transactionId}, tr.date=${tr.date}, tr.type=${tr.type}, tr.crAmount=${tr.crAmount}, tr.dbAmount=${tr.dbAmount}, runningBalance = ${runningBalance}`)
       tr.balance = runningBalance
       tr.crRate = crRate
       tr.dbRate = dbRate
