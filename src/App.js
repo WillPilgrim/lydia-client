@@ -85,7 +85,9 @@ class App extends Component {
   };
 
   refreshAccounts = async () => {
-    const accounts = await this.getAccounts()
+    const accountsFromGet = await this.getAccounts()
+    // added to insert new 'hide' value
+    const accounts = accountsFromGet.map(acc => {return {hide:false, ...acc}})
     this.sortAndSetAccounts(accounts);
   };
 
@@ -107,6 +109,8 @@ class App extends Component {
     const toSort = toAcc.sortOrder
     fromAcc.sortOrder = toSort;
     toAcc.sortOrder = fromSort;
+    this.setRecalcRequired(true)
+
     await this.saveAccount(fromAcc);
     await this.saveAccount(toAcc);
     this.sortAndSetAccounts(accounts);

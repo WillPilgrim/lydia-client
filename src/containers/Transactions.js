@@ -706,7 +706,7 @@ export default class Transactions extends Component {
               transAcc={this.props.transAcc}
             />
           </Tab>
-          {this.props.transAcc ? this.props.transAcc.filter(account => !account.hide).map((x, index) => (
+          {this.props.transAcc ? this.props.transAcc.filter(account => !account.hide).sort((a,b) => (a.sortOrder - b.sortOrder)).map((x, index) => (
             <Tab key={x.accountId} eventKey={x.accountId} title={x.accName}>
               <div
                 id="transGrid"
