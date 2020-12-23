@@ -194,6 +194,7 @@ export default class Transactions extends Component {
       else
       {
         let currAccId = this.props.currentAccId;
+        console.log(`Transactions - componentDidMount - currAccId=${currAccId}`)
         if (currAccId)
         {
           let acc = transAcc.find(x => x.accountId === currAccId)
@@ -319,8 +320,7 @@ export default class Transactions extends Component {
           transAcc,
           today
         )
-        let currentAccId = 0;
-        if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
+        let currentAccId = this.props.currentAccId
         this.selectAccount(currentAccId);
         this.props.setTransactions(transAcc);
         transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
@@ -337,8 +337,7 @@ export default class Transactions extends Component {
             transAcc,
             today
           );
-          let currentAccId = 0;
-          if (transAcc.length > 0) currentAccId = transAcc[0].accountId;
+          let currentAccId = this.props.currentAccId
           this.selectAccount(currentAccId);
           this.props.setTransactions(transAcc);
           transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
@@ -551,8 +550,9 @@ export default class Transactions extends Component {
         } else console.log('Invalid archive format!')
 
         this.setState( {archiveFile: key})
-        let currentAccId = 0
-        if (transAcc.length > 0) currentAccId = transAcc[0].accountId
+        // let currentAccId = 0
+        // if (transAcc.length > 0) currentAccId = transAcc[0].accountId
+        let currentAccId = this.props.currentAccId
         this.props.setTransactions(transAcc)
         transAcc.forEach(account => this.insertDataIntoGrid(account,this.gridApi[account.accountId]))
         this.selectAccount(currentAccId)

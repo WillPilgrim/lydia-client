@@ -92,13 +92,11 @@ class App extends Component {
   };
 
   sortAndSetAccounts = accounts => {
-    accounts.sort((a, b) => {
-      const as  = a.sortOrder ? a.sortOrder : 1
-      const bs = b.sortOrder ? b.sortOrder : 1
-      return as-bs
-    });
-    this.setState({ accounts });
-    if (accounts.length) this.setCurrentAccId(accounts[0].accountId);
+    accounts.sort((a, b) => a.sortOrder - b.sortOrder)
+    this.setState({ accounts })
+    const selectedAccount = accounts.find(acc => !acc.hide)
+    if (selectedAccount) this.setCurrentAccId(selectedAccount.accountId)
+    else this.setCurrentAccId(0)
   }
 
   moveAccounts = async (i, dir) => {

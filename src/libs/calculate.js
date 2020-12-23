@@ -478,15 +478,15 @@ const updateBalance = (account, transactions, today) => {
     let prevInterestDate = Moment(firstBaseInterestDate)
 
     // Use an old school loop so it can be manipulated when doing 'Minimise' transactions
-    console.log(`*** begin the loop for account ${account.accName} ***** account.trans.length=${account.trans.length}`)
+  //  console.log(`*** begin the loop for account ${account.accName} ***** account.trans.length=${account.trans.length}`)
     for (let trIndex = 0; trIndex < account.trans.length; trIndex++) {
       let tr = account.trans[trIndex]
       let lineDate = Moment(tr.date)
 
-console.log(`trIndex=${trIndex}, account.trans.length=${account.trans.length}, ${tr.transactionId}, tr.date=${tr.date}, tr.type=${tr.type}, tr.crAmount=${tr.crAmount}, tr.dbAmount=${tr.dbAmount}, runningBalance = ${runningBalance}`)
+// console.log(`trIndex=${trIndex}, account.trans.length=${account.trans.length}, ${tr.transactionId}, tr.date=${tr.date}, tr.type=${tr.type}, tr.crAmount=${tr.crAmount}, tr.dbAmount=${tr.dbAmount}, runningBalance = ${runningBalance}`)
 
       if (ccIndex > -1) {
-console.log(`### ccIndex=${ccIndex}`)        
+// console.log(`### ccIndex=${ccIndex}`)        
         // Calculate period closing balance
         // Note: this can cause a problem if the current period end date is before
         // the starting date. The amount calculated to pay off the credit card
@@ -530,8 +530,8 @@ console.log(`### ccIndex=${ccIndex}`)
       if (lineDate.isAfter(today, "day")) {
         // Zero account to/from partner (if provided)
         if (tr.type === "Zero") {
-          console.log(`### Zero ###`)        
-          console.log(`tr.date=${tr.date} runningBalance=${runningBalance}`)
+//          console.log(`### Zero ###`)        
+//          console.log(`tr.date=${tr.date} runningBalance=${runningBalance}`)
           if (runningBalance >= 0) {
             tr.crAmount = 0
             tr.dbAmount = runningBalance
@@ -543,7 +543,7 @@ console.log(`### ccIndex=${ccIndex}`)
           }
 
           const zeroPartnerAcc = transactions.find(acc => acc.accountId === tr.partnerAccId)
-          console.log(`zeroPartnerAcc=${zeroPartnerAcc}`)
+//          console.log(`zeroPartnerAcc=${zeroPartnerAcc}`)
           if (zeroPartnerAcc) {
             const newTrans = {
               date: lineDate.format("YYYY-MM-DD"),
@@ -565,12 +565,12 @@ console.log(`### ccIndex=${ccIndex}`)
             zeroPartnerAcc.trans.push(newTrans)
             zeroPartnerAcc.dirty = true
           }
-          console.log('*************** End Zero   *******************************')
+//          console.log('*************** End Zero   *******************************')
         }
 
         // Minimise types calculation process
         if (tr.type === "Minimise" || tr.type === "PeriodEndMarker") {
-          console.log(`### Minimise or PeriodEndMarker=${tr.type}`)        
+//          console.log(`### Minimise or PeriodEndMarker=${tr.type}`)        
 
           if (minPeriodStartIndex === -1) {
             // starting a new min period
@@ -616,7 +616,7 @@ console.log(`### ccIndex=${ccIndex}`)
 
 
             if (minPartnerAcc) {
-console.log(`tr.date=${tr.date}, beginning=${beginning}`)
+// console.log(`tr.date=${tr.date}, beginning=${beginning}`)
               const newTrans = {
                 // date: tr.date,
                 // sortKey: tr.date.diff(beginning,'days'),
@@ -642,10 +642,10 @@ console.log(`tr.date=${tr.date}, beginning=${beginning}`)
                   newTrans.description = `Transfer from ${account.accName}`
                 }
               }
-              console.log(`Transfer pushed to ${minPartnerAcc.accName} cr=${newTrans.crAmount}, db=${newTrans.dbAmount}, id=${newTrans.transactionId}`)
-              console.log(`Size of partner array before push=${minPartnerAcc.trans.length}`)
+//              console.log(`Transfer pushed to ${minPartnerAcc.accName} cr=${newTrans.crAmount}, db=${newTrans.dbAmount}, id=${newTrans.transactionId}`)
+//              console.log(`Size of partner array before push=${minPartnerAcc.trans.length}`)
               minPartnerAcc.trans.push(newTrans)
-              console.log(`Size of partner array after push=${minPartnerAcc.trans.length} from=${account.accName} to=${minPartnerAcc.accName}`)
+//              console.log(`Size of partner array after push=${minPartnerAcc.trans.length} from=${account.accName} to=${minPartnerAcc.accName}`)
               minPartnerAcc.dirty = true
             }
 
