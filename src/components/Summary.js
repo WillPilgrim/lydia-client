@@ -73,7 +73,7 @@ class Summary extends Component {
     const divStyle = { boxSizing: "border-box", height: `${h}px` }
     const transAcc = this.props.transAcc
     let total = 0
-    const accounts = transAcc ? transAcc.map(account => {
+    const accounts = transAcc ? transAcc.filter(account => !account.hide).map(account => {
       const newAccount = { ...account, total: false, dataline: true }
       total += account.currentBal
       return newAccount

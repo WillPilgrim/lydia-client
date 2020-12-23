@@ -10,7 +10,7 @@ import Moment from "moment";
 import DatePicker from "react-16-bootstrap-date-picker";
 import { today } from "../libs/utilities";
 
-export default class Accounts extends Component {
+export default class Account extends Component {
   constructor(props) {
     super(props);
 
@@ -30,7 +30,8 @@ export default class Accounts extends Component {
       dbRate: "",
       periodType: 'M',
       periodCnt: 1,
-      interest: false
+      interest: false,
+      hide: false
     };
   }
 
@@ -49,7 +50,8 @@ export default class Accounts extends Component {
         interest,
         periodType,
         periodCnt,
-        sortOrder
+        sortOrder,
+        hide
       } = account;
 
       this.setState({
@@ -66,7 +68,8 @@ export default class Accounts extends Component {
         periodType : periodType ? periodType : "M",
         periodCnt : periodCnt ? periodCnt : 1,
         interest,
-        sortOrder : sortOrder ? sortOrder : 1
+        sortOrder : sortOrder ? sortOrder : 1,
+        hide
       });
     } catch (e) {
       alert(e);
@@ -235,7 +238,8 @@ export default class Accounts extends Component {
         periodType: this.state.interest ? this.state.periodType : "M",
         periodCnt: this.state.interest ? parseInt(this.state.periodCnt, 10) : 1,
         intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).startOf('date').format(),
-        sortOrder: this.state.sortOrder
+        sortOrder: this.state.sortOrder,
+        hide: this.state.hide
       }
       await this.saveAccount(acc);
       await this.props.refreshAccounts();

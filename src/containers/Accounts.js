@@ -1,10 +1,12 @@
 import React, { Component } from "react"
 import {PageHeader, Button, ButtonToolbar} from "react-bootstrap"
 import "./Accounts.css"
+import AccountHideCellRenderer from "../components/AccountHideCellRenderer.js";
 import { AgGridReact } from "ag-grid-react"
 import "ag-grid-community/dist/styles/ag-grid.css"
 import "ag-grid-community/dist/styles/ag-theme-bootstrap.css"
 import Moment from "moment"
+import { API } from "aws-amplify"
 
 export default class Accounts extends Component {
   constructor(props) {
@@ -23,12 +25,14 @@ export default class Accounts extends Component {
         {
           headerName: "Name",
           field: "accName",
-          width: 120
+          cellStyle: this.cellStyleFormatter,
+          width: 130
         },
         {
           headerName: "Description",
           field: "description",
-          width: 480
+          cellStyle: this.cellStyleFormatter,
+          width: 430
         },
         {
             headerName: "Opening",
@@ -36,24 +40,22 @@ export default class Accounts extends Component {
                 {
                     headerName: "Date",
                     field: "openingDate",
-                    width: 110,
+                    width: 120,
                     filter: "agDateColumnFilter",
-                    cellStyle: { textAlign: "right" },
+                    cellStyle: this.cellStyleFormatter,
+                    cellStyleRightJustified: true,
                     filterParams: this.dateFilterOptions,
                     valueFormatter: this.dateFormatter
                 },
                 {
                     headerName: "Balance",
                     field: "amount",
-                    width: 115,
+                    width: 125,
                     type: "numericColumn",
                     valueFormatter: this.balanceFormatter,
                     filter: "agNumberColumnFilter",
                     filterParams: this.amountFilterOptions,
-                    cellStyle: params => {
-                      if (params.value < 0) return { color: "red" }
-                      else return null
-                    }
+                    cellStyle: this.cellStyleFormatter,
                 }
             ]
         },
@@ -64,7 +66,8 @@ export default class Accounts extends Component {
                     headerName: "Debit",
                     field: "dbRate",
                     width: 110,
-                    cellStyle: { textAlign: "right" },
+                    cellStyle: this.cellStyleFormatter,
+                    cellStyleRightJustified: true,
                     filter: "agNumberColumnFilter",
                     filterParams: this.amountFilterOptions,
                     valueFormatter: this.percentFormatter
@@ -73,15 +76,41 @@ export default class Accounts extends Component {
                     headerName: "Credit",
                     field: "crRate",
                     width: 110,
-                    cellStyle: { textAlign: "right" },
+                    cellStyle: this.cellStyleFormatter,
+                    cellStyleRightJustified: true,
                     filter: "agNumberColumnFilter",
                     filterParams: this.amountFilterOptions,
                     valueFormatter: this.percentFormatter
                 }
             ]
-        }
-      ]
+        },
+        {
+          headerName: "",
+          field: "hide",
+          cellRenderer: "btnCellRenderer",
+          cellRendererParams: {
+            saveAcc: this.saveAccount,
+            refreshAcc: this.props.refreshAccounts,
+            recalcReq: this.props.setRecalcRequired
+          },
+          width: 110
+        },
+      ],
+      frameworkComponents: {
+        btnCellRenderer: AccountHideCellRenderer
+      }
     }
+  }
+
+  cellStyleFormatter = params => {
+    let cellStyle = {"color":"", "text-decoration": ""}
+    if (params.colDef.cellStyleRightJustified) cellStyle["textAlign"] = "right"
+    if (params.value < 0) cellStyle["color"] = "red"
+    if (params.data.hide) {
+      cellStyle["color"] = "#a9a9a9"
+      cellStyle["text-decoration"] = "line-through"
+     }
+    return cellStyle
   }
 
   dateFilterOptions = { 
@@ -137,6 +166,12 @@ export default class Accounts extends Component {
     this.setState({ isLoading: false })
   }
 
+  saveAccount = account => {
+    return API.put("accounts", `/accounts/${account.accountId}`, {
+      body: account
+    });
+  }
+
   percentFormatter = params => {
     const val = parseFloat(params.value, 10) 
     if (val) return val.toFixed(2)
@@ -165,13 +200,14 @@ export default class Accounts extends Component {
     let h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 400
     let divStyle = { boxSizing: "border-box", height: `${h}px` }
     return (
-      <div className="accounts">
+      <div className="accounts" style={{height: '100%'}}>
         <PageHeader>Accounts</PageHeader>
 
-        <div id="accGrid" style={divStyle} className="ag-theme-bootstrap">
+        <div id="accGrid" style={divStyle} className="ag-theme-alpine">
           <AgGridReact
             columnDefs={this.state.columnDefs}
             defaultColDef={this.state.defaultColDef}
+            frameworkComponents={this.state.frameworkComponents}
             rowData={this.state.accounts}
             rowDeselection={true}
             rowSelection="single"
