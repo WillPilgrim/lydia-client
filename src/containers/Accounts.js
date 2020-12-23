@@ -1,7 +1,8 @@
 import React, { Component } from "react"
 import {PageHeader, Button, ButtonToolbar} from "react-bootstrap"
 import "./Accounts.css"
-import AccountHideCellRenderer from "../components/AccountHideCellRenderer.js";
+import AccountHideCellRenderer from "../components/AccountHideCellRenderer.js"
+import AccountEditCellRenderer from "../components/AccountEditCellRenderer.js"
 import { AgGridReact } from "ag-grid-react"
 import "ag-grid-community/dist/styles/ag-grid.css"
 import "ag-grid-community/dist/styles/ag-theme-bootstrap.css"
@@ -26,13 +27,13 @@ export default class Accounts extends Component {
           headerName: "Name",
           field: "accName",
           cellStyle: this.cellStyleFormatter,
-          width: 130
+          width: 125
         },
         {
           headerName: "Description",
           field: "description",
           cellStyle: this.cellStyleFormatter,
-          width: 430
+          width: 375
         },
         {
             headerName: "Opening",
@@ -87,20 +88,30 @@ export default class Accounts extends Component {
         {
           headerName: "",
           field: "hide",
-          cellRenderer: "btnCellRenderer",
+          cellRenderer: "accountHideCellRenderer",
           cellRendererParams: {
             saveAcc: this.saveAccount,
             refreshAcc: this.props.refreshAccounts,
             recalcReq: this.props.setRecalcRequired
           },
-          width: 110
+          width: 89
+        },
+        {
+          headerName: "",
+          field: "accountId",
+          cellRenderer: "accountEditCellRenderer",
+          width: 80
         },
       ],
+      context: {componentParent: this },
       frameworkComponents: {
-        btnCellRenderer: AccountHideCellRenderer
+        accountHideCellRenderer: AccountHideCellRenderer,
+        accountEditCellRenderer: AccountEditCellRenderer
       }
     }
   }
+
+  handleEdit = id => this.props.history.push(`/accounts/${id}`)
 
   cellStyleFormatter = params => {
     let cellStyle = {"color":"", "text-decoration": ""}
@@ -187,15 +198,6 @@ export default class Accounts extends Component {
     this.props.history.push(`/accounts/new`)
   }
 
-  handleModify = event => {
-    event.preventDefault()
-    let nodes = this.gridApi.getSelectedNodes()
-    if (nodes.length) {
-      let accountId = nodes[0].data.accountId
-      this.props.history.push(`/accounts/${accountId}`)
-    }
-  }
-
   render() {
     let h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 400
     let divStyle = { boxSizing: "border-box", height: `${h}px` }
@@ -209,6 +211,7 @@ export default class Accounts extends Component {
             defaultColDef={this.state.defaultColDef}
             frameworkComponents={this.state.frameworkComponents}
             rowData={this.state.accounts}
+            context={this.state.context}
             rowDeselection={true}
             rowSelection="single"
             onGridReady={params => (this.gridApi = params.api)}
@@ -217,7 +220,6 @@ export default class Accounts extends Component {
         <div className="row">
           <div className="col-sm-12">
             <ButtonToolbar id="buttons" className="pull-right">
-              <Button onClick={this.handleModify}>Modify</Button>
               <Button bsStyle="primary" onClick={this.handleNewAccountClick}>
                 New
               </Button>
