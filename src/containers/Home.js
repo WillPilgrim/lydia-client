@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
-import { PageHeader, ListGroup, ListGroupItem, Button, ButtonToolbar, ButtonGroup, } from "react-bootstrap";
+import { PageHeader, ListGroup, ListGroupItem } from "react-bootstrap";
 import "./Home.css";
 
 export default class Home extends Component {
@@ -47,12 +47,6 @@ export default class Home extends Component {
     this.props.history.push(event.currentTarget.getAttribute("href"));
   }
 
-  handleSortClick = async (i,dir,event) => {
-    event.preventDefault()
-    this.props.moveAccounts(i, dir)
-    this.props.history.push("/");
-  }
-
   renderAccountsList(accounts, transAcc) {
     let acclist = [{}]
     if (accounts) acclist = acclist.concat(accounts)
@@ -60,7 +54,6 @@ export default class Home extends Component {
       (account, i) =>
         i !== 0
           ? <div className="row" key={account.accountId}>
-              <div className="col-sm-11">
                 <ListGroupItem
                   key={account.accountId}
                   href={`/accounts/${account.accountId}`}
@@ -70,25 +63,13 @@ export default class Home extends Component {
                   {this.lineFormatter(transAcc,account)}
                 </ListGroupItem>
               </div>
-              <div className="col-sm-1">
-              <ButtonToolbar id="buttons">
-              <ButtonGroup vertical block>
-                <Button onClick={(e) => this.handleSortClick(i,"U",e)} disabled={i===1}>&#x2B06;</Button>
-                <Button onClick={(e) => this.handleSortClick(i,"D",e)} disabled={i===acclist.length-1}>&#x2B07;</Button>
-              </ButtonGroup>
-            </ButtonToolbar>
-              </div>
-            </div>
           : <div className="row" key="new">
-          <div className="col-sm-11"><ListGroupItem
-              key="new"
-              href="/accounts/new"
-              onClick={this.handleAccountClick}
-            >
-              <h4>
-                <b>{"\uFF0B"}</b> Create a new account
-              </h4>
-            </ListGroupItem></div></div>
+                <ListGroupItem key="new" href="/accounts/new" onClick={this.handleAccountClick}>
+                  <h4>
+                    <b>{"\uFF0B"}</b> Create a new account
+                  </h4>
+                </ListGroupItem>
+            </div>
     );
   }
 

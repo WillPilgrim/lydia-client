@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "ag-grid-community": "^21.0.1",
-    "ag-grid-react": "^21.0.1",
+    "ag-grid-community": "^24.1.0",
+    "ag-grid-react": "^24.1.1",
     "aws-amplify": "^1.1.28",
     "create-react-class": "^15.6.3",
     "moment": "^2.24.0",

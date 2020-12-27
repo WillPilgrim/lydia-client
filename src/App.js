@@ -92,6 +92,7 @@ class App extends Component {
   };
 
   sortAndSetAccounts = accounts => {
+//    accounts.forEach(x => console.log(`Name=${x.accName} sortOrder=${x.sortOrder}`))
     accounts.sort((a, b) => a.sortOrder - b.sortOrder)
     this.setState({ accounts })
     const selectedAccount = accounts.find(acc => !acc.hide)
@@ -99,25 +100,30 @@ class App extends Component {
     else this.setCurrentAccId(0)
   }
 
-  moveAccounts = async (i, dir) => {
+  changeAccountsOrder = (fromIndex, toIndex, fromSortOrder, toSortOrder) => {
     const accounts = this.state.accounts
-    const fromAcc = accounts[i-1]
-    const toAcc = accounts[dir === "U"?i-2:i]
-    const fromSort = fromAcc.sortOrder
-    const toSort = toAcc.sortOrder
-    fromAcc.sortOrder = toSort;
-    toAcc.sortOrder = fromSort;
-    this.setRecalcRequired(true)
 
-    await this.saveAccount(fromAcc);
-    await this.saveAccount(toAcc);
-    this.sortAndSetAccounts(accounts);
+    accounts[fromIndex].sortOrder = toSortOrder
+    accounts[toIndex].sortOrder = fromSortOrder
+//    console.log(`fromIndex=${fromIndex}, toIndex=${toIndex}, fromSortOrderr=${fromSortOrder}, toSortOrder.sortOrder=${toSortOrder}`)
+
+    this.setRecalcRequired(true)
+    this.sortAndSetAccounts(accounts)
   }
 
-  saveAccount(account) {
+  saveAccount= account => {
     return API.put("accounts", `/accounts/${account.accountId}`, {
       body: account
     });
+  }
+
+  saveAccountSet = async (fromIndex, toIndex) => {
+    for (let i = fromIndex; i <= toIndex; i++)
+    {
+      let account = this.state.accounts[i]
+//      console.log(`${i} ${account.accName}`)
+      await this.saveAccount(account)
+    }
   }
 
   setTransactions = transAcc => this.setState({ transAcc })
@@ -142,7 +148,6 @@ class App extends Component {
     const childProps = {
       userHasAuthenticated: this.userHasAuthenticated,
       refreshAccounts: this.refreshAccounts,
-      moveAccounts: this.moveAccounts,
       refreshTemplates: this.refreshTemplates,
       setCurrentAccId: this.setCurrentAccId,
       setTransactions: this.setTransactions,
@@ -150,6 +155,8 @@ class App extends Component {
       setSaveRequired: this.setSaveRequired,
       setSaveArchiveRequired: this.setSaveArchiveRequired,
       setArchive: this.setArchive,
+      changeAccountsOrder: this.changeAccountsOrder,
+      saveAccountSet: this.saveAccountSet,
       currentAccId: this.state.currentAccId,
       isAuthenticated: this.state.isAuthenticated,
       accounts: this.state.accounts,

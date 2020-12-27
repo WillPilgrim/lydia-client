@@ -14,26 +14,28 @@ export default class Accounts extends Component {
     super(props)
 
     this.state = {
+      startSortIndex: -1,
       isLoading: true,
       accounts: [],
       defaultColDef : 
       {
         resizable : true,
-        filter: true,
-        sortable: true
+        filter: false,
+        sortable: false
       },
       columnDefs: [
         {
           headerName: "Name",
           field: "accName",
           cellStyle: this.cellStyleFormatter,
-          width: 125
+          width: 130,
+          rowDrag: true
         },
         {
           headerName: "Description",
           field: "description",
           cellStyle: this.cellStyleFormatter,
-          width: 375
+          width: 355
         },
         {
             headerName: "Opening",
@@ -198,6 +200,65 @@ export default class Accounts extends Component {
     this.props.history.push(`/accounts/new`)
   }
 
+  onRowDragMove = event => {
+    let movingNode = event.node;
+    let overNode = event.overNode;
+    let rowNeedsToMove = movingNode !== overNode;
+    if (rowNeedsToMove && overNode) {
+      let movingData = movingNode.data;
+      let overData = overNode.data;
+      let fromIndex = this.state.accounts.indexOf(movingData);
+      let toIndex = this.state.accounts.indexOf(overData);
+//      console.log(`fromIndex=${fromIndex}, toIndex=${toIndex}, overData.sortOrder=${overData.sortOrder}, movingData.sortOrder=${movingData.sortOrder}`)
+      this.props.changeAccountsOrder(fromIndex, toIndex, movingData.sortOrder, overData.sortOrder)
+
+
+//      console.log(movingData.accName ,fromIndex, movingData.sortOrder)
+//      console.log(overData.accName ,toIndex, overData.sortOrder)
+
+
+      this.gridApi.setRowData(this.state.accounts);
+      this.gridApi.clearFocusedCell();
+    }
+
+  }
+
+  // onRowDragLeave = event => {
+  //   let leaveNode = event.node;
+  //   let leaveData = leaveNode.data
+  //   let startIndex = this.state.accounts.indexOf(leaveData)
+  //   this.setState({ startSortIndex: startIndex })
+  //   console.log(`onRowDragLeave event fired. Starting index =${this.state.startSortIndex}`)
+  //   console.log(event)
+
+  // }
+
+  onRowDragEnter = event => {
+    let startNode = event.node;
+    let startData = startNode.data
+    let startIndex = this.state.accounts.indexOf(startData)
+    this.setState({ startSortIndex: startIndex })
+    // console.log(`onRowDragEnter event fired. Starting index =${this.state.startSortIndex}`)
+    // console.log(event)
+  }
+
+  onRowDragEnd = async event => {
+    let endNode = event.node;
+    let endData = endNode.data
+    let endIndex = this.state.accounts.indexOf(endData)
+    let startIndex = this.state.startSortIndex
+
+    // console.log(`onRowDragEnd event fired. Starting index =${startIndex}, end Index=${endIndex}`)
+    // console.log(event)
+    let startLoop = Math.min(startIndex, endIndex)
+    let endLoop = Math.max(startIndex, endIndex)
+    await this.props.saveAccountSet(startLoop, endLoop)
+  }
+
+  getRowNodeId = (data) => {
+    return data.accountId;
+  };
+
   render() {
     let h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 400
     let divStyle = { boxSizing: "border-box", height: `${h}px` }
@@ -213,8 +274,15 @@ export default class Accounts extends Component {
             rowData={this.state.accounts}
             context={this.state.context}
             rowDeselection={true}
+            immutableData={true}
+            animateRows={true}
+            getRowNodeId={this.getRowNodeId}
             rowSelection="single"
             onGridReady={params => (this.gridApi = params.api)}
+            onRowDragMove={this.onRowDragMove.bind(this)}
+            onRowDragEnter={this.onRowDragEnter.bind(this)}
+//            onRowDragLeave={this.onRowDragLeave.bind(this)}
+            onRowDragEnd={this.onRowDragEnd.bind(this)}
           />
         </div>
         <div className="row">
