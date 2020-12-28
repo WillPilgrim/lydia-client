@@ -722,7 +722,7 @@ export default class Transactions extends Component {
                   onCellEditingStopped={this.updateRow}
                   onCellClicked={this.onCellClicked}
                   rowDeselection={true}
-                  deltaRowDataMode={true}
+                  immutableData={true}
                   components={this.state.components}
                   getRowNodeId={data => data.transactionId}
                   getRowStyle={this.getRowStyle}

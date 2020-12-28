@@ -67,7 +67,9 @@ class App extends Component {
       recalcRequired: false,
       saveRequired: false,
       saveArchiveRequired: false,
-      archive: false
+      archive: false,
+      templateColumnState: null,
+      templateFilterModel: null
     })
   }
 
@@ -138,6 +140,10 @@ class App extends Component {
 
   setArchive = archive => this.setState({archive})
 
+  setTemplateColumnState = colState => this.setState({templateColumnState: colState })
+
+  setTemplateFilterModel = model => this.setState({templateFilterModel: model })
+
   handleLogout = async event => {
     await Auth.signOut();
     this.clearState();
@@ -155,6 +161,8 @@ class App extends Component {
       setSaveRequired: this.setSaveRequired,
       setSaveArchiveRequired: this.setSaveArchiveRequired,
       setArchive: this.setArchive,
+      setTemplateColumnState: this.setTemplateColumnState,
+      setTemplateFilterModel: this.setTemplateFilterModel,
       changeAccountsOrder: this.changeAccountsOrder,
       saveAccountSet: this.saveAccountSet,
       currentAccId: this.state.currentAccId,
@@ -165,7 +173,9 @@ class App extends Component {
       recalcRequired: this.state.recalcRequired,
       saveRequired: this.state.saveRequired,
       saveArchiveRequired: this.state.saveArchiveRequired,
-      archive: this.state.archive
+      archive: this.state.archive,
+      templateColumnState: this.state.templateColumnState,
+      templateFilterModel: this.state.templateFilterModel
     };
 
     return (

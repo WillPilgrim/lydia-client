@@ -80,6 +80,12 @@ export default class Templates extends Component {
     };
   }
 
+  onGridReady = params => {
+    this.gridApi = params.api;
+    this.gridColumnApi = params.columnApi;
+  }
+
+
   dateFilterOptions = { 
       comparator: function(filterLocalDateAtMidnight, cellValue) {
         let dateParts = cellValue.substring(0,10).split("-");
@@ -227,6 +233,31 @@ export default class Templates extends Component {
     }
   }
 
+  onFirstDataRendered = params => {
+    let columnState = this.props.templateColumnState;
+    if (columnState) {
+      this.gridColumnApi.applyColumnState({
+        state: columnState,
+        applyOrder: true
+      })        
+    }
+    let filterModel = this.props.templateFilterModel;
+    if (filterModel) {
+      this.gridApi.setFilterModel(filterModel)
+    }
+  }
+
+  saveColumnState = params => {
+    let columnState = this.gridColumnApi.getColumnState();
+    this.props.setTemplateColumnState(columnState)
+  }
+
+  saveColumnFilter = params => {
+    let filterModel = this.gridApi.getFilterModel();
+    this.props.setTemplateFilterModel(filterModel)
+  }
+
+
   render() {
     let h =
       Math.max(document.documentElement.clientHeight, window.innerHeight || 0) -
@@ -243,7 +274,12 @@ export default class Templates extends Component {
             rowData={this.state.templates}
             rowDeselection={true}
             rowSelection="single"
-            onGridReady={params => (this.gridApi = params.api)}
+            onGridReady={this.onGridReady}
+            onFirstDataRendered={this.onFirstDataRendered.bind(this)}
+            onSortChanged={this.saveColumnState.bind(this)}
+            onColumnMoved={this.saveColumnState.bind(this)}
+            onColumnResized={this.saveColumnState.bind(this)}
+            onFilterChanged={this.saveColumnFilter.bind(this)}
           />
         </div>
         <div className="row">
