@@ -1,26 +1,40 @@
-import React from "react";
-import { Route, Switch } from "react-router-dom";
-import Home from "./containers/Home";
-import Accounts from "./containers/Accounts";
-import Account from "./containers/Account";
-import Login from "./containers/Login";
-import Signup from "./containers/Signup";
-import NewAccount from "./containers/NewAccount";
-import NotFound from "./containers/NotFound";
-import AppliedRoute from "./components/AppliedRoute";
-import AuthenticatedRoute from "./components/AuthenticatedRoute";
-import UnauthenticatedRoute from "./components/UnauthenticatedRoute";
-import Settings from "./containers/Settings";
-import Templates from "./containers/Templates";
-import Template from "./containers/Template";
-import Transactions from "./containers/Transactions";
-import ResetPassword from "./containers/ResetPassword";
-import ChangePassword from "./containers/ChangePassword";
-import ChangeEmail from "./containers/ChangeEmail";
+import React from "react"
+import { Route, Switch } from "react-router-dom"
+import Home from "./containers/Home"
+import NotFound from "./containers/NotFound"
+import Login from "./containers/Login"
+import Signup from "./containers/Signup"
+import NewAccount from "./containers/NewAccount"
+import Account from "./containers/Account"
 
-export default ({ childProps }) =>
+// import Accounts from "./containers/Accounts";
+// import AppliedRoute from "./components/AppliedRoute";
+// import AuthenticatedRoute from "./components/AuthenticatedRoute";
+// import UnauthenticatedRoute from "./components/UnauthenticatedRoute";
+// import Settings from "./containers/Settings";
+// import Templates from "./containers/Templates";
+// import Template from "./containers/Template";
+// import Transactions from "./containers/Transactions";
+// import ResetPassword from "./containers/ResetPassword";
+// import ChangePassword from "./containers/ChangePassword";
+// import ChangeEmail from "./containers/ChangeEmail";
+
+// export default ({ childProps }) =>
+export default () =>
   <Switch>
-    <AppliedRoute path="/" exact component={Home} props={childProps} />
+    <Route exact path="/">
+      <Home />
+    </Route>
+    <Route exact path="/login">
+      <Login />
+    </Route>
+    <Route exact path="/signup">
+      <Signup />
+    </Route>
+    <Route exact path="/accounts/:id">
+      <Account />
+    </Route>
+    {/* <AppliedRoute path="/" exact component={Home} props={childProps} />
     <UnauthenticatedRoute path="/login" exact component={Login} props={childProps} />
     <UnauthenticatedRoute path="/login/reset" exact component={ResetPassword} props={childProps} />
     <UnauthenticatedRoute path="/signup" exact component={Signup} props={childProps} />
@@ -32,7 +46,9 @@ export default ({ childProps }) =>
     <AuthenticatedRoute path="/accounts/:id" exact component={Account} props={childProps} />
     <AuthenticatedRoute path="/templates/:id" exact component={Template} props={childProps} />
     <AuthenticatedRoute path="/templates" exact component={Templates} props={childProps} />
-    <AuthenticatedRoute path="/transactions" exact component={Transactions} props={childProps} />
+    <AuthenticatedRoute path="/transactions" exact component={Transactions} props={childProps} /> */}
     { /* Finally, catch all unmatched routes */ }
-    <Route component={NotFound} />
-  </Switch>;
+    <Route>
+      <NotFound />
+    </Route>
+  </Switch>

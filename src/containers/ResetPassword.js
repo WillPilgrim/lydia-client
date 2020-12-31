@@ -1,15 +1,10 @@
-import React, { Component } from "react";
-import { Auth } from "aws-amplify";
-import { Link } from "react-router-dom";
-import {
-  HelpBlock,
-  FormGroup,
-  Glyphicon,
-  FormControl,
-  ControlLabel
-} from "react-bootstrap";
-import LoaderButton from "../components/LoaderButton";
-import "./ResetPassword.css";
+import React, { Component } from "react"
+import { Auth } from "aws-amplify"
+import { Link } from "react-router-dom"
+import { BsCheck } from "react-icons/bs"
+import Form from "react-bootstrap/Form"
+import LoaderButton from "../components/LoaderButton"
+import "./ResetPassword.css"
 
 export default class ResetPassword extends Component {
   constructor(props) {
@@ -80,15 +75,15 @@ export default class ResetPassword extends Component {
   renderRequestCodeForm() {
     return (
       <form onSubmit={this.handleSendCodeClick}>
-        <FormGroup bsSize="large" controlId="email">
-          <ControlLabel>Email</ControlLabel>
-          <FormControl
+        <Form.Group bsSize="large" controlId="email">
+          <Form.Label>Email</Form.Label>
+          <Form.Control
             autoFocus
             type="email"
             value={this.state.email}
             onChange={this.handleChange}
           />
-        </FormGroup>
+        </Form.Group>
         <LoaderButton
           block
           type="submit"
@@ -105,36 +100,33 @@ export default class ResetPassword extends Component {
   renderConfirmationForm() {
     return (
       <form onSubmit={this.handleConfirmClick}>
-        <FormGroup bsSize="large" controlId="code">
-          <ControlLabel>Confirmation Code</ControlLabel>
-          <FormControl
+        <Form.Group bsSize="large" controlId="code">
+          <Form.Label>Confirmation Code</Form.Label>
+          <Form.Control
             autoFocus
             type="tel"
             value={this.state.code}
             onChange={this.handleChange}
           />
-          <HelpBlock>
-            Please check your email ({this.state.email}) for the confirmation
-            code.
-          </HelpBlock>
-        </FormGroup>
+          <Form.Text muted>Please check your email ({this.state.email}) for the confirmation code.</Form.Text>
+        </Form.Group>
         <hr />
-        <FormGroup bsSize="large" controlId="password">
-          <ControlLabel>New Password</ControlLabel>
-          <FormControl
+        <Form.Group bsSize="large" controlId="password">
+          <Form.Label>New Password</Form.Label>
+          <Form.Control
             type="password"
             value={this.state.password}
             onChange={this.handleChange}
           />
-        </FormGroup>
-        <FormGroup bsSize="large" controlId="confirmPassword">
-          <ControlLabel>Confirm Password</ControlLabel>
-          <FormControl
+        </Form.Group>
+        <Form.Group bsSize="large" controlId="confirmPassword">
+          <Form.Label>Confirm Password</Form.Label>
+          <Form.Control
             type="password"
             onChange={this.handleChange}
             value={this.state.confirmPassword}
           />
-        </FormGroup>
+        </Form.Group>
         <LoaderButton
           block
           type="submit"
@@ -151,7 +143,7 @@ export default class ResetPassword extends Component {
   renderSuccessMessage() {
     return (
       <div className="success">
-        <Glyphicon glyph="ok" />
+        <BsCheck />
         <p>Your password has been reset.</p>
         <p>
           <Link to="/login">

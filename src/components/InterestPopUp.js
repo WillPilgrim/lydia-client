@@ -1,14 +1,12 @@
 import React, { Component } from "react"
 import {
     Modal,
-    FormGroup,
-    FormControl,
-    ControlLabel,
-    Checkbox,
     Button,
     InputGroup
   } from "react-bootstrap"
-import DatePicker from "react-16-bootstrap-date-picker"
+  // import { Checkbox } from "react-bootstrap"; to be fixed
+import Form from "react-bootstrap/Form";
+import DatePicker from "react-datepicker"
 import Moment from "moment"
 import { today } from "../libs/utilities"
 
@@ -80,11 +78,11 @@ class InterestPopUp extends Component {
                 <Modal.Title>Interest Rate Change</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-            <FormGroup
+            <Form.Group
                 controlId="intFirstAppliedDate"
                 validationState={this.getFirstAppliedDateValidationState()}
             >
-                <ControlLabel>Start Date</ControlLabel>
+                <Form.Label>Start Date</Form.Label>
                 <DatePicker
                 id="intFirstAppliedDate"
                 value={this.state.intFirstAppliedDate}
@@ -92,15 +90,15 @@ class InterestPopUp extends Component {
                 onChange={this.handleFirstAppliedDateChange}
                 autoComplete="off"
                 />
-            </FormGroup>
-            <FormGroup
+            </Form.Group>
+            <Form.Group
                 controlId="newRateValue"
                 validationState={this.getNewRateValidationState()}
             >
-                <ControlLabel>Interest Rate</ControlLabel>
+                <Form.Label>Interest Rate</Form.Label>
                 <InputGroup>
                 <InputGroup.Addon>%</InputGroup.Addon>
-                <FormControl
+                <Form.Control
                     type="text"
                     value={this.state.newRateValue}
                     placeholder="Rate"
@@ -108,16 +106,16 @@ class InterestPopUp extends Component {
                     onFocus={this.handleFocus}
                 />
                 </InputGroup>
-                <FormControl.Feedback />
-            </FormGroup>
-            <FormGroup controlId="newRateCredit" validationState="success">
-                <Checkbox
+                <Form.Control.Feedback />
+            </Form.Group>
+            <Form.Group controlId="newRateCredit" validationState="success">
+                {/* <Checkbox
                 checked={this.state.newRateCredit}
                 onChange={this.handleInterestTypeChange}
                 >
                 Credit Interest
-                </Checkbox>
-            </FormGroup>
+                </Checkbox> */}
+            </Form.Group>
             </Modal.Body>
             <Modal.Footer>
             <Button onClick={this.props.onClose}>Close</Button>

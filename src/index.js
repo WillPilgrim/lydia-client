@@ -1,11 +1,11 @@
-import React from "react";
-import ReactDOM from "react-dom";
-import Amplify from "aws-amplify";
-import { BrowserRouter as Router } from "react-router-dom";
-import App from "./App";
-import registerServiceWorker from "./registerServiceWorker";
-import config from "./config";
-import "./index.css";
+import React from "react"
+import ReactDOM from "react-dom"
+import Amplify from "aws-amplify"
+import { BrowserRouter as Router } from "react-router-dom"
+import App from "./App"
+import registerServiceWorker from "./registerServiceWorker"
+import config from "./config"
+import "./index.css"
 
 Amplify.configure({
   Auth: {
@@ -29,12 +29,15 @@ Amplify.configure({
       },
     ]
   }
-});
+})
 
 ReactDOM.render(
-  <Router>
-    <App />
-  </Router>,
+  <React.StrictMode>
+    <Router>
+      <App />
+    </Router>
+  </React.StrictMode>,
   document.getElementById("root")
-);
-registerServiceWorker();
+)
+
+registerServiceWorker()

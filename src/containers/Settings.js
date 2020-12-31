@@ -6,7 +6,7 @@ import config from "../config";
 import "./Settings.css";
 import { LinkContainer } from "react-router-bootstrap";
 import LoaderButton from "../components/LoaderButton";
-import { ControlLabel } from "react-bootstrap";
+import Form from "react-bootstrap/Form";
 
 export default class Settings extends Component {
   constructor(props) {
@@ -48,7 +48,7 @@ export default class Settings extends Component {
   render() {
     return (
       <div className="Settings">
-        <ControlLabel>Security</ControlLabel>
+        <Form.Label>Security</Form.Label>
         <LinkContainer to="/settings/email">
           <LoaderButton
             block

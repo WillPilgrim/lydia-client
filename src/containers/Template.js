@@ -1,16 +1,13 @@
 import React, { Component } from "react";
 import { API } from "aws-amplify";
 import {
-  FormGroup,
-  FormControl,
-  ControlLabel,
   InputGroup,
-  Checkbox,
   Col
 } from "react-bootstrap";
+import Form from "react-bootstrap/Form"
 import LoaderButton from "../components/LoaderButton";
 import "./Template.css";
-import DatePicker from "react-16-bootstrap-date-picker";
+import DatePicker from "react-datepicker";
 import Moment from "moment";
 import { today } from "../libs/utilities";
 
@@ -311,23 +308,23 @@ export default class Template extends Component {
       <div className="Template">
         {this.state.template && (
           <form onSubmit={this.handleSubmit}>
-            <FormGroup
+            <Form.Group
               controlId="description"
               validationState={this.getDescriptionValidationState()}
             >
-              <ControlLabel>Description</ControlLabel>
-              <FormControl
+              <Form.Label>Description</Form.Label>
+              <Form.Control
                 onChange={this.handleChange}
                 value={this.state.description}
                 componentClass="textarea"
                 placeholder="Enter a description"
               />
-              <FormControl.Feedback />
-            </FormGroup>
+              <Form.Control.Feedback />
+            </Form.Group>
             <Col sm={6}>
-              <FormGroup controlId="templateType" validationState="success">
-                <ControlLabel>Transaction Type</ControlLabel>
-                <FormControl
+              <Form.Group controlId="templateType" validationState="success">
+                <Form.Label>Transaction Type</Form.Label>
+                <Form.Control
                   componentClass="select"
                   type="text"
                   value={this.state.templateType}
@@ -340,13 +337,13 @@ export default class Template extends Component {
                   <option value="CC">Credit Card</option>
                   <option value="Minimise">Minimise</option>
                   <option value="Zero">Zero</option>
-                </FormControl>
-              </FormGroup>
-              <FormGroup
+                </Form.Control>
+              </Form.Group>
+              <Form.Group
                 controlId="startDate"
                 validationState={this.getStartDateValidationState()}
               >
-                <ControlLabel>Start Date</ControlLabel>
+                <Form.Label>Start Date</Form.Label>
                 <DatePicker
                   id="startDate"
                   value={this.state.startDate}
@@ -354,12 +351,12 @@ export default class Template extends Component {
                   onChange={this.handleStartDateChange}
                   autoComplete="off"
                 />
-              </FormGroup>
-              <FormGroup
+              </Form.Group>
+              <Form.Group
                 controlId="endDate"
                 validationState={this.getEndDateValidationState()}
               >
-                <ControlLabel>End Date</ControlLabel>
+                <Form.Label>End Date</Form.Label>
                 <DatePicker
                   id="endDate"
                   value={this.state.endDate}
@@ -368,10 +365,10 @@ export default class Template extends Component {
                   autoComplete="off"
                   disabled={this.state.templateType === "Zero"}
                 />
-              </FormGroup>
-              <FormGroup controlId="accountFromId" validationState="success">
-                <ControlLabel>Template Account</ControlLabel>
-                <FormControl
+              </Form.Group>
+              <Form.Group controlId="accountFromId" validationState="success">
+                <Form.Label>Template Account</Form.Label>
+                <Form.Control
                   componentClass="select"
                   type="text"
                   value={this.state.accountFromId}
@@ -383,14 +380,14 @@ export default class Template extends Component {
                       {x.accName}
                     </option>
                   ))}
-                </FormControl>
-              </FormGroup>
-              <FormGroup
+                </Form.Control>
+              </Form.Group>
+              <Form.Group
                 controlId="accountToId"
                 validationState={this.getToAccountValidationState()}
               >
-                <ControlLabel>Partner Account</ControlLabel>
-                <FormControl
+                <Form.Label>Partner Account</Form.Label>
+                <Form.Control
                   componentClass="select"
                   type="text"
                   value={this.state.accountToId}
@@ -409,18 +406,18 @@ export default class Template extends Component {
                       {x.accName}
                     </option>
                   ))}
-                </FormControl>
-              </FormGroup>
+                </Form.Control>
+              </Form.Group>
             </Col>
             <Col sm={6}>
-              <FormGroup
+              <Form.Group
                 controlId="amount100"
                 validationState={this.getAmountValidationState()}
               >
-                <ControlLabel>Amount</ControlLabel>
+                <Form.Label>Amount</Form.Label>
                 <InputGroup>
                   <InputGroup.Addon>$</InputGroup.Addon>
-                  <FormControl
+                  <Form.Control
                     type="text"
                     value={this.state.amount100}
                     placeholder="Enter transaction amount"
@@ -433,11 +430,11 @@ export default class Template extends Component {
                   />
                 </InputGroup>
 
-                <FormControl.Feedback />
-              </FormGroup>
-              <FormGroup controlId="periodType" validationState="success">
-                <ControlLabel>Period Type</ControlLabel>
-                <FormControl
+                <Form.Control.Feedback />
+              </Form.Group>
+              <Form.Group controlId="periodType" validationState="success">
+                <Form.Label>Period Type</Form.Label>
+                <Form.Control
                   componentClass="select"
                   type="text"
                   value={this.state.periodType}
@@ -450,14 +447,14 @@ export default class Template extends Component {
                   <option value="y">Year</option>
                   <option value="Q">Quarter</option>
                   <option value="d">Day</option>
-                </FormControl>
-              </FormGroup>
-              <FormGroup
+                </Form.Control>
+              </Form.Group>
+              <Form.Group
                 controlId="periodCnt"
                 validationState={this.getFreqValidationState()}
               >
-                <ControlLabel>Frequency</ControlLabel>
-                <FormControl
+                <Form.Label>Frequency</Form.Label>
+                <Form.Control
                   type="text"
                   value={this.state.periodCnt}
                   placeholder="Number of periods"
@@ -465,13 +462,13 @@ export default class Template extends Component {
                   onFocus={this.handleFocus}
                   disabled={this.state.templateType === "Zero"}
                 />
-              </FormGroup>
-              <FormGroup
+              </Form.Group>
+              <Form.Group
                 controlId="periodLastDay"
                 validationState={this.getLastPeriodDayValidationState()}
               >
-                <ControlLabel>Last Period Day</ControlLabel>
-                <FormControl
+                <Form.Label>Last Period Day</Form.Label>
+                <Form.Control
                   type="text"
                   value={this.state.periodLastDay}
                   placeholder="Last day of the period"
@@ -479,16 +476,16 @@ export default class Template extends Component {
                   disabled={this.state.templateType !== "CC"}
                   onFocus={this.handleFocus}
                 />
-              </FormGroup>
-              <FormGroup controlId="inflation" validationState="success">
-                <ControlLabel>Inflation</ControlLabel>
-                <Checkbox
+              </Form.Group>
+              <Form.Group controlId="inflation" validationState="success">
+                <Form.Label>Inflation</Form.Label>
+                {/* <Checkbox
                   checked={this.state.inflation}
                   onChange={this.handleInflationChange}
                 >
                   Apply annual inflation rate
-                </Checkbox>
-              </FormGroup>
+                </Checkbox> */}
+              </Form.Group>
             </Col>
             <LoaderButton
               block

@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import {
-  PageHeader,
   Button,
   ButtonToolbar
 } from "react-bootstrap";
@@ -265,7 +264,7 @@ export default class Templates extends Component {
     let divStyle = { boxSizing: "border-box", height: `${h}px` };
     return (
       <div className="templates">
-        <PageHeader>Transaction Templates</PageHeader>
+        <h1>Transaction Templates</h1>
 
         <div id="tempGrid" style={divStyle} className="ag-theme-bootstrap">
           <AgGridReact

@@ -1,5 +1,5 @@
 import React, { Component } from "react"
-import {PageHeader, Button, ButtonToolbar} from "react-bootstrap"
+import { Button, ButtonToolbar} from "react-bootstrap"
 import "./Accounts.css"
 import AccountHideCellRenderer from "../components/AccountHideCellRenderer.js"
 import AccountEditCellRenderer from "../components/AccountEditCellRenderer.js"
@@ -264,7 +264,7 @@ export default class Accounts extends Component {
     let divStyle = { boxSizing: "border-box", height: `${h}px` }
     return (
       <div className="accounts" style={{height: '100%'}}>
-        <PageHeader>Accounts</PageHeader>
+        <h1>Accounts</h1>
 
         <div id="accGrid" style={divStyle} className="ag-theme-alpine">
           <AgGridReact

@@ -1,13 +1,8 @@
-import React, { Component } from "react";
-import { Auth } from "aws-amplify";
-import {
-  HelpBlock,
-  FormGroup,
-  FormControl,
-  ControlLabel
-} from "react-bootstrap";
-import LoaderButton from "../components/LoaderButton";
-import "./ChangeEmail.css";
+import React, { Component } from "react"
+import { Auth } from "aws-amplify"
+import Form from "react-bootstrap/Form"
+import LoaderButton from "../components/LoaderButton"
+import "./ChangeEmail.css"
 
 export default class ChangeEmail extends Component {
   constructor(props) {
@@ -70,15 +65,15 @@ export default class ChangeEmail extends Component {
   renderUpdateForm() {
     return (
       <form onSubmit={this.handleUpdateClick}>
-        <FormGroup bsSize="large" controlId="email">
-          <ControlLabel>Email</ControlLabel>
-          <FormControl
+        <Form.Group bsSize="large" controlId="email">
+          <Form.Label>Email</Form.Label>
+          <Form.Control
             autoFocus
             type="email"
             value={this.state.email}
             onChange={this.handleChange}
           />
-        </FormGroup>
+        </Form.Group>
         <LoaderButton
           block
           type="submit"
@@ -95,19 +90,16 @@ export default class ChangeEmail extends Component {
   renderConfirmationForm() {
     return (
       <form onSubmit={this.handleConfirmClick}>
-        <FormGroup bsSize="large" controlId="code">
-          <ControlLabel>Confirmation Code</ControlLabel>
-          <FormControl
+        <Form.Group bsSize="large" controlId="code">
+          <Form.Label>Confirmation Code</Form.Label>
+          <Form.Control
             autoFocus
             type="tel"
             value={this.state.code}
             onChange={this.handleChange}
           />
-          <HelpBlock>
-            Please check your email ({this.state.email}) for the confirmation
-            code.
-          </HelpBlock>
-        </FormGroup>
+          <Form.Text muted>Please check your email ({this.state.email}) for the confirmation code.</Form.Text>
+        </Form.Group>
         <LoaderButton
           block
           type="submit"

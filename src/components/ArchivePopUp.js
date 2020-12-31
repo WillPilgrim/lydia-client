@@ -1,12 +1,11 @@
 import React, { Component } from "react";
 import {
     Modal,
-    FormGroup,
-    ControlLabel,
     Button
   } from "react-bootstrap";
+import Form from "react-bootstrap/Form";
 //import "./ArchivePopUp.css";
-import DatePicker from "react-16-bootstrap-date-picker"
+import DatePicker from "react-datepicker"
 import Moment from "moment"
 import { today } from "../libs/utilities";
 
@@ -70,11 +69,11 @@ class ArchivePopUp extends Component {
                 <Modal.Title>{this.props.type} Accounts</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-            <FormGroup
+            <Form.Group
                 controlId="archiveEndDate"
                 validationState={this.getArchiveEndDateValidationState()}
             >
-                <ControlLabel>End Date</ControlLabel>
+                <Form.Label>End Date</Form.Label>
                 <DatePicker
                 id="archiveEndDate"
                 value={this.state.archiveEndDate}
@@ -82,7 +81,7 @@ class ArchivePopUp extends Component {
                 onChange={this.handleArchiveEndDateChange}
                 autoComplete="off"
                 />
-            </FormGroup>
+            </Form.Group>
             </Modal.Body>
             <Modal.Footer>
             <Button onClick={this.props.onClose}>Close</Button>

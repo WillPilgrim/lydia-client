@@ -1,5 +1,5 @@
 import React, { Component } from "react"
-import {PageHeader, Button, ButtonToolbar, ButtonGroup, Tabs, Tab} from "react-bootstrap"
+import { Button, ButtonToolbar, ButtonGroup, Tabs, Tab} from "react-bootstrap"
 import "./Transactions.css"
 import Moment from "moment"
 import { calculate, deleteFutureAllTransactions, trim, archiveRebalance } from "../libs/calculate"
@@ -670,7 +670,7 @@ export default class Transactions extends Component {
     return (
 //      <div className="transactions" class="ag-theme-alpine-dark">
       <div className="ag-theme-alpine-dark">
-        <PageHeader>Transactions {this.props.archive?"- ARCHIVE":""}</PageHeader>
+        <h1>Transactions {this.props.archive?"- ARCHIVE":""}</h1>
         <InterestPopUp
           showInterest={this.state.showInterest}
           onClose={this.handleInterestClose}

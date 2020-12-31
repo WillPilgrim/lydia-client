@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { FormGroup, FormControl, ControlLabel } from "react-bootstrap";
+import Form from "react-bootstrap/Form";
 import { CardElement, injectStripe } from "react-stripe-elements";
 import LoaderButton from "./LoaderButton";
 import "./BillingForm.css";
@@ -55,27 +55,27 @@ class BillingForm extends Component {
 
     return (
       <form className="BillingForm" onSubmit={this.handleSubmitClick}>
-        <FormGroup bsSize="large" controlId="accounts">
-          <ControlLabel>Accounts</ControlLabel>
-          <FormControl
+        <Form.Group bsSize="large" controlId="accounts">
+          <Form.Label>Accounts</Form.Label>
+          <Form.Control
             min="0"
             type="number"
             value={this.state.accounts}
             onChange={this.handleFieldChange}
             placeholder="Maximum number of accounts"
           />
-        </FormGroup>
+        </Form.Group>
         <hr />
-        <FormGroup bsSize="large" controlId="name">
-          <ControlLabel>Cardholder&apos;s name</ControlLabel>
-          <FormControl
+        <Form.Group bsSize="large" controlId="name">
+          <Form.Label>Cardholder&apos;s name</Form.Label>
+          <Form.Control
             type="text"
             value={this.state.name}
             onChange={this.handleFieldChange}
             placeholder="Name on the card"
           />
-        </FormGroup>
-        <ControlLabel>Credit Card Info</ControlLabel>
+        </Form.Group>
+        <Form.Label>Credit Card Info</Form.Label>
         <CardElement
           className="card-field"
           onChange={this.handleCardFieldChange}

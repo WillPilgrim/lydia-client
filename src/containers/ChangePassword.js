@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Auth } from "aws-amplify";
-import { FormGroup, FormControl, ControlLabel } from "react-bootstrap";
+import Form from "react-bootstrap/Form";
 import LoaderButton from "../components/LoaderButton";
 import "./ChangePassword.css";
 
@@ -54,31 +54,31 @@ export default class ChangePassword extends Component {
     return (
       <div className="ChangePassword">
         <form onSubmit={this.handleChangeClick}>
-          <FormGroup bsSize="large" controlId="oldPassword">
-            <ControlLabel>Old Password</ControlLabel>
-            <FormControl
+          <Form.Group bsSize="large" controlId="oldPassword">
+            <Form.Label>Old Password</Form.Label>
+            <Form.Control
               type="password"
               onChange={this.handleChange}
               value={this.state.oldPassword}
             />
-          </FormGroup>
+          </Form.Group>
           <hr />
-          <FormGroup bsSize="large" controlId="password">
-            <ControlLabel>New Password</ControlLabel>
-            <FormControl
+          <Form.Group bsSize="large" controlId="password">
+            <Form.Label>New Password</Form.Label>
+            <Form.Control
               type="password"
               value={this.state.password}
               onChange={this.handleChange}
             />
-          </FormGroup>
-          <FormGroup bsSize="large" controlId="confirmPassword">
-            <ControlLabel>Confirm Password</ControlLabel>
-            <FormControl
+          </Form.Group>
+          <Form.Group bsSize="large" controlId="confirmPassword">
+            <Form.Label>Confirm Password</Form.Label>
+            <Form.Control
               type="password"
               onChange={this.handleChange}
               value={this.state.confirmPassword}
             />
-          </FormGroup>
+          </Form.Group>
           <LoaderButton
             block
             type="submit"
