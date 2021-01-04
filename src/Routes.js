@@ -10,10 +10,9 @@ import ResetPassword from "./containers/ResetPassword"
 import AuthenticatedRoute from "./components/AuthenticatedRoute"
 import UnauthenticatedRoute from "./components/UnauthenticatedRoute"
 import Templates from "./containers/Templates"
+import Template from "./containers/Template"
 
 // import Accounts from "./containers/Accounts";
-// import AppliedRoute from "./components/AppliedRoute";
-// import Template from "./containers/Template";
 // import Transactions from "./containers/Transactions";
 // import ChangePassword from "./containers/ChangePassword";
 // import ChangeEmail from "./containers/ChangeEmail";
@@ -41,11 +40,13 @@ const Routes = () =>
     <AuthenticatedRoute exact path="/templates">
       <Templates />
     </AuthenticatedRoute>
-    {/* <AppliedRoute path="/" exact component={Home} props={childProps} />
+    <AuthenticatedRoute exact path="/templates/:id">
+      <Template />
+    </AuthenticatedRoute>
+    {/* 
     <AuthenticatedRoute path="/settings/password" exact component={ChangePassword} props={childProps} />
     <AuthenticatedRoute path="/settings/email" exact component={ChangeEmail} props={childProps} />
     <AuthenticatedRoute path="/accounts" exact component={Accounts} props={childProps} />
-    <AuthenticatedRoute path="/templates/:id" exact component={Template} props={childProps} />
     <AuthenticatedRoute path="/transactions" exact component={Transactions} props={childProps} /> */}
     { /* Finally, catch all unmatched routes */ }
     <Route>

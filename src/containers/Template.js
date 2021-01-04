@@ -1,140 +1,85 @@
-import React, { Component } from "react";
-import { API } from "aws-amplify";
-import {
-  InputGroup,
-  Col
-} from "react-bootstrap";
+import React, { useState, useEffect } from "react"
+import { API } from "aws-amplify"
 import Form from "react-bootstrap/Form"
-import LoaderButton from "../components/LoaderButton";
-import "./Template.css";
-import DatePicker from "react-datepicker";
-import Moment from "moment";
-import { today } from "../libs/utilities";
+import { InputGroup, Col } from "react-bootstrap"
+import { useParams, useHistory } from "react-router-dom"
+import LoaderButton from "../components/LoaderButton"
+import { useFormFields } from "../libs/hooksLib"
+import { useAppContext } from "../libs/contextLib"
+import { onError } from "../libs/errorLib"
+import Moment from "moment"
+import { today } from "../libs/utilities"
+import DatePicker from "react-datepicker"
+import "./Template.css"
 
-export default class Template extends Component {
-  constructor(props) {
-    super(props);
+const Template = () => {
+  const { refreshTemplates } = useAppContext()
+  const { id } = useParams()
+  const history = useHistory()
+  const [interest, setInterest] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [startDate, setStartDate] = useState(today.toDate())
+  const [endDate, setEndDate] = useState(today.clone().add(10, "y").toDate()) // default closing date to 10 years from now
+  const [fields, handleFieldChange, setValues] = useFormFields({
+    description: "",
+    amount100: "0.00",
+    accountFromId: "",
+    accountToId: "0",
+    templateType: "Debit",
+    periodType: "M",
+    periodFrequency: 1,
+    periodLastDay: 0,
+    inflation: true
+  })
 
-    this.state = {
-      isLoading: null,
-      isDeleting: null,
-      template: null,
-      description: "",
-      amount: 0,
-      startDate: today.format(),
-      endDate: today.clone()
-        .add(10, "y")
-        .format(),
-      accountFromId: "",
-      accountToId: "0",
-      templateType: "Debit",
-      periodType: "M",
-      periodCnt: 1,
-      periodLastDay: 0,
-      templateId: null,
-      inflation: true,
-      new: ""
-    };
-  }
+  useEffect(() => {
+    const loadTemplate = () => API.get("accounts", `/templates/${id}`)
+    const onLoad = async () => {
+      try {
+        setIsLoading(true)
+        const template = await loadTemplate()
+        const { accountFromId, accountToId, description, amount, startDate, endDate, templateType, periodType, periodCnt, periodLastDay, templateId, inflation } = template
 
-  async componentDidMount() {
-    try {
-      let template;
-      if (this.props.match.params.id === "new") {
-        template = this.state;
-        template.accountFromId = this.props.accounts
-          ? this.props.accounts[0].accountId
-          : "0";
-      } else {
-        template = await this.getTemplate();
+        setStartDate(new Date(startDate))
+        setEndDate(new Date(endDate))
+        setValues({ description, amount100: (amount / 100).toFixed(2), accountFromId, accountToId,
+          templateType, periodType, periodFrequency: periodCnt, 
+          periodLastDay: periodLastDay ? periodLastDay : 0, 
+          inflation:inflation ? inflation : false })
+        setIsLoading(false)
+      } catch (e) {
+        setIsLoading(false)
+        onError(e)
       }
-      const {
-        accountFromId,
-        accountToId,
-        description,
-        amount,
-        startDate,
-        endDate,
-        templateType,
-        periodType,
-        periodCnt,
-        periodLastDay,
-        templateId,
-        inflation
-      } = template;
-      this.setState({
-        accountFromId,
-        accountToId,
-        template,
-        description,
-        amount,
-        amount100: (amount / 100).toFixed(2),
-        startDate,
-        endDate,
-        templateType,
-        periodType,
-        periodCnt,
-        periodLastDay: periodLastDay ? periodLastDay : 0,
-        templateId,
-        inflation:inflation ? inflation : false
-      });
-    } catch (e) {
-      alert(e);
     }
-  }
 
-  getTemplate() {
-    return API.get("accounts", `/templates/${this.props.match.params.id}`);
-  }
+    if (id !== "new") {
+      onLoad()
+    }
+  }, [id, setValues])
 
-  saveTemplate(template) {
-    return API.put("accounts", `/templates/${this.props.match.params.id}`, {
-      body: template
-    });
-  }
-
-  createTemplate(template) {
-    return API.post("accounts", "/templates", {
-      body: template
-    });
-  }
-
-  deleteTemplate() {
-    return API.del("accounts", `/templates/${this.props.match.params.id}`);
-  }
-
-  validateForm() {
-    return (
-      this.getDescriptionValidationState() === "success" &&
-      this.getFreqValidationState() === "success" &&
-      this.getAmountValidationState() === "success" &&
-      this.getStartDateValidationState() === "success" &&
-      this.getEndDateValidationState() !== "error" &&
-      this.getToAccountValidationState() === "success" &&
-      this.getLastPeriodDayValidationState() !== "error"
-    );
-  }
-
-  handleChange = event => {
+  const handleChange = event => {
     this.setState({
       [event.target.id]: event.target.value
     });
   };
 
-  handleInflationChange = event => {
+  const handleInflationChange = event => {
     this.setState({
       inflation: event.target.checked
     });
   };
 
-  handleTypeChange = event => {
+  const handleTypeChange = event => {
     this.setState({
       [event.target.id]: event.target.value,
       accountToId: "0"
     });
   };
 
-  handleStartDateChange = value => {
+  const handleStartDateChange = value => {
     if (this.state.templateType === "Zero")
     {
       this.setState({
@@ -150,18 +95,89 @@ export default class Template extends Component {
     }
   };
 
-  handleEndDateChange = value => {
+  const handleEndDateChange = value => {
     this.setState({
       endDate: value
     });
   };
 
-  handleFocus = event => {
-    event.target.select();
-  };
 
-  handleSubmit = async event => {
-    event.preventDefault();
+
+
+  const isValidDescription = () => fields.description.length > 0
+
+  const getAmountValidationState = () => {
+    if (this.state.amount100.length === 0) return "error";
+    const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
+    if (regex.test(this.state.amount100)) return "success";
+    return "error";
+  }
+
+  const getFreqValidationState = () => {
+    if (this.state.periodCnt.length <= 0) return "error";
+    if (isNaN(parseInt(this.state.periodCnt, 10))) return "error";
+    else return "success";
+  }
+
+  const getLastPeriodDayValidationState = () => {
+    if (this.state.templateType !== "CC") return "success";
+    if (this.state.periodLastDay.length === 0) return "error";
+    if (isNaN(parseInt(this.state.periodLastDay, 10))) return "error";
+    let val = parseInt(this.state.periodLastDay, 10);
+    if (val < 1 || val > 28) return "error";
+    return "success";
+  }
+
+  const getStartDateValidationState = () => {
+    if (this.state.startDate === null) return "error";
+    return "success";
+  }
+
+  const getEndDateValidationState = () => {
+    if (this.state.endDate === null) return "warning";
+    if (this.state.startDate === null) return "warning";
+    if (
+      Moment(this.state.endDate).isBefore(Moment(this.state.startDate), "day")
+    )
+      return "error";
+    return "success";
+  }
+
+  const getToAccountValidationState = () => {
+    let partnerRequired =
+      this.state.templateType === "Transfer" ||
+      this.state.templateType === "CC";
+    if (partnerRequired && this.state.accountToId === "0") return "error"; // can't have transfer type without account
+    let partnerNotAllowed =
+      this.state.templateType === "Debit" ||
+      this.state.templateType === "Credit";
+    if (partnerNotAllowed && this.state.accountToId !== "0") return "error";
+    if (this.state.accountFromId === this.state.accountToId) return "error"; // from account equals to account
+    return "success";
+  }
+
+  const validateForm = () => (
+      isValidDescription &&
+      getFreqValidationState() === "success" &&
+      getAmountValidationState() === "success" &&
+      getStartDateValidationState() === "success" &&
+      getEndDateValidationState() !== "error" &&
+      getToAccountValidationState() === "success" &&
+      getLastPeriodDayValidationState() !== "error"
+  )
+
+  const createTemplate = template => API.post("accounts", "/templates", { body: template })
+
+  const saveTemplate = template => API.put("accounts", `/templates/${id}`, { body: template })
+  
+  const deleteTemplate = () => API.del("accounts", `/templates/${id}`)
+
+  const handleFocus = event => {
+    event.target.select()
+  }
+
+  const handleSubmit = async event => {
+    event.preventDefault()
 
     if (this.state.templateType === "CC") {
       if (this.props.templates) {
@@ -222,9 +238,9 @@ export default class Template extends Component {
       alert(e);
       this.setState({ isLoading: false });
     }
-  };
+  }
 
-  handleDelete = async event => {
+  const handleDelete = async event => {
     event.preventDefault();
 
     const confirmed = window.confirm(
@@ -246,269 +262,198 @@ export default class Template extends Component {
       alert(e);
       this.setState({ isDeleting: false });
     }
-  };
-
-  getDescriptionValidationState() {
-    if (this.state.description.length > 0) return "success";
-    return "error";
   }
 
-  getAmountValidationState() {
-    if (this.state.amount100.length === 0) return "error";
-    const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
-    if (regex.test(this.state.amount100)) return "success";
-    return "error";
-  }
-
-  getFreqValidationState() {
-    if (this.state.periodCnt.length <= 0) return "error";
-    if (isNaN(parseInt(this.state.periodCnt, 10))) return "error";
-    else return "success";
-  }
-
-  getLastPeriodDayValidationState() {
-    if (this.state.templateType !== "CC") return "success";
-    if (this.state.periodLastDay.length === 0) return "error";
-    if (isNaN(parseInt(this.state.periodLastDay, 10))) return "error";
-    let val = parseInt(this.state.periodLastDay, 10);
-    if (val < 1 || val > 28) return "error";
-    return "success";
-  }
-
-  getStartDateValidationState() {
-    if (this.state.startDate === null) return "error";
-    return "success";
-  }
-
-  getEndDateValidationState() {
-    if (this.state.endDate === null) return "warning";
-    if (this.state.startDate === null) return "warning";
-    if (
-      Moment(this.state.endDate).isBefore(Moment(this.state.startDate), "day")
-    )
-      return "error";
-    return "success";
-  }
-
-  getToAccountValidationState() {
-    let partnerRequired =
-      this.state.templateType === "Transfer" ||
-      this.state.templateType === "CC";
-    if (partnerRequired && this.state.accountToId === "0") return "error"; // can't have transfer type without account
-    let partnerNotAllowed =
-      this.state.templateType === "Debit" ||
-      this.state.templateType === "Credit";
-    if (partnerNotAllowed && this.state.accountToId !== "0") return "error";
-    if (this.state.accountFromId === this.state.accountToId) return "error"; // from account equals to account
-    return "success";
-  }
-
-  render() {
-    return (
-      <div className="Template">
-        {this.state.template && (
-          <form onSubmit={this.handleSubmit}>
-            <Form.Group
-              controlId="description"
-              validationState={this.getDescriptionValidationState()}
+  return (
+    isLoading ?
+    <div>
+      Retrieving template data...
+    </div>
+    :
+    <div className="Template">
+      <Form onSubmit={handleSubmit}>
+        <Form.Group controlId="description">
+          <Form.Label>Description</Form.Label>
+          <Form.Control
+            type="text"
+            value={fields.description}
+            placeholder="Enter a description"
+            onChange={handleFieldChange}
+            isValid={isValidDescription()}
+          />
+        </Form.Group>
+        <Form.Row>
+        <Col>
+          <Form.Group controlId="templateType">
+            <Form.Label>Transaction Type</Form.Label>
+            <Form.Control
+              as="select"
+              type="text"
+              value={fields.templateType}
+              onChange={handleFieldChange}
             >
-              <Form.Label>Description</Form.Label>
+              <option value="Debit">Debit</option>
+              <option value="Credit">Credit</option>
+              <option value="Transfer">Transfer</option>
+              <option value="CC">Credit Card</option>
+              <option value="Minimise">Minimise</option>
+              <option value="Zero">Zero</option>
+            </Form.Control>
+          </Form.Group>
+          <Form.Group controlId="startDate">
+            <Form.Label>Start Date</Form.Label>
+            <DatePicker
+              id="startDate"
+              value={this.state.startDate}
+              placeholder="Start date"
+              onChange={this.handleStartDateChange}
+              autoComplete="off"
+            />
+          </Form.Group>
+          <Form.Group controlId="endDate">
+            <Form.Label>End Date</Form.Label>
+            <DatePicker
+              id="endDate"
+              value={this.state.endDate}
+              placeholder="End date"
+              onChange={this.handleEndDateChange}
+              autoComplete="off"
+              disabled={this.state.templateType === "Zero"}
+            />
+          </Form.Group>
+          <Form.Group controlId="accountFromId">
+            <Form.Label>Template Account</Form.Label>
+            <Form.Control
+              componentClass="select"
+              type="text"
+              value={this.state.accountFromId}
+              placeholder="Select account template applies to"
+              onChange={this.handleChange}
+            >
+              {this.props.accounts.map(x => (
+                <option key={x.accountId} value={x.accountId}>
+                  {x.accName}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+          <Form.Group controlId="accountToId">
+            <Form.Label>Partner Account</Form.Label>
+            <Form.Control
+              componentClass="select"
+              type="text"
+              value={this.state.accountToId}
+              placeholder="Select partner account"
+              onChange={this.handleChange}
+              disabled={
+                this.state.templateType === "Debit" ||
+                this.state.templateType === "Credit"
+              }
+            >
+              <option key={0} value={0}>
+                -
+              </option>
+              {this.props.accounts.map(x => (
+                <option key={x.accountId} value={x.accountId}>
+                  {x.accName}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </Col>
+        <Col>
+          <Form.Group controlId="amount100">
+            <Form.Label>Amount</Form.Label>
+            <InputGroup>
+              <InputGroup.Addon>$</InputGroup.Addon>
               <Form.Control
+                type="text"
+                value={this.state.amount100}
+                placeholder="Enter transaction amount"
                 onChange={this.handleChange}
-                value={this.state.description}
-                componentClass="textarea"
-                placeholder="Enter a description"
+                disabled={
+                  this.state.templateType === "CC" ||
+                  this.state.templateType === "Zero"
+                }
+                onFocus={this.handleFocus}
               />
-              <Form.Control.Feedback />
-            </Form.Group>
-            <Col sm={6}>
-              <Form.Group controlId="templateType" validationState="success">
-                <Form.Label>Transaction Type</Form.Label>
-                <Form.Control
-                  componentClass="select"
-                  type="text"
-                  value={this.state.templateType}
-                  placeholder="Select transaction type"
-                  onChange={this.handleTypeChange}
-                >
-                  <option value="Debit">Debit</option>
-                  <option value="Credit">Credit</option>
-                  <option value="Transfer">Transfer</option>
-                  <option value="CC">Credit Card</option>
-                  <option value="Minimise">Minimise</option>
-                  <option value="Zero">Zero</option>
-                </Form.Control>
-              </Form.Group>
-              <Form.Group
-                controlId="startDate"
-                validationState={this.getStartDateValidationState()}
-              >
-                <Form.Label>Start Date</Form.Label>
-                <DatePicker
-                  id="startDate"
-                  value={this.state.startDate}
-                  placeholder="Start date"
-                  onChange={this.handleStartDateChange}
-                  autoComplete="off"
-                />
-              </Form.Group>
-              <Form.Group
-                controlId="endDate"
-                validationState={this.getEndDateValidationState()}
-              >
-                <Form.Label>End Date</Form.Label>
-                <DatePicker
-                  id="endDate"
-                  value={this.state.endDate}
-                  placeholder="End date"
-                  onChange={this.handleEndDateChange}
-                  autoComplete="off"
-                  disabled={this.state.templateType === "Zero"}
-                />
-              </Form.Group>
-              <Form.Group controlId="accountFromId" validationState="success">
-                <Form.Label>Template Account</Form.Label>
-                <Form.Control
-                  componentClass="select"
-                  type="text"
-                  value={this.state.accountFromId}
-                  placeholder="Select account template applies to"
-                  onChange={this.handleChange}
-                >
-                  {this.props.accounts.map(x => (
-                    <option key={x.accountId} value={x.accountId}>
-                      {x.accName}
-                    </option>
-                  ))}
-                </Form.Control>
-              </Form.Group>
-              <Form.Group
-                controlId="accountToId"
-                validationState={this.getToAccountValidationState()}
-              >
-                <Form.Label>Partner Account</Form.Label>
-                <Form.Control
-                  componentClass="select"
-                  type="text"
-                  value={this.state.accountToId}
-                  placeholder="Select partner account"
-                  onChange={this.handleChange}
-                  disabled={
-                    this.state.templateType === "Debit" ||
-                    this.state.templateType === "Credit"
-                  }
-                >
-                  <option key={0} value={0}>
-                    -
-                  </option>
-                  {this.props.accounts.map(x => (
-                    <option key={x.accountId} value={x.accountId}>
-                      {x.accName}
-                    </option>
-                  ))}
-                </Form.Control>
-              </Form.Group>
-            </Col>
-            <Col sm={6}>
-              <Form.Group
-                controlId="amount100"
-                validationState={this.getAmountValidationState()}
-              >
-                <Form.Label>Amount</Form.Label>
-                <InputGroup>
-                  <InputGroup.Addon>$</InputGroup.Addon>
-                  <Form.Control
-                    type="text"
-                    value={this.state.amount100}
-                    placeholder="Enter transaction amount"
-                    onChange={this.handleChange}
-                    disabled={
-                      this.state.templateType === "CC" ||
-                      this.state.templateType === "Zero"
-                    }
-                    onFocus={this.handleFocus}
-                  />
-                </InputGroup>
+            </InputGroup>
 
-                <Form.Control.Feedback />
-              </Form.Group>
-              <Form.Group controlId="periodType" validationState="success">
-                <Form.Label>Period Type</Form.Label>
-                <Form.Control
-                  componentClass="select"
-                  type="text"
-                  value={this.state.periodType}
-                  placeholder="Select period type"
-                  onChange={this.handleChange}
-                  disabled={this.state.templateType === "Zero"}
-                >
-                  <option value="M">Month</option>
-                  <option value="w">Week</option>
-                  <option value="y">Year</option>
-                  <option value="Q">Quarter</option>
-                  <option value="d">Day</option>
-                </Form.Control>
-              </Form.Group>
-              <Form.Group
-                controlId="periodCnt"
-                validationState={this.getFreqValidationState()}
-              >
-                <Form.Label>Frequency</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={this.state.periodCnt}
-                  placeholder="Number of periods"
-                  onChange={this.handleChange}
-                  onFocus={this.handleFocus}
-                  disabled={this.state.templateType === "Zero"}
-                />
-              </Form.Group>
-              <Form.Group
-                controlId="periodLastDay"
-                validationState={this.getLastPeriodDayValidationState()}
-              >
-                <Form.Label>Last Period Day</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={this.state.periodLastDay}
-                  placeholder="Last day of the period"
-                  onChange={this.handleChange}
-                  disabled={this.state.templateType !== "CC"}
-                  onFocus={this.handleFocus}
-                />
-              </Form.Group>
-              <Form.Group controlId="inflation" validationState="success">
-                <Form.Label>Inflation</Form.Label>
-                {/* <Checkbox
-                  checked={this.state.inflation}
-                  onChange={this.handleInflationChange}
-                >
-                  Apply annual inflation rate
-                </Checkbox> */}
-              </Form.Group>
-            </Col>
-            <LoaderButton
-              block
-              bsStyle="primary"
-              bsSize="large"
-              disabled={!this.validateForm()}
-              type="submit"
-              isLoading={this.state.isLoading}
-              text="Save"
-              loadingText="Saving…"
+            <Form.Control.Feedback />
+          </Form.Group>
+          <Form.Group controlId="periodType">
+            <Form.Label>Period Type</Form.Label>
+            <Form.Control
+              componentClass="select"
+              type="text"
+              value={this.state.periodType}
+              placeholder="Select period type"
+              onChange={this.handleChange}
+              disabled={this.state.templateType === "Zero"}
+            >
+              <option value="M">Month</option>
+              <option value="w">Week</option>
+              <option value="y">Year</option>
+              <option value="Q">Quarter</option>
+              <option value="d">Day</option>
+            </Form.Control>
+          </Form.Group>
+          <Form.Group controlId="periodCnt">
+            <Form.Label>Frequency</Form.Label>
+            <Form.Control
+              type="text"
+              value={this.state.periodCnt}
+              placeholder="Number of periods"
+              onChange={this.handleChange}
+              onFocus={this.handleFocus}
+              disabled={this.state.templateType === "Zero"}
             />
-            <LoaderButton
-              block
-              bsStyle="danger"
-              bsSize="large"
-              isLoading={this.state.isDeleting}
-              onClick={this.handleDelete}
-              text="Delete"
-              loadingText="Deleting…"
+          </Form.Group>
+          <Form.Group
+            controlId="periodLastDay">
+            <Form.Label>Last Period Day</Form.Label>
+            <Form.Control
+              type="text"
+              value={this.state.periodLastDay}
+              placeholder="Last day of the period"
+              onChange={this.handleChange}
+              disabled={this.state.templateType !== "CC"}
+              onFocus={this.handleFocus}
             />
-          </form>
-        )}
-      </div>
-    );
-  }
+          </Form.Group>
+          <Form.Group controlId="inflation">
+            <Form.Label>Inflation</Form.Label>
+            {/* <Checkbox
+              checked={this.state.inflation}
+              onChange={this.handleInflationChange}
+            >
+              Apply annual inflation rate
+            </Checkbox> */}
+          </Form.Group>
+        </Col>
+        </Form.Row>
+        <LoaderButton
+          block
+          type="submit"
+          size="lg"
+          variant="primary"
+          isSaving={isSaving}
+          disabled={!validateForm()}
+        >
+          Save
+        </LoaderButton>
+        <LoaderButton
+          block
+          onClick={handleDelete}
+          size="lg"
+          variant="danger"
+          isSaving={isDeleting}
+        >
+          Delete
+        </LoaderButton>
+      </Form>
+    </div>
+  )
 }
+
+export default Template
