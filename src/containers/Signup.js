@@ -8,7 +8,8 @@ import { onError } from "../libs/errorLib"
 import { Auth } from "aws-amplify"
 import "./Signup.css"
 
-export default () => {
+const Signup = () => {
+
   const [fields, handleFieldChange] = useFormFields({
     email: "",
     password: "",
@@ -142,3 +143,5 @@ export default () => {
     </div>
   )
 }
+
+export default Signup

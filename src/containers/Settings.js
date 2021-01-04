@@ -1,78 +1,81 @@
-import React, { Component } from "react";
-import { API } from "aws-amplify";
-import { Elements, StripeProvider } from "react-stripe-elements";
-import BillingForm from "../components/BillingForm";
-import config from "../config";
-import "./Settings.css";
-import { LinkContainer } from "react-router-bootstrap";
-import LoaderButton from "../components/LoaderButton";
-import Form from "react-bootstrap/Form";
+import React, { useState, useEffect } from "react"
+import { API } from "aws-amplify"
+import { useHistory } from "react-router-dom"
+import { Elements, StripeProvider } from "react-stripe-elements"
+import { LinkContainer } from "react-router-bootstrap"
+import Form from "react-bootstrap/Form"
+import { onError } from "../libs/errorLib"
+import BillingForm from "../components/BillingForm"
+import LoaderButton from "../components/LoaderButton"
+import config from "../config"
+import "./Settings.css"
 
-export default class Settings extends Component {
-  constructor(props) {
-    super(props);
+const Settings = () => {
+  const history = useHistory()
+  const [isLoading, setIsLoading] = useState(false)
+  const [stripe, setStripe] = useState(null);
 
-    this.state = {
-      isLoading: false
-    };
-  }
+  useEffect(() => {
+    setStripe(window.Stripe(config.STRIPE_KEY))
+  }, [])
 
-  billUser(details) {
-    return API.post("accounts", "/billing", {
-      body: details
-    });
-  }
+  const billUser = details => API.post("accounts", "/billing", { body: details })
 
-  handleFormSubmit = async (accounts, { token, error }) => {
+  const handleFormSubmit = async (accounts, { token, error }) => {
     if (error) {
-      alert(error);
-      return;
+      onError(error)
+      return
     }
   
-    this.setState({ isLoading: true });
+    setIsLoading(true)
   
     try {
-      await this.billUser({
+      await billUser({
         accounts,
         source: token.id
-      });
+      })
   
-      alert("Your card has been charged successfully!");
-      this.props.history.push("/");
+      alert("Your card has been charged successfully!")
+      history.push("/")
     } catch (e) {
-      alert(e);
-      this.setState({ isLoading: false });
+      onError(e)
+      setIsLoading(false)
     }
   }
   
-  render() {
-    return (
-      <div className="Settings">
-        <Form.Label>Security</Form.Label>
-        <LinkContainer to="/settings/email">
-          <LoaderButton
-            block
-            bsSize="large"
-            text="Change Email"
-          />
-        </LinkContainer>
-        <LinkContainer to="/settings/password">
-          <LoaderButton
-            block
-            bsSize="large"
-            text="Change Password"
-        />
-        </LinkContainer>      
-        <hr />
-        <StripeProvider apiKey={config.STRIPE_KEY}>
-          <Elements>
-            <BillingForm
-              loading={this.state.isLoading}
-              onSubmit={this.handleFormSubmit}
-            />
-          </Elements>
-        </StripeProvider>
-      </div>
-    );
-  }
+
+  return (
+    <div className="Settings">
+      <Form.Label>Security</Form.Label>
+      <LinkContainer to="/settings/email">
+        <LoaderButton
+          block
+          size="lg">
+            Change Email
+        </LoaderButton>
+      </LinkContainer>
+      <LinkContainer to="/settings/password">
+        <LoaderButton
+          block
+          size="lg">
+           Change Password
+        </LoaderButton>
+      </LinkContainer>      
+      <hr />
+      <StripeProvider stripe={stripe}>
+        <Elements
+          fonts={[
+            {
+              cssSrc:
+                "https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700,800"
+            }
+          ]}
+        >
+          <BillingForm isLoading={isLoading} onSubmit={handleFormSubmit} />
+        </Elements>
+      </StripeProvider>
+    </div>
+  )
 }
+
+export default Settings

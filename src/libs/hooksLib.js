@@ -5,12 +5,12 @@ export const useFormFields = (initialState) => {
 
   return [
     fields,
-    setValues,
     event => {
       setValues({
         ...fields,
         [event.target.id]: event.target.value
       })
-    }
+    },
+    setValues
   ]
 }

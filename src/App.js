@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react"
 import { useHistory } from "react-router-dom"
 import Navbar from "react-bootstrap/Navbar"
@@ -7,33 +8,72 @@ import { LinkContainer } from "react-router-bootstrap"
 import { AppContext } from "./libs/contextLib"
 import { onError } from "./libs/errorLib"
 import { Auth } from "aws-amplify"
+import { API } from "aws-amplify"
 import "./App.css"
-// import au from 'date-fns/locale/en-AU';
-// import { registerLocale, setDefaultLocale } from "react-datepicker";
 
-export default () => {
+const App = () => {
   const history = useHistory()
   const [isAuthenticating, setIsAuthenticating] = useState(true)
   const [isAuthenticated, userHasAuthenticated] = useState(false)
+  const [email, setEmail] = useState("Settings")
+  const [templates, setTemplates] = useState(null)
+  const [accounts, setAccounts] = useState(null)
+  const [currentAccId, setCurrentAccId] = useState(0)
+  const [templateFilterModel, setTemplateFilterModel] = useState(null)
+  const [templateColumnState, setTemplateColumnState] = useState(null)
 
   useEffect(() => {
-    // registerLocale('en-AU', au)
-    // setDefaultLocale('en-AU')
+    const onLoad = async () => {
+      try {
+        let session = await Auth.currentSession()
+        userHasAuthenticated(true)
+        console.log('Session:')
+        console.log(session)
+        if (session) {
+          console.log('** > Before call to currentUserInfo')
+          const { attributes } = await Auth.currentUserInfo()
+          console.log('** > After call to currentUserInfo')
+          setEmail(attributes.email)
+        }
+        await refreshAccounts()
+        await refreshTemplates()
+      }
+      catch(e) {
+        if (e !== 'No current user') {
+          onError(e)
+        }
+      }
+    
+      setIsAuthenticating(false)
+    }
     onLoad()
   }, [])
   
-  const onLoad = async () => {
-    try {
-      await Auth.currentSession()
-      userHasAuthenticated(true)
+
+
+  const getAccounts = () => API.get("accounts", "/accounts")
+
+  const getTemplates = () => API.get("accounts", "/templates")
+
+  const refreshTemplates = async () => {
+    const currentTemplates = await getTemplates()
+    setTemplates( currentTemplates )
+  }
+
+  const refreshAccounts = async () => {
+    const accountsFromGet = await getAccounts()
+    const mappedAccounts = accountsFromGet.map(acc => {return {hide:false, ...acc}})
+    sortAndSetAccounts(mappedAccounts)
+  }
+
+   const sortAndSetAccounts = accs => {
+    accs.sort((a, b) => a.sortOrder - b.sortOrder)
+    setAccounts(accs)
+    const selectedAccount = accs.find(acc => !acc.hide)
+    if (selectedAccount) {
+     setCurrentAccId(selectedAccount.accountId)
     }
-    catch(e) {
-      if (e !== 'No current user') {
-        onError(e)
-      }
-    }
-  
-    setIsAuthenticating(false)
+    else setCurrentAccId(0)
   }
 
   const handleLogout = async () => {
@@ -57,7 +97,15 @@ export default () => {
           <Navbar.Collapse className="justify-content-end">
             <Nav activeKey={window.location.pathname}>
               {isAuthenticated ? (
-                <Nav.Link onClick={handleLogout}>Logout</Nav.Link>
+                <>
+                  <LinkContainer to="/templates">
+                    <Nav.Link>Templates</Nav.Link>
+                  </LinkContainer>
+                  <LinkContainer to="/settings">
+                    <Nav.Link>{email}</Nav.Link>
+                  </LinkContainer>
+                  <Nav.Link onClick={handleLogout}>Logout</Nav.Link>
+                </>
               ) : (
                 <>
                   <LinkContainer to="/signup">
@@ -71,13 +119,18 @@ export default () => {
             </Nav>
           </Navbar.Collapse>
         </Navbar>
-        <AppContext.Provider value={{ isAuthenticated, userHasAuthenticated }}>
+        <AppContext.Provider value={{ 
+          isAuthenticated, userHasAuthenticated, templates, refreshTemplates, accounts, refreshAccounts, currentAccId, setCurrentAccId, 
+          templateColumnState, templateFilterModel, setTemplateColumnState, setTemplateFilterModel 
+        }}>
           <Routes />
         </AppContext.Provider>
       </div>
     )
   )
 }
+
+export default App
 
 // import React, { Component, Fragment } from "react";
 // import { Auth } from "aws-amplify";

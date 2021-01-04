@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react"
 import ListGroup from "react-bootstrap/ListGroup"
-import { BsCreditCard } from "react-icons/bs";
-import { LinkContainer } from "react-router-bootstrap";
+import { BsCreditCard } from "react-icons/bs"
+import { LinkContainer } from "react-router-bootstrap"
+import { Link } from "react-router-dom"
 import { useAppContext } from "../libs/contextLib"
 import { onError } from "../libs/errorLib"
 import { API } from "aws-amplify"
 import "./Home.css"
 
-export default () => {
+const Home = () => {
+
   const [accounts, setAccounts] = useState([])
   const { isAuthenticated } = useAppContext()
   const [isLoading, setIsLoading] = useState(true)
+  
   useEffect(() => {
     const onLoad = async () => {
       if (!isAuthenticated) {
@@ -61,6 +64,14 @@ export default () => {
       <div className="lander">
         <h1>Lydia</h1>
         <p className="text-muted">Take control of your money</p>
+        <div className="pt-3">
+          <Link to="/login" className="btn btn-info btn-lg mr-3">
+            Login
+          </Link>
+          <Link to="/signup" className="btn btn-success btn-lg">
+            Signup
+          </Link>
+        </div>
       </div>
     )
   }
@@ -81,32 +92,7 @@ export default () => {
   )
 }
 
-// import React, { Component } from "react";
-// import { Link } from "react-router-dom";
-// import { ListGroup, ListGroupItem } from "react-bootstrap";
-// import "./Home.css";
-
-// export default class Home extends Component {
-//   constructor(props) {
-//     super(props);
-
-//     this.state = {
-//       isLoading: true
-//     };
-//   }
-
-//   async componentDidMount() {
-//     if (!this.props.isAuthenticated) {
-//       return;
-//     }
-
-//     try {
-//     } catch (e) {
-//       alert(e);
-//     }
-
-//     this.setState({ isLoading: false });
-//   }
+export default Home
 
 //   lineFormatter = (transAcc, account) => {
 //     let line = "Balance: "
@@ -155,40 +141,3 @@ export default () => {
 //             </div>
 //     );
 //   }
-
-//   renderLander() {
-//     return (
-//       <div className="lander">
-//         <h1>Lydia</h1>
-//         <p>Take control of your money</p>
-//         <div>
-//           <Link to="/login" className="btn btn-info btn-lg">
-//             Login
-//           </Link>
-//           <Link to="/signup" className="btn btn-success btn-lg">
-//             Signup
-//           </Link>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   renderAccounts() {
-//     return (
-//       <div className="accounts">
-//         <h1>Your Accounts</h1>
-//         <ListGroup>
-//           {!this.state.isLoading && this.renderAccountsList(this.props.accounts, this.props.transAcc)}
-//         </ListGroup>
-//       </div>
-//     );
-//   }
-
-//   render() {
-//     return (
-//       <div className="Home">
-//         {this.props.isAuthenticated ? this.renderAccounts() : this.renderLander()}
-//       </div>
-//     );
-//   }
-// }

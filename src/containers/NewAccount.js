@@ -9,10 +9,12 @@ import { onError } from "../libs/errorLib"
 import Moment from "moment"
 import { today } from "../libs/utilities"
 import DatePicker from "react-datepicker"
+import { useAppContext } from "../libs/contextLib"
 import 'react-datepicker/dist/react-datepicker-cssmodules.css'
 import "./NewAccount.css"
 
 export default () => {
+  const { refreshAccounts } = useAppContext()
   const history = useHistory()
   const [openingDate, setOpeningDate] = useState(today.toDate())
   const [closingDate, setClosingDate] = useState(today.clone().add(10, "y").toDate()) // default closing date to 10 years from now
@@ -129,7 +131,7 @@ export default () => {
       })
      // this.props.setTransactions(null)
       // Needs to be worked out in context refresh
-      // await this.props.refreshAccounts();
+      await refreshAccounts()
       this.props.setRecalcRequired(true)
       history.push("/");
     } catch (e) {

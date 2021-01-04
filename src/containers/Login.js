@@ -1,27 +1,23 @@
 import React, { useState } from "react"
 import { Auth } from "aws-amplify"
 import Form from "react-bootstrap/Form"
-import { useHistory } from "react-router-dom"
+import { Link } from "react-router-dom"
 import LoaderButton from "../components/LoaderButton"
 import { useAppContext } from "../libs/contextLib"
 import { useFormFields } from "../libs/hooksLib"
 import { onError } from "../libs/errorLib"
 import "./Login.css"
 
-// import { Link } from "react-router-dom";
+const Login = () => {
 
-export default () => {
-  const history = useHistory()
-  const { userHasAuthenticated } = useAppContext()
+  const { userHasAuthenticated, refreshAccounts, refreshTemplates } = useAppContext()
   const [isLoading, setIsLoading] = useState(false)
   const [fields, handleFieldChange] = useFormFields({
     email: "",
     password: ""
   })
 
-  const validateForm = () => {
-    return fields.email.length > 0 && fields.password.length > 0
-  }
+  const validateForm = () => fields.email.length > 0 && fields.password.length > 0
 
   const handleSubmit = async event => {
     event.preventDefault()
@@ -30,15 +26,13 @@ export default () => {
 
     try {
       await Auth.signIn(fields.email, fields.password)
-    //   await this.props.refreshAccounts();
-    //   await this.props.refreshTemplates();
+      await refreshAccounts()
+      await refreshTemplates()
       userHasAuthenticated(true)
-      history.push("/")
     } catch (e) {
       onError(e)
       setIsLoading(false)
     }
-
   }
 
   return (
@@ -61,6 +55,7 @@ export default () => {
             onChange={handleFieldChange}
           />
         </Form.Group>
+        <Link to="/login/reset">Forgot password?</Link>
         <LoaderButton
           block
           size="lg"
@@ -70,8 +65,9 @@ export default () => {
         >
           Login
         </LoaderButton>
-        {/* <Link to="/login/reset">Forgot password?</Link> */}
       </Form>
     </div>
   )
 }
+
+export default Login

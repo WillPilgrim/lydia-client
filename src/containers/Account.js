@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react"
 import { API } from "aws-amplify"
 import Form from "react-bootstrap/Form"
-import { InputGroup, Col, Row } from "react-bootstrap"
+import { InputGroup, Col  } from "react-bootstrap"
 import { useParams, useHistory } from "react-router-dom"
 import LoaderButton from "../components/LoaderButton"
 import { useFormFields } from "../libs/hooksLib"
+import { useAppContext } from "../libs/contextLib"
 import { onError } from "../libs/errorLib"
 import Moment from "moment"
 import { today } from "../libs/utilities"
@@ -12,15 +13,18 @@ import DatePicker from "react-datepicker"
 import 'react-datepicker/dist/react-datepicker-cssmodules.css'
 import "./Account.css"
 
-export default () => {
+const Account = () => {
+  const { refreshAccounts } = useAppContext()
   const { id } = useParams()
   const history = useHistory()
   const [openingDate, setOpeningDate] = useState(today.toDate())
   const [closingDate, setClosingDate] = useState(today.clone().add(10, "y").toDate()) // default closing date to 10 years from now
   const [intFirstAppliedDate, setIntFirstAppliedDate] = useState(today.toDate())
   const [interest, setInterest] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [fields, setValues, handleFieldChange] = useFormFields({
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [fields, handleFieldChange, setValues] = useFormFields({
     accName: "",
     description: "",
     amount100: "0.00",
@@ -34,9 +38,9 @@ export default () => {
 
   useEffect(() => {
     const loadAccount = () => API.get("accounts", `/accounts/${id}`)
-
     const onLoad = async () => {
       try {
+        setIsLoading(true)
         const account = await loadAccount()
         const { accName, description, amount, crRate, dbRate, periodCnt, periodType, hide, sortOrder, openingDate, closingDate, intFirstAppliedDate, interest } = account
 
@@ -44,8 +48,10 @@ export default () => {
         setClosingDate(new Date(closingDate))
         setIntFirstAppliedDate(new Date(intFirstAppliedDate))
         setInterest(interest)
-        setValues({accName, description, amount100: (amount / 100).toFixed(2), crRate, dbRate, periodFrequency: periodCnt, periodType, hide, sortOrder})
+        setValues({ accName, description, amount100: (amount / 100).toFixed(2), crRate, dbRate, periodFrequency: periodCnt, periodType, hide, sortOrder })
+        setIsLoading(false)
       } catch (e) {
+        setIsLoading(false)
         onError(e)
       }
     }
@@ -56,22 +62,22 @@ export default () => {
   }, [id, setValues]);
 
   const isValidName = () => fields.accName.length > 0
-  
+
   const isValidDescription = () => fields.description.length > 0
-  
+
   const isValidOpeningDate = () => {
     if (openingDate === null) return false
     // Bizarre check to make sure opening date not more than 30 years in the future!
-    return Moment(openingDate).isBefore(today.clone().add(30, "y"))  
+    return Moment(openingDate).isBefore(today.clone().add(30, "y"))
   }
-  
+
   const isValidClosingDate = () => {
     if (closingDate === null || openingDate === null) return false
-    if (Moment(closingDate).isBefore(Moment(openingDate),"day")) return false
+    if (Moment(closingDate).isBefore(Moment(openingDate), "day")) return false
     // Bizarre check to make sure closing date not more than 30 years in the future!
-    return Moment(closingDate).isBefore(today.clone().add(30, "y"))  
+    return Moment(closingDate).isBefore(today.clone().add(30, "y"))
   }
-  
+
   const isValidOpeningBalance = () => {
     if (fields.amount100.length === 0) return false
     const regex = /^(-|\+)?[0-9]+(\.[0-9]{1,2})?$/
@@ -95,9 +101,9 @@ export default () => {
   const isValidIntFirstAppliedDate = () => {
     if (!interest) return true
     if (intFirstAppliedDate === null) return false
-    if (Moment(intFirstAppliedDate).isAfter(today.clone().add(30, "y"),"day")) return false
-    if (Moment(intFirstAppliedDate).isBefore(Moment(openingDate),"day")) return false
-    if (Moment(intFirstAppliedDate).isAfter(Moment(closingDate),"day")) return false
+    if (Moment(intFirstAppliedDate).isAfter(today.clone().add(30, "y"), "day")) return false
+    if (Moment(intFirstAppliedDate).isBefore(Moment(openingDate), "day")) return false
+    if (Moment(intFirstAppliedDate).isAfter(Moment(closingDate), "day")) return false
     return true
   }
 
@@ -109,7 +115,7 @@ export default () => {
     if (val > 99 || val < 1) return false
     return true
   }
-  
+
   const isValidPeriodType = () => true
 
   const validateForm = () => (
@@ -125,16 +131,23 @@ export default () => {
     isValidPeriodType()
   )
 
+  const createAccount = account => API.post("accounts", "/accounts", { body: account })
+  
+  const saveAccount = account => API.put("accounts", `/accounts/${id}`, { body: account })
+
+  const deleteAccount = () => API.del("accounts", `/accounts/${id}`)
+  
   const handleFocus = event => {
     event.target.select()
   }
-  
-  const handleSubmit = async (event) => {
+
+  const handleSubmit = async event => {
     event.preventDefault()
 
-    setIsLoading(true)
+    setIsSaving(true)
+    
     try {
-      await createAccount({
+      let account = {
         accName: fields.accName,
         description: fields.description,
         openingDate: Moment(openingDate).startOf('date').format(),
@@ -144,47 +157,55 @@ export default () => {
         dbRate: interest ? parseFloat(fields.dbRate).toFixed(2) : 0,
         interest: interest,
         periodType: interest ? fields.periodType : "M",
-        periodCnt: interest ? parseInt(fields.periodCnt, 10) : 1,
+        periodCnt: interest ? parseInt(fields.periodFrequency, 10) : 1,
         intFirstAppliedDate: Moment(intFirstAppliedDate).startOf('date').format(),
 
-        // this should be done in the lambda
-        //      sortOrder: this.props.accounts.length + 1,
-        hide: false
-      })
-     // this.props.setTransactions(null)
+        // this should be done in the lambda - this.props.accounts.length
+        sortOrder: id === "new" ? 1 : fields.sortOrder,
+        hide: id === "new" ? false : fields.hide
+      }
+
+      id === "new" ? await createAccount(account) : await saveAccount(account)
+      
+      // not sure about this one - this.props.setTransactions(null)
       // Needs to be worked out in context refresh
-      // await this.props.refreshAccounts();
-      this.props.setRecalcRequired(true)
-      history.push("/");
+      await refreshAccounts()
+      // this.props.setRecalcRequired(true)
+      history.push("/")
     } catch (e) {
       onError(e)
-      setIsLoading(false)
+      setIsSaving(false)
+    }
+  }
+
+  const handleDelete = async event => {
+    event.preventDefault()
+
+    const confirmed = window.confirm( "Are you sure you want to delete this account?" )
+
+    if (!confirmed) {
+      return
     }
 
-  }
+    setIsDeleting(true)
 
-  const createAccount = (account) => {
-    return API.post("accounts", "/accounts", {
-      body: account
-    })
-  }
-
-  const handleSave = async (event) => {
-    event.preventDefault()
-
-    setIsLoading(true)
-  // do something
-    setIsLoading(false)
-  }
-  const handleDelete = async (event) => {
-    event.preventDefault()
-
-    setIsLoading(true)
-  // do something
-    setIsLoading(false)
+    try {
+      await deleteAccount()
+      // await this.props.refreshAccounts();
+      // this.props.setRecalcRequired(true)
+      history.push("/")
+    } catch (e) {
+      onError(e)
+      setIsDeleting(false)
+    }
   }
 
   return (
+    isLoading ?
+      <div>
+        Retrieving account data...
+      </div>
+      :
     <div className="Account">
       <Form onSubmit={handleSubmit}>
         <Form.Group controlId="accName">
@@ -207,18 +228,24 @@ export default () => {
             isValid={isValidDescription()}
           />
         </Form.Group>
-        <Form.Group controlId="openingDate">
-          <Form.Label>Opening Date</Form.Label>
-          <div>
-            <DatePicker dateFormat="dd/MM/yyyy" selected={openingDate} onChange={date => setOpeningDate(date)} />
-          </div>
-        </Form.Group>
-        <Form.Group controlId="closingDate">
-          <Form.Label>Closing Date</Form.Label>
-          <div>
-            <DatePicker dateFormat="dd/MM/yyyy" selected={closingDate} onChange={date => setClosingDate(date)} />
-          </div>
-        </Form.Group>
+        <Form.Row>
+          <Col>
+            <Form.Group controlId="openingDate">
+              <Form.Label>Opening Date</Form.Label>
+              <div>
+                <DatePicker dateFormat="dd/MM/yyyy" selected={openingDate} onChange={date => setOpeningDate(date)} />
+              </div>
+            </Form.Group>
+          </Col>
+          <Col>
+            <Form.Group controlId="closingDate">
+              <Form.Label>Closing Date</Form.Label>
+              <div>
+                <DatePicker dateFormat="dd/MM/yyyy" selected={closingDate} onChange={date => setClosingDate(date)} />
+              </div>
+            </Form.Group>
+          </Col>
+        </Form.Row>
         <Form.Group controlId="amount100">
           <Form.Label>Opening Balance</Form.Label>
           <InputGroup className="mb-3">
@@ -233,7 +260,7 @@ export default () => {
               onFocus={handleFocus}
               isValid={isValidOpeningBalance()}
               isInvalid={!isValidOpeningBalance()}
-              />
+            />
             <Form.Control.Feedback type="invalid">Please enter a valid opening balance amount. Zero or negative opening balances are okay.</Form.Control.Feedback>
           </InputGroup>
         </Form.Group>
@@ -243,13 +270,12 @@ export default () => {
             type='checkbox'
             label="Calculate Interest For This Account"
             checked={interest}
-            onChange={event => setInterest(event.target.checked)} 
+            onChange={event => setInterest(event.target.checked)}
           />
-              
-        </Form.Group> 
-        <Row>
+        </Form.Group>
+        <Form.Row>
           <Col>
-            <Form.Group  controlId="crRate">
+            <Form.Group controlId="crRate">
               <Form.Label>Opening Credit Rate</Form.Label>
               <InputGroup className="mb-3">
                 <InputGroup.Prepend>
@@ -295,11 +321,10 @@ export default () => {
             </Form.Group>
           </Col>
           <Col>
-
             <Form.Group controlId="periodType">
               <Form.Label>Period Type</Form.Label>
-              <Form.Control 
-                as="select" 
+              <Form.Control
+                as="select"
                 type="text"
                 value={fields.periodType}
                 onChange={handleFieldChange}
@@ -328,15 +353,15 @@ export default () => {
               />
               <Form.Control.Feedback type="invalid">Please enter a period frequency between 1 and 99.</Form.Control.Feedback>
             </Form.Group>
-          </Col>  
-        </Row>
-        { id === "new" ?
+          </Col>
+        </Form.Row>
+        {id === "new" ?
           <LoaderButton
             block
             type="submit"
             size="lg"
             variant="primary"
-            isLoading={isLoading}
+            isSaving={isSaving}
             disabled={!validateForm()}
           >
             Create
@@ -344,30 +369,31 @@ export default () => {
           <>
             <LoaderButton
               block
-              onClick={handleSave}
+              type="submit"
               size="lg"
               variant="primary"
-              isLoading={isLoading}
+              isSaving={isSaving}
               disabled={!validateForm()}
             >
               Save
             </LoaderButton>
             <LoaderButton
-            block
-            onClick={handleDelete}
-            size="lg"
-            variant="danger"
-            isLoading={isLoading}
-          >
-            Delete
+              block
+              onClick={handleDelete}
+              size="lg"
+              variant="danger"
+              isSaving={isDeleting}
+            >
+              Delete
           </LoaderButton>
-        </>
-      }
+          </>
+        }
       </Form>
     </div>
   )
 }
 
+export default Account
 
 // import React, { Component } from "react";
 // import { API } from "aws-amplify";
@@ -387,7 +413,7 @@ export default () => {
 
 //     this.state = {
 //       account: null,
-//       isLoading: null,
+//       isSaving: null,
 //       isDeleting: null,
 //       description: "",
 //       openingDate: today.format(),
@@ -594,7 +620,7 @@ export default () => {
 //   handleSubmit = async event => {
 //     event.preventDefault();
 
-//     this.setState({ isLoading: true });
+//     this.setState({ isSaving: true });
 
 //     try {
 //       let acc = {
@@ -618,7 +644,7 @@ export default () => {
 //       this.props.history.push("/");
 //     } catch (e) {
 //       alert(e);
-//       this.setState({ isLoading: false });
+//       this.setState({ isSaving: false });
 //     }
 //   }
 
@@ -645,7 +671,7 @@ export default () => {
 //       this.setState({ isDeleting: false });
 //     }
 //   }
-  
+
 //   handleFocus = event => {
 //     event.target.select();
 //   }
@@ -825,7 +851,7 @@ export default () => {
 //               bsSize="large"
 //               disabled={!this.validateForm()}
 //               type="submit"
-//               isLoading={this.state.isLoading}
+//               isSaving={this.state.isSaving}
 //               text="Save"
 //               loadingText="Saving…"
 //             />
@@ -833,7 +859,7 @@ export default () => {
 //               block
 //               bsStyle="danger"
 //               bsSize="large"
-//               isLoading={this.state.isDeleting}
+//               isSaving={this.state.isDeleting}
 //               onClick={this.handleDelete}
 //               text="Delete"
 //               loadingText="Deleting…"
