@@ -10,7 +10,7 @@ import "./Login.css"
 
 const Login = () => {
 
-  const { userHasAuthenticated, refreshAccounts, refreshTemplates } = useAppContext()
+  const { userHasAuthenticated, refreshAccounts, refreshTemplates, setStateToBeRefreshed } = useAppContext()
   const [isLoading, setIsLoading] = useState(false)
   const [fields, handleFieldChange] = useFormFields({
     email: "",
@@ -26,9 +26,10 @@ const Login = () => {
 
     try {
       await Auth.signIn(fields.email, fields.password)
-      await refreshAccounts()
-      await refreshTemplates()
-      userHasAuthenticated(true)
+      setStateToBeRefreshed(true)
+      // await refreshAccounts()
+      // await refreshTemplates()
+      // userHasAuthenticated(true)
     } catch (e) {
       onError(e)
       setIsLoading(false)

@@ -1,121 +1,70 @@
-import React, { Component } from "react"
-import { Button, ButtonToolbar} from "react-bootstrap"
-import "./Accounts.css"
-import AccountHideCellRenderer from "../components/AccountHideCellRenderer.js"
-import AccountEditCellRenderer from "../components/AccountEditCellRenderer.js"
-import { AgGridReact } from "ag-grid-react"
+import React, { useState, useEffect } from "react"
+import { Row, Col, Button, ButtonGroup} from "react-bootstrap"
+import { useHistory } from "react-router-dom"
+import { AgGridColumn, AgGridReact } from "ag-grid-react"
 import "ag-grid-community/dist/styles/ag-grid.css"
 import "ag-grid-community/dist/styles/ag-theme-bootstrap.css"
+import { useAppContext } from "../libs/contextLib"
+import { onError } from "../libs/errorLib"
 import Moment from "moment"
 import { API } from "aws-amplify"
+import "./Accounts.css"
 
-export default class Accounts extends Component {
-  constructor(props) {
-    super(props)
+const Accounts = () => {
 
-    this.state = {
-      startSortIndex: -1,
-      isLoading: true,
-      accounts: [],
-      defaultColDef : 
-      {
-        resizable : true,
-        filter: false,
-        sortable: false
-      },
-      columnDefs: [
-        {
-          headerName: "Name",
-          field: "accName",
-          cellStyle: this.cellStyleFormatter,
-          width: 130,
-          rowDrag: true
-        },
-        {
-          headerName: "Description",
-          field: "description",
-          cellStyle: this.cellStyleFormatter,
-          width: 355
-        },
-        {
-            headerName: "Opening",
-            children: [
-                {
-                    headerName: "Date",
-                    field: "openingDate",
-                    width: 120,
-                    filter: "agDateColumnFilter",
-                    cellStyle: this.cellStyleFormatter,
-                    cellStyleRightJustified: true,
-                    filterParams: this.dateFilterOptions,
-                    valueFormatter: this.dateFormatter
-                },
-                {
-                    headerName: "Balance",
-                    field: "amount",
-                    width: 125,
-                    type: "numericColumn",
-                    valueFormatter: this.balanceFormatter,
-                    filter: "agNumberColumnFilter",
-                    filterParams: this.amountFilterOptions,
-                    cellStyle: this.cellStyleFormatter,
-                }
-            ]
-        },
-        {
-            headerName: "Interest Rate",
-            children: [
-                {
-                    headerName: "Debit",
-                    field: "dbRate",
-                    width: 110,
-                    cellStyle: this.cellStyleFormatter,
-                    cellStyleRightJustified: true,
-                    filter: "agNumberColumnFilter",
-                    filterParams: this.amountFilterOptions,
-                    valueFormatter: this.percentFormatter
-                },
-                {
-                    headerName: "Credit",
-                    field: "crRate",
-                    width: 110,
-                    cellStyle: this.cellStyleFormatter,
-                    cellStyleRightJustified: true,
-                    filter: "agNumberColumnFilter",
-                    filterParams: this.amountFilterOptions,
-                    valueFormatter: this.percentFormatter
-                }
-            ]
-        },
-        {
-          headerName: "",
-          field: "hide",
-          cellRenderer: "accountHideCellRenderer",
-          cellRendererParams: {
-            saveAcc: this.saveAccount,
-            refreshAcc: this.props.refreshAccounts,
-            recalcReq: this.props.setRecalcRequired
-          },
-          width: 89
-        },
-        {
-          headerName: "",
-          field: "accountId",
-          cellRenderer: "accountEditCellRenderer",
-          width: 80
-        },
-      ],
-      context: {componentParent: this },
-      frameworkComponents: {
-        accountHideCellRenderer: AccountHideCellRenderer,
-        accountEditCellRenderer: AccountEditCellRenderer
-      }
-    }
+  const history = useHistory()
+  const { isAuthenticated, accounts, refreshAccounts, setRecalcRequired, changeAccountsOrder, saveAccountSet } = useAppContext()
+  const [gridApi, setGridApi] = useState(null)
+  const [startSortIndex, setStartSortIndex] = useState(-1)
+
+  // useEffect(() => {
+  //   console.log('Accounts: useEffect')
+  //   const onLoad = async () => {
+  //     if (!isAuthenticated) return
+
+  //     try {
+  //       setAccounts(accounts)
+  //     } catch (e) {
+  //       onError(e)
+  //     }
+  //     setIsLoading(false)
+  //   }
+  
+  //   onLoad()
+  // }, [isAuthenticated, accounts])
+
+  const onGridReady = params => setGridApi(params.api)
+  
+  const saveAccount = account => {
+    return API.put("accounts", `/accounts/${account.accountId}`, {
+      body: account
+    });
   }
 
-  handleEdit = id => this.props.history.push(`/accounts/${id}`)
+  const AccountHideCellRenderer = props => {
+    const btnClickedHandler = async () => {
+      let account =  props.data
+      account.hide = !account.hide
+      await saveAccount(account)
+      await refreshAccounts()
+      setRecalcRequired(true)
+      props.api.refreshCells({force:true})
+    }
 
-  cellStyleFormatter = params => {
+    let buttonName = "Hide"
+    if (props.data.hide) buttonName = "Unhide"
+    return <span><button style={{ height: 20, lineHeight: 0.5, width:70}} className="btn btn-primary" onClick={btnClickedHandler}>{buttonName}</button></span>
+  }
+
+  const AccountEditCellRenderer = props => 
+    <span>
+      <button style={{ height: 20, lineHeight: 0.5, width:50}} className="btn btn-primary" 
+              onClick={async () => history.push(`/accounts/${props.data.accountId}`)}>
+        Edit
+      </button>
+    </span>
+
+  const cellStyleFormatter = params => {
     let cellStyle = {"color":"", "text-decoration": ""}
     if (params.colDef.cellStyleRightJustified) cellStyle["textAlign"] = "right"
     if (params.value < 0) cellStyle["color"] = "red"
@@ -126,7 +75,7 @@ export default class Accounts extends Component {
     return cellStyle
   }
 
-  dateFilterOptions = { 
+  const dateFilterOptions = { 
       comparator: function(filterLocalDateAtMidnight, cellValue) {
         const dateParts = cellValue.substring(0,10).split("-")
         const day = Number(dateParts[2])
@@ -139,7 +88,7 @@ export default class Accounts extends Component {
       }
   }
 
-  amountFilterOptions = { 
+  const amountFilterOptions = { 
     filterOptions: [
       {
         displayKey: 'equals',
@@ -168,133 +117,106 @@ export default class Accounts extends Component {
     ]
   }
 
-  async componentDidMount() {
-    if (!this.props.isAuthenticated) return
-    try {
-        const accounts = this.props.accounts
-        this.setState({ accounts })
-    } catch (e) {
-        alert(e)
-    }
-    this.setState({ isLoading: false })
-  }
-
-  saveAccount = account => {
-    return API.put("accounts", `/accounts/${account.accountId}`, {
-      body: account
-    });
-  }
-
-  percentFormatter = params => {
+  const percentFormatter = params => {
     const val = parseFloat(params.value, 10) 
     if (val) return val.toFixed(2)
     return ""
   }
 
-  balanceFormatter = params => (parseInt(params.value, 10) / 100).toFixed(2)
+  const balanceFormatter = params => (parseInt(params.value, 10) / 100).toFixed(2)
 
-  dateFormatter = params => Moment(params.value).format("Do MMM YY")
+  const dateFormatter = params => Moment(params.value).format("Do MMM YY")
 
-  handleNewAccountClick = event => {
+  const handleNewAccountClick = event => {
     event.preventDefault()
-    this.props.history.push(`/accounts/new`)
+    history.push(`/accounts/new`)
   }
 
-  onRowDragMove = event => {
-    let movingNode = event.node;
-    let overNode = event.overNode;
-    let rowNeedsToMove = movingNode !== overNode;
+  const onRowDragMove = event => {
+    const movingNode = event.node
+    const overNode = event.overNode
+    const rowNeedsToMove = movingNode !== overNode
     if (rowNeedsToMove && overNode) {
-      let movingData = movingNode.data;
-      let overData = overNode.data;
-      let fromIndex = this.state.accounts.indexOf(movingData);
-      let toIndex = this.state.accounts.indexOf(overData);
-//      console.log(`fromIndex=${fromIndex}, toIndex=${toIndex}, overData.sortOrder=${overData.sortOrder}, movingData.sortOrder=${movingData.sortOrder}`)
-      this.props.changeAccountsOrder(fromIndex, toIndex, movingData.sortOrder, overData.sortOrder)
-
-
-//      console.log(movingData.accName ,fromIndex, movingData.sortOrder)
-//      console.log(overData.accName ,toIndex, overData.sortOrder)
-
-
-      this.gridApi.setRowData(this.state.accounts);
-      this.gridApi.clearFocusedCell();
+      const movingData = movingNode.data
+      const overData = overNode.data
+      const fromIndex = accounts.indexOf(movingData)
+      const toIndex = accounts.indexOf(overData)
+      changeAccountsOrder(fromIndex, toIndex, movingData.sortOrder, overData.sortOrder)
+      gridApi.setRowData(accounts)
+      gridApi.clearFocusedCell()
     }
-
   }
 
-  // onRowDragLeave = event => {
-  //   let leaveNode = event.node;
-  //   let leaveData = leaveNode.data
-  //   let startIndex = this.state.accounts.indexOf(leaveData)
-  //   this.setState({ startSortIndex: startIndex })
-  //   console.log(`onRowDragLeave event fired. Starting index =${this.state.startSortIndex}`)
-  //   console.log(event)
-
-  // }
-
-  onRowDragEnter = event => {
-    let startNode = event.node;
-    let startData = startNode.data
-    let startIndex = this.state.accounts.indexOf(startData)
-    this.setState({ startSortIndex: startIndex })
-    // console.log(`onRowDragEnter event fired. Starting index =${this.state.startSortIndex}`)
-    // console.log(event)
+  const onRowDragEnter = event => {
+    // console.log(`${event.type}: index=${accounts.indexOf(event.node.data)}`)
+    setStartSortIndex(accounts.indexOf(event.node.data))
   }
 
-  onRowDragEnd = async event => {
-    let endNode = event.node;
-    let endData = endNode.data
-    let endIndex = this.state.accounts.indexOf(endData)
-    let startIndex = this.state.startSortIndex
-
-    // console.log(`onRowDragEnd event fired. Starting index =${startIndex}, end Index=${endIndex}`)
-    // console.log(event)
-    let startLoop = Math.min(startIndex, endIndex)
-    let endLoop = Math.max(startIndex, endIndex)
-    await this.props.saveAccountSet(startLoop, endLoop)
+  const onRowDragComplete = async event => {
+    // console.log(`${event.type}: index=${accounts.indexOf(event.node.data)}`)
+    const endIndex = accounts.indexOf(event.node.data)
+    const startLoop = Math.min(startSortIndex, endIndex)
+    const endLoop = Math.max(startSortIndex, endIndex)
+    if (startLoop !== endLoop) await saveAccountSet(startLoop, endLoop)
   }
 
-  getRowNodeId = (data) => {
-    return data.accountId;
-  };
+  const getRowNodeId = data => data.accountId
+  
+  const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 400
+  const divStyle = { boxSizing: "border-box", height: `${h}px` }
+  
+  return (
+    <div className="accounts">
+      <h1>Accounts</h1>
 
-  render() {
-    let h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 400
-    let divStyle = { boxSizing: "border-box", height: `${h}px` }
-    return (
-      <div className="accounts" style={{height: '100%'}}>
-        <h1>Accounts</h1>
-
-        <div id="accGrid" style={divStyle} className="ag-theme-alpine">
-          <AgGridReact
-            columnDefs={this.state.columnDefs}
-            defaultColDef={this.state.defaultColDef}
-            frameworkComponents={this.state.frameworkComponents}
-            rowData={this.state.accounts}
-            context={this.state.context}
-            rowDeselection={true}
-            immutableData={true}
-            animateRows={true}
-            getRowNodeId={this.getRowNodeId}
-            rowSelection="single"
-            onGridReady={params => (this.gridApi = params.api)}
-            onRowDragMove={this.onRowDragMove.bind(this)}
-            onRowDragEnter={this.onRowDragEnter.bind(this)}
-//            onRowDragLeave={this.onRowDragLeave.bind(this)}
-            onRowDragEnd={this.onRowDragEnd.bind(this)}
-          />
-        </div>
-        <div className="row">
-          <div className="col-sm-12">
-            <ButtonToolbar id="buttons" className="pull-right">
-              <Button bsStyle="primary" onClick={this.handleNewAccountClick}>
+      <div id="accGrid" style={divStyle} className="ag-theme-alpine">
+        <AgGridReact
+          defaultColDef={{
+            resizable : true,
+            filter: false,
+            sortable: false
+          }}
+          frameworkComponents={{
+            accountHideCellRenderer: AccountHideCellRenderer,
+            accountEditCellRenderer: AccountEditCellRenderer
+          }}
+          rowData={accounts}
+          rowDeselection={true}
+          rowSelection="single"
+          onGridReady={onGridReady}
+          immutableData={true}
+          animateRows={true}
+          getRowNodeId={getRowNodeId}
+          onRowDragMove={onRowDragMove}
+          onRowDragEnter={onRowDragEnter}
+          onRowDragEnd={onRowDragComplete}
+          onRowDragLeave={onRowDragComplete}
+        >
+          <AgGridColumn headerName="Name" field="accName" cellStyle={cellStyleFormatter} width={130} rowDrag={true}></AgGridColumn>
+          <AgGridColumn headerName="Description" field="description" cellStyle={cellStyleFormatter} width={325}></AgGridColumn>
+          <AgGridColumn headerName="Opening">
+            <AgGridColumn headerName="Date" field="openingDate" width={120} cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agDateColumnFilter" filterParams={dateFilterOptions} valueFormatter={dateFormatter}></AgGridColumn>
+            <AgGridColumn headerName="Balance" field="amount" width={125} type="numericColumn" cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={balanceFormatter}></AgGridColumn>
+          </AgGridColumn>
+          <AgGridColumn headerName="Interest Rate">
+            <AgGridColumn headerName="Debit" field="dbRate" width={110} cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={percentFormatter}></AgGridColumn>
+            <AgGridColumn headerName="Credit" field="crRate" width={110} cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={percentFormatter}></AgGridColumn>
+          </AgGridColumn>
+          <AgGridColumn headerName="" field="hide" width={89} cellRenderer='accountHideCellRenderer' cellRendererParams={{saveAcc:saveAccount,refreshAcc:refreshAccounts,recalcReq:setRecalcRequired}}></AgGridColumn>
+          <AgGridColumn headerName="" field="accountId" width={80} cellRenderer='accountEditCellRenderer' cellRendererParams={{saveAcc:saveAccount,refreshAcc:refreshAccounts,recalcReq:setRecalcRequired}}></AgGridColumn>
+        </AgGridReact>
+      </div>
+      <Row>
+          <Col>
+            <ButtonGroup id="buttons" className="mb-2 float-right">
+              <Button variant="primary" onClick={handleNewAccountClick}>
                 New
               </Button>
-            </ButtonToolbar>
-          </div>
-        </div>
-      </div>
-    )
-  }
+            </ButtonGroup>
+          </Col>
+        </Row>
+    </div>
+  )
 }
+
+export default Accounts

@@ -5,12 +5,7 @@ export const useFormFields = (initialState) => {
 
   return [
     fields,
-    event => {
-      setValues({
-        ...fields,
-        [event.target.id]: event.target.value
-      })
-    },
-    setValues
+    event  => setValues({...fields, [event.target.id]: event.target.value}),
+    values => setValues( Object.assign({}, fields, values) )
   ]
 }

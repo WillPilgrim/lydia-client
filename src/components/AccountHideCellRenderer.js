@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component } from "react"
 
 class AccountHideCellRenderer extends Component {
   constructor(props) {
@@ -21,4 +21,4 @@ class AccountHideCellRenderer extends Component {
   }
 }
 
-export default AccountHideCellRenderer;
+export default AccountHideCellRenderer

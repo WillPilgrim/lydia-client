@@ -13,21 +13,20 @@ import DatePicker from "react-datepicker"
 import "./Template.css"
 
 const Template = () => {
-  const { refreshTemplates } = useAppContext()
+  const { accounts, refreshTemplates, templates, setRecalcRequired } = useAppContext()
   const { id } = useParams()
   const history = useHistory()
-  const [interest, setInterest] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [startDate, setStartDate] = useState(today.toDate())
-  const [endDate, setEndDate] = useState(today.clone().add(10, "y").toDate()) // default closing date to 10 years from now
-  const [fields, handleFieldChange, setValues] = useFormFields({
+  const [fields, handleFieldChange, setFieldValues] = useFormFields({
     description: "",
-    amount100: "0.00",
-    accountFromId: "",
-    accountToId: "0",
     templateType: "Debit",
+    startDate: today.toDate(),
+    endDate: today.clone().add(10, "y").toDate(),
+    amount100: "0.00",
+    accountFromId: accounts ? accounts[0].accountId:"0",
+    accountToId: "0",
     periodType: "M",
     periodFrequency: 1,
     periodLastDay: 0,
@@ -35,135 +34,116 @@ const Template = () => {
   })
 
   useEffect(() => {
+    console.log('Template: useEffect')
     const loadTemplate = () => API.get("accounts", `/templates/${id}`)
     const onLoad = async () => {
-      try {
-        setIsLoading(true)
-        const template = await loadTemplate()
-        const { accountFromId, accountToId, description, amount, startDate, endDate, templateType, periodType, periodCnt, periodLastDay, templateId, inflation } = template
-
-        setStartDate(new Date(startDate))
-        setEndDate(new Date(endDate))
-        setValues({ description, amount100: (amount / 100).toFixed(2), accountFromId, accountToId,
-          templateType, periodType, periodFrequency: periodCnt, 
-          periodLastDay: periodLastDay ? periodLastDay : 0, 
-          inflation:inflation ? inflation : false })
-        setIsLoading(false)
-      } catch (e) {
-        setIsLoading(false)
-        onError(e)
+      if (id !== "new") {
+          try {
+          const template = await loadTemplate()
+          const { accountFromId, accountToId, description, amount, startDate, endDate, templateType, periodType, periodCnt, periodLastDay, templateId, inflation } = template
+          setFieldValues({ templateId, description, templateType,
+            startDate: new Date(startDate), 
+            endDate: new Date(endDate),
+            amount100: (amount / 100).toFixed(2), accountFromId, accountToId,
+            periodType, 
+            periodFrequency: periodCnt, 
+            periodLastDay: periodLastDay ? periodLastDay : 0, 
+            inflation:inflation ? inflation : false 
+          })
+        } catch (e) {
+          setIsLoading(false)
+          onError(e)
+        }
       }
+      setIsLoading(false)
     }
+    onLoad()
+  }, [id])
 
-    if (id !== "new") {
-      onLoad()
+  const handleTemplateTypeChange = event => {
+    const templateType = event.target.value
+    // Always reset partner account and last period day when changing type
+    let newSet = {[event.target.id]: templateType, accountToId:"0", periodLastDay:0}  
+    if (templateType === "CC") {
+      Object.assign(newSet, {amount100:"0.00"})
     }
-  }, [id, setValues])
-
-  const handleChange = event => {
-    this.setState({
-      [event.target.id]: event.target.value
-    });
-  };
-
-  const handleInflationChange = event => {
-    this.setState({
-      inflation: event.target.checked
-    });
-  };
-
-  const handleTypeChange = event => {
-    this.setState({
-      [event.target.id]: event.target.value,
-      accountToId: "0"
-    });
-  };
+    if (templateType === "Zero") {
+      Object.assign(newSet, {periodFrequency:1, endDate:fields.startDate, amount100:"0.00"})
+    }
+    setFieldValues(newSet)
+  }
 
   const handleStartDateChange = value => {
-    if (this.state.templateType === "Zero")
+    let newSet = {startDate:value}
+    if (fields.templateType === "Zero")
     {
-      this.setState({
-        startDate: value,
-        endDate: value
-      });
+      Object.assign(newSet, {endDate:value})
     }
-    else
-    {
-      this.setState({
-        startDate: value
-      });
-    }
-  };
-
-  const handleEndDateChange = value => {
-    this.setState({
-      endDate: value
-    });
-  };
-
-
-
+    setFieldValues(newSet)
+  }
 
   const isValidDescription = () => fields.description.length > 0
 
-  const getAmountValidationState = () => {
-    if (this.state.amount100.length === 0) return "error";
-    const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
-    if (regex.test(this.state.amount100)) return "success";
-    return "error";
+  const isValidAmount = () => {
+    if (fields.templateType === "CC" || fields.templateType === "Zero") return true  // don't validate if type doesn't require an amount
+    if (fields.amount100.length === 0) return false
+    const regex = /^[0-9]+(\.[0-9]{1,2})?$/
+    if (!regex.test(fields.amount100)) return false
+    let amount = Math.round(parseFloat(fields.amount100).toFixed(2) * 100)
+    if (isNaN(amount)) return false
+    if (amount > 99999999) return false
+    if (amount === 0 &&(fields.templateType === "Debit" || 
+        fields.templateType === "Credit" || fields.templateType === "Transfer")) return false
+    return true
   }
 
-  const getFreqValidationState = () => {
-    if (this.state.periodCnt.length <= 0) return "error";
-    if (isNaN(parseInt(this.state.periodCnt, 10))) return "error";
-    else return "success";
+  const isValidPeriodFrequency = () => {
+    if (fields.templateType === "Zero") return true
+    if (fields.periodFrequency.length <= 0) return false
+    let val = parseInt(fields.periodFrequency, 10)
+    if (isNaN(val)) return false
+    if (val > 364 || val < 1) return false
+    return true
   }
 
-  const getLastPeriodDayValidationState = () => {
-    if (this.state.templateType !== "CC") return "success";
-    if (this.state.periodLastDay.length === 0) return "error";
-    if (isNaN(parseInt(this.state.periodLastDay, 10))) return "error";
-    let val = parseInt(this.state.periodLastDay, 10);
-    if (val < 1 || val > 28) return "error";
-    return "success";
+  const isValidPeriodLastDay = () => {
+    if (fields.templateType !== "CC") return true
+    if (fields.periodLastDay.length <= 0) return false
+    let val = parseInt(fields.periodLastDay, 10)
+    if (isNaN(val)) return false
+    if (val < 1 || val > 28) return false
+    return true
   }
 
-  const getStartDateValidationState = () => {
-    if (this.state.startDate === null) return "error";
-    return "success";
+  // Probably not good enough to assme any non null value is a valid date.
+  // Need to check its an actual valid date and to give some reasonable bounds to it.
+  const isValidStartDate = () => fields.startDate !== null
+
+  const isValidEndDate = () => {
+    if (fields.endDate === null) return true
+    if (fields.startDate === null) return true
+    if (Moment(fields.endDate).isBefore(Moment(fields.startDate), "day"))
+      return false
+    return true
   }
 
-  const getEndDateValidationState = () => {
-    if (this.state.endDate === null) return "warning";
-    if (this.state.startDate === null) return "warning";
-    if (
-      Moment(this.state.endDate).isBefore(Moment(this.state.startDate), "day")
-    )
-      return "error";
-    return "success";
-  }
-
-  const getToAccountValidationState = () => {
-    let partnerRequired =
-      this.state.templateType === "Transfer" ||
-      this.state.templateType === "CC";
-    if (partnerRequired && this.state.accountToId === "0") return "error"; // can't have transfer type without account
-    let partnerNotAllowed =
-      this.state.templateType === "Debit" ||
-      this.state.templateType === "Credit";
-    if (partnerNotAllowed && this.state.accountToId !== "0") return "error";
-    if (this.state.accountFromId === this.state.accountToId) return "error"; // from account equals to account
-    return "success";
+  const isValidToAccount = () => {
+    let partnerRequired = fields.templateType === "Transfer" || fields.templateType === "CC"
+    if (partnerRequired && fields.accountToId === "0") return false // can't have transfer type without account
+    let partnerNotAllowed = fields.templateType === "Debit" || fields.templateType === "Credit"
+    if (partnerNotAllowed && fields.accountToId !== "0") return false
+    if (fields.accountFromId === fields.accountToId) return false // from account equals to account
+    return true
   }
 
   const validateForm = () => (
-      isValidDescription &&
-      getFreqValidationState() === "success" &&
-      getAmountValidationState() === "success" &&
-      getStartDateValidationState() === "success" &&
-      getEndDateValidationState() !== "error" &&
-      getToAccountValidationState() === "success" &&
-      getLastPeriodDayValidationState() !== "error"
+      isValidDescription() &&
+      isValidAmount() &&
+      isValidPeriodFrequency() &&
+      isValidPeriodLastDay() &&
+      isValidStartDate() &&
+      isValidEndDate() &&
+      isValidToAccount()
   )
 
   const createTemplate = template => API.post("accounts", "/templates", { body: template })
@@ -179,91 +159,76 @@ const Template = () => {
   const handleSubmit = async event => {
     event.preventDefault()
 
-    if (this.state.templateType === "CC") {
-      if (this.props.templates) {
+    setIsSaving(true)
+
+    if (fields.templateType === "CC") {
+      if (templates) {
         if (
-          this.props.templates.find(x => x.accountFromId === this.state.accountFromId && x.templateType === "CC" &&
-          this.state.templateId !== x.templateId)
+          templates.find(x => x.accountFromId === fields.accountFromId && x.templateType === "CC" &&
+          fields.templateId !== x.templateId)
         ) {
           alert(
             `Credit card template already exists for account '${
-              this.props.accounts.find(
-                x => x.accountId === this.state.accountFromId
-              ).accName
+              accounts ? accounts.find(x => x.accountId === fields.accountFromId).accName : ""
             }'`
-          );
-          return;
+          )
+          return
         }
       }
     }
 
-    this.setState({ isLoading: true });
-
     try {
-      const templ = {
-        numPeriods: this.state.template.numPeriods,
-        noEnd: this.state.template.noEnd,
-
-        description: this.state.description,
-        amount: Math.round(parseFloat(this.state.amount100).toFixed(2) * 100),
-        startDate: Moment(this.state.startDate).startOf('date').format(),
-        endDate:
-          this.state.templateType === "Zero"
-            ? Moment(this.state.startDate).startOf('date').format()
-            : Moment(this.state.endDate).startOf('date').format(),
-        templateType: this.state.templateType,
-        periodType: this.state.periodType,
-        periodCnt:
-          this.state.templateType !== "Zero"
-            ? parseInt(this.state.periodCnt, 10)
-            : 1,
-        periodLastDay:
-          this.state.templateType === "CC"
-            ? parseInt(this.state.periodLastDay, 10)
-            : 0,
-        accountFromId: this.state.accountFromId,
-        accountToId: this.state.accountToId,
-        inflation: this.state.inflation
-      };
-      if (this.props.match.params.id === "new") {
-        await this.createTemplate(templ);
-      } else {
-        await this.saveTemplate(templ);
+      const template = {
+        accountFromId: fields.accountFromId,
+        accountToId: fields.accountToId,
+        amount: Math.round(parseFloat(fields.amount100).toFixed(2) * 100),
+        description: fields.description,
+        endDate: fields.templateType === "Zero"
+            ? Moment(fields.startDate).startOf('date').format()
+            : Moment(fields.endDate).startOf('date').format(),
+        inflation: fields.inflation,
+        periodCnt: parseInt(fields.periodFrequency, 10),
+        periodLastDay: parseInt(fields.periodLastDay, 10),
+        periodType: fields.periodType,
+        startDate: Moment(fields.startDate).startOf('date').format(),
+        templateType: fields.templateType
       }
-      this.setState({ isLoading: false });
-      await this.props.refreshTemplates();
-      this.props.setRecalcRequired(true)
-      this.props.history.push("/templates");
+
+      id === "new" ? await createTemplate(template) : await saveTemplate(template)
+
+      await refreshTemplates()
+      setRecalcRequired(true)
+      history.push("/templates")
     } catch (e) {
-      alert(e);
-      this.setState({ isLoading: false });
+      onError(e)
+      setIsSaving(false)
     }
   }
 
   const handleDelete = async event => {
-    event.preventDefault();
+    event.preventDefault()
 
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this template?"
-    );
+    const confirmed = window.confirm( "Are you sure you want to delete this template?" )
 
     if (!confirmed) {
-      return;
+      return
     }
 
-    this.setState({ isDeleting: true });
+    setIsDeleting(true)
 
     try {
-      await this.deleteTemplate();
-      await this.props.refreshTemplates();
-      this.props.setRecalcRequired(true)
-      this.props.history.push("/templates");
+      await deleteTemplate()
+      await refreshTemplates()
+      setRecalcRequired(true)
+      history.push("/templates")
     } catch (e) {
-      alert(e);
-      this.setState({ isDeleting: false });
+      onError(e)
+      setIsDeleting(false)
     }
   }
 
+  let amountRequired = !(fields.templateType === "CC" || fields.templateType === "Zero")
+  let partnerAccountRequired = !(fields.templateType === "Debit" || fields.templateType === "Credit")
   return (
     isLoading ?
     <div>
@@ -280,7 +245,9 @@ const Template = () => {
             placeholder="Enter a description"
             onChange={handleFieldChange}
             isValid={isValidDescription()}
+            isInvalid={!isValidDescription()}
           />
+          <Form.Control.Feedback type="invalid">A template description is required.</Form.Control.Feedback>
         </Form.Group>
         <Form.Row>
         <Col>
@@ -290,7 +257,7 @@ const Template = () => {
               as="select"
               type="text"
               value={fields.templateType}
-              onChange={handleFieldChange}
+              onChange={handleTemplateTypeChange}
             >
               <option value="Debit">Debit</option>
               <option value="Credit">Credit</option>
@@ -302,35 +269,25 @@ const Template = () => {
           </Form.Group>
           <Form.Group controlId="startDate">
             <Form.Label>Start Date</Form.Label>
-            <DatePicker
-              id="startDate"
-              value={this.state.startDate}
-              placeholder="Start date"
-              onChange={this.handleStartDateChange}
-              autoComplete="off"
-            />
+            <div>
+              <DatePicker dateFormat="dd/MM/yyyy" selected={fields.startDate} onChange={handleStartDateChange} />
+            </div>
           </Form.Group>
           <Form.Group controlId="endDate">
             <Form.Label>End Date</Form.Label>
-            <DatePicker
-              id="endDate"
-              value={this.state.endDate}
-              placeholder="End date"
-              onChange={this.handleEndDateChange}
-              autoComplete="off"
-              disabled={this.state.templateType === "Zero"}
-            />
+            <div>
+              <DatePicker dateFormat="dd/MM/yyyy" selected={fields.endDate} onChange={date => setFieldValues({endDate:date})} disabled={fields.templateType === "Zero"}/>
+            </div>
           </Form.Group>
           <Form.Group controlId="accountFromId">
             <Form.Label>Template Account</Form.Label>
             <Form.Control
-              componentClass="select"
+              as="select"
               type="text"
-              value={this.state.accountFromId}
-              placeholder="Select account template applies to"
-              onChange={this.handleChange}
+              value={fields.accountFromId}
+              onChange={handleFieldChange}
             >
-              {this.props.accounts.map(x => (
+              {accounts.map(x => (
                 <option key={x.accountId} value={x.accountId}>
                   {x.accName}
                 </option>
@@ -340,56 +297,55 @@ const Template = () => {
           <Form.Group controlId="accountToId">
             <Form.Label>Partner Account</Form.Label>
             <Form.Control
-              componentClass="select"
+              as="select"
               type="text"
-              value={this.state.accountToId}
-              placeholder="Select partner account"
-              onChange={this.handleChange}
-              disabled={
-                this.state.templateType === "Debit" ||
-                this.state.templateType === "Credit"
-              }
-            >
+              value={fields.accountToId}
+              onChange={handleFieldChange}
+              disabled={!partnerAccountRequired}
+              isValid={partnerAccountRequired && isValidToAccount()}
+              isInvalid={partnerAccountRequired && !isValidToAccount()}
+          >
               <option key={0} value={0}>
                 -
               </option>
-              {this.props.accounts.map(x => (
+              {accounts.map(x => (
                 <option key={x.accountId} value={x.accountId}>
                   {x.accName}
                 </option>
               ))}
             </Form.Control>
+            <Form.Control.Feedback type="invalid">Select partner account. It must not be the template account.</Form.Control.Feedback>
           </Form.Group>
         </Col>
         <Col>
           <Form.Group controlId="amount100">
             <Form.Label>Amount</Form.Label>
-            <InputGroup>
-              <InputGroup.Addon>$</InputGroup.Addon>
+            <InputGroup className="mb-3">
+              <InputGroup.Prepend>
+                <InputGroup.Text>$</InputGroup.Text>
+              </InputGroup.Prepend>
               <Form.Control
                 type="text"
-                value={this.state.amount100}
-                placeholder="Enter transaction amount"
-                onChange={this.handleChange}
-                disabled={
-                  this.state.templateType === "CC" ||
-                  this.state.templateType === "Zero"
-                }
-                onFocus={this.handleFocus}
+                value={fields.amount100}
+                placeholder={amountRequired ? "Enter transaction amount" : ""}
+                onChange={handleFieldChange}
+                disabled={!amountRequired}
+                onFocus={handleFocus}
+                isValid={amountRequired && isValidAmount()}
+                isInvalid={amountRequired && !isValidAmount()}
               />
+              <Form.Control.Feedback type="invalid">Please enter a valid transaction amount.</Form.Control.Feedback>
             </InputGroup>
-
-            <Form.Control.Feedback />
           </Form.Group>
           <Form.Group controlId="periodType">
             <Form.Label>Period Type</Form.Label>
             <Form.Control
-              componentClass="select"
+              as="select"
               type="text"
-              value={this.state.periodType}
-              placeholder="Select period type"
-              onChange={this.handleChange}
-              disabled={this.state.templateType === "Zero"}
+              value={fields.periodType}
+              onChange={handleFieldChange}
+              disabled={fields.templateType === "Zero"}
+              isValid={!fields.templateType === "Zero"}
             >
               <option value="M">Month</option>
               <option value="w">Week</option>
@@ -398,59 +354,79 @@ const Template = () => {
               <option value="d">Day</option>
             </Form.Control>
           </Form.Group>
-          <Form.Group controlId="periodCnt">
+          <Form.Group controlId="periodFrequency">
             <Form.Label>Frequency</Form.Label>
             <Form.Control
               type="text"
-              value={this.state.periodCnt}
+              value={fields.periodFrequency}
               placeholder="Number of periods"
-              onChange={this.handleChange}
-              onFocus={this.handleFocus}
-              disabled={this.state.templateType === "Zero"}
+              onChange={handleFieldChange}
+              disabled={fields.templateType === "Zero"}
+              onFocus={handleFocus}
+              isValid={isValidPeriodFrequency() && !fields.templateType === "Zero"}
+              isInvalid={!isValidPeriodFrequency() && !fields.templateType === "Zero"}
             />
+            <Form.Control.Feedback type="invalid">Please enter a period frequency from 1 to 364.</Form.Control.Feedback>
           </Form.Group>
           <Form.Group
             controlId="periodLastDay">
             <Form.Label>Last Period Day</Form.Label>
             <Form.Control
               type="text"
-              value={this.state.periodLastDay}
+              value={fields.periodLastDay}
               placeholder="Last day of the period"
-              onChange={this.handleChange}
-              disabled={this.state.templateType !== "CC"}
-              onFocus={this.handleFocus}
+              onChange={handleFieldChange}
+              disabled={fields.templateType !== "CC"}
+              onFocus={handleFocus}
+              isValid={isValidPeriodLastDay() && fields.templateType === "CC"}
+              isInvalid={!isValidPeriodLastDay() && fields.templateType === "CC"}
             />
+            <Form.Control.Feedback type="invalid">Please enter a period last day from 1 to 28.</Form.Control.Feedback>
           </Form.Group>
           <Form.Group controlId="inflation">
             <Form.Label>Inflation</Form.Label>
-            {/* <Checkbox
-              checked={this.state.inflation}
-              onChange={this.handleInflationChange}
-            >
-              Apply annual inflation rate
-            </Checkbox> */}
+            <Form.Check
+            type='checkbox'
+            label="Apply annual inflation rate"
+            checked={fields.inflation}
+            onChange={event => setFieldValues({inflation:event.target.checked})}
+          />
           </Form.Group>
         </Col>
         </Form.Row>
-        <LoaderButton
+        {id === "new" ?
+          <LoaderButton
           block
           type="submit"
           size="lg"
           variant="primary"
-          isSaving={isSaving}
+          isLoading={isSaving || isLoading}
           disabled={!validateForm()}
         >
-          Save
-        </LoaderButton>
-        <LoaderButton
-          block
-          onClick={handleDelete}
-          size="lg"
-          variant="danger"
-          isSaving={isDeleting}
-        >
-          Delete
-        </LoaderButton>
+          Create
+        </LoaderButton> :
+        <>
+          <LoaderButton
+            block
+            type="submit"
+            size="lg"
+            variant="primary"
+            isLoading={isSaving || isLoading}
+            disabled={!validateForm()}
+          >
+            Save
+          </LoaderButton>
+          <LoaderButton
+            block
+            onClick={handleDelete}
+            size="lg"
+            variant="danger"
+            isLoading={isDeleting || isLoading}
+          >
+            Delete
+          </LoaderButton>
+        </>
+        }
       </Form>
     </div>
   )

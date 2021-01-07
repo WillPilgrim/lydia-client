@@ -14,7 +14,7 @@ import 'react-datepicker/dist/react-datepicker-cssmodules.css'
 import "./Account.css"
 
 const Account = () => {
-  const { refreshAccounts } = useAppContext()
+  const { refreshAccounts, setRecalcRequired, accounts } = useAppContext()
   const { id } = useParams()
   const history = useHistory()
   const [openingDate, setOpeningDate] = useState(today.toDate())
@@ -37,6 +37,7 @@ const Account = () => {
   })
 
   useEffect(() => {
+    console.log('Account: useEffect')
     const loadAccount = () => API.get("accounts", `/accounts/${id}`)
     const onLoad = async () => {
       try {
@@ -59,7 +60,7 @@ const Account = () => {
     if (id !== "new") {
       onLoad()
     }
-  }, [id, setValues]);
+  }, [id]);
 
   const isValidName = () => fields.accName.length > 0
 
@@ -112,7 +113,7 @@ const Account = () => {
     if (fields.periodFrequency.length <= 0) return false
     let val = parseInt(fields.periodFrequency, 10)
     if (isNaN(val)) return false
-    if (val > 99 || val < 1) return false
+    if (val > 364 || val < 1) return false
     return true
   }
 
@@ -147,7 +148,7 @@ const Account = () => {
     setIsSaving(true)
     
     try {
-      let account = {
+      const account = {
         accName: fields.accName,
         description: fields.description,
         openingDate: Moment(openingDate).startOf('date').format(),
@@ -160,17 +161,16 @@ const Account = () => {
         periodCnt: interest ? parseInt(fields.periodFrequency, 10) : 1,
         intFirstAppliedDate: Moment(intFirstAppliedDate).startOf('date').format(),
 
-        // this should be done in the lambda - this.props.accounts.length
-        sortOrder: id === "new" ? 1 : fields.sortOrder,
+        // sortOrder should be specified in the lambda
+        sortOrder: id === "new" ? accounts.length + 1 : fields.sortOrder,
         hide: id === "new" ? false : fields.hide
       }
 
       id === "new" ? await createAccount(account) : await saveAccount(account)
       
       // not sure about this one - this.props.setTransactions(null)
-      // Needs to be worked out in context refresh
       await refreshAccounts()
-      // this.props.setRecalcRequired(true)
+      setRecalcRequired(true)
       history.push("/")
     } catch (e) {
       onError(e)
@@ -191,8 +191,8 @@ const Account = () => {
 
     try {
       await deleteAccount()
-      // await this.props.refreshAccounts();
-      // this.props.setRecalcRequired(true)
+      await refreshAccounts()
+      setRecalcRequired(true)
       history.push("/")
     } catch (e) {
       onError(e)
@@ -216,7 +216,9 @@ const Account = () => {
             placeholder="Enter an account Name"
             onChange={handleFieldChange}
             isValid={isValidName()}
+            isInvalid={!isValidName()}
           />
+          <Form.Control.Feedback type="invalid">An account name is required.</Form.Control.Feedback>
         </Form.Group>
         <Form.Group controlId="description">
           <Form.Label>Description</Form.Label>
@@ -226,7 +228,9 @@ const Account = () => {
             placeholder="Enter a description"
             onChange={handleFieldChange}
             isValid={isValidDescription()}
+            isInvalid={!isValidDescription()}
           />
+          <Form.Control.Feedback type="invalid">An account description is required.</Form.Control.Feedback>
         </Form.Group>
         <Form.Row>
           <Col>
@@ -338,7 +342,6 @@ const Account = () => {
                 <option value="d">Day</option>
               </Form.Control>
             </Form.Group>
-
             <Form.Group controlId="periodFrequency">
               <Form.Label>Frequency</Form.Label>
               <Form.Control
@@ -351,7 +354,7 @@ const Account = () => {
                 isValid={isValidPeriodFrequency() && interest}
                 isInvalid={!isValidPeriodFrequency() && interest}
               />
-              <Form.Control.Feedback type="invalid">Please enter a period frequency between 1 and 99.</Form.Control.Feedback>
+              <Form.Control.Feedback type="invalid">Please enter a period frequency from 1 to 364.</Form.Control.Feedback>
             </Form.Group>
           </Col>
         </Form.Row>
@@ -361,7 +364,7 @@ const Account = () => {
             type="submit"
             size="lg"
             variant="primary"
-            isSaving={isSaving}
+            isLoading={isSaving}
             disabled={!validateForm()}
           >
             Create
@@ -372,7 +375,7 @@ const Account = () => {
               type="submit"
               size="lg"
               variant="primary"
-              isSaving={isSaving}
+              isLoading={isSaving}
               disabled={!validateForm()}
             >
               Save
@@ -382,7 +385,7 @@ const Account = () => {
               onClick={handleDelete}
               size="lg"
               variant="danger"
-              isSaving={isDeleting}
+              isLoading={isDeleting}
             >
               Delete
           </LoaderButton>
@@ -394,478 +397,3 @@ const Account = () => {
 }
 
 export default Account
-
-// import React, { Component } from "react";
-// import { API } from "aws-amplify";
-// import {
-//   InputGroup, Col
-// } from "react-bootstrap";
-// import Form from "react-bootstrap/Form"
-// import LoaderButton from "../components/LoaderButton";
-// import "./Account.css";
-// import Moment from "moment";
-// import DatePicker from "react-datepicker";
-// import { today } from "../libs/utilities";
-
-// export default class Account extends Component {
-//   constructor(props) {
-//     super(props);
-
-//     this.state = {
-//       account: null,
-//       isSaving: null,
-//       isDeleting: null,
-//       description: "",
-//       openingDate: today.format(),
-//       intFirstAppliedDate: today.format(),
-//       closingDate: today.clone()
-//         .add(10, "y")
-//         .format(), // default closing date to 10 years from now
-//       accName: "",
-//       amount100: "0.00",
-//       crRate: "",
-//       dbRate: "",
-//       periodType: 'M',
-//       periodCnt: 1,
-//       interest: false,
-//       hide: false
-//     };
-//   }
-
-//   async componentDidMount() {
-//     try {
-//       const account = await this.getAccount();
-//       const {
-//         description,
-//         openingDate,
-//         closingDate,
-//         intFirstAppliedDate,
-//         accName,
-//         amount,
-//         crRate,
-//         dbRate,
-//         interest,
-//         periodType,
-//         periodCnt,
-//         sortOrder,
-//         hide
-//       } = account;
-
-//       this.setState({
-//         account,
-//         description,
-//         openingDate,
-//         closingDate,
-//         intFirstAppliedDate,
-//         accName,
-//         amount,
-//         amount100: (amount / 100).toFixed(2),
-//         crRate,
-//         dbRate,
-//         periodType : periodType ? periodType : "M",
-//         periodCnt : periodCnt ? periodCnt : 1,
-//         interest,
-//         sortOrder : sortOrder ? sortOrder : 1,
-//         hide
-//       });
-//     } catch (e) {
-//       alert(e);
-//     }
-//   }
-
-//   getAccount() {
-//     return API.get("accounts", `/accounts/${this.props.match.params.id}`);
-//   }
-
-//   saveAccount(account) {
-//     return API.put("accounts", `/accounts/${this.props.match.params.id}`, {
-//       body: account
-//     });
-//   }
-
-//   deleteAccount() {
-//     return API.del("accounts", `/accounts/${this.props.match.params.id}`);
-//   }
-
-//   validateForm() {
-//     return (
-//       this.getCrRateValidationState() !== "error" &&
-//       this.getDbRateValidationState() !== "error" &&
-//       this.getAmountValidationState() === "success" &&
-//       this.getDescriptionValidationState() === "success" &&
-//       this.getNameValidationState() === "success" &&
-//       this.getOpeningDateValidationState() === "success" &&
-//       this.getClosingDateValidationState() !== "error" &&
-//       this.getFreqValidationState() !== "error" &&
-//       this.getFirstAppliedDateValidationState() !== "error" &&
-//       this.getPeriodTypeValidationState() !== "error"
-//     );
-//   }
-
-//   getFreqValidationState() {
-//     if (!this.state.interest) return "warning";
-//     if (this.state.periodCnt.length <= 0) return "error";
-//     if (isNaN(parseInt(this.state.periodCnt, 10)))
-//       return "error";
-//     let val = parseInt(this.state.periodCnt, 10);
-//     if (val > 99 || val < 1)
-//       return "error";
-//     return "success";
-//   }
-
-//   getPeriodTypeValidationState() {
-//     if (!this.state.interest) return "warning";
-//     return "success";
-//   }
-
-//   getDescriptionValidationState() {
-//     if (this.state.description.length > 0) return "success";
-//     return "error";
-//   }
-
-//   getNameValidationState() {
-//     if (this.state.accName.length > 0) return "success";
-//     return "error";
-//   }
-
-//   getOpeningDateValidationState() {
-//     if (this.state.openingDate === null) return "error";
-//     if (Moment(this.state.openingDate).isAfter(today.clone().add(30, "y"),'day'))
-//       return "error";
-//     return "success";
-//   }
-
-//   getFirstAppliedDateValidationState() {
-//     if (!this.state.interest) return "warning";
-//     if (this.state.intFirstAppliedDate === null) return "error";
-//     if (Moment(this.state.intFirstAppliedDate).isAfter(today.clone().add(30, "y"),"day"))
-//       return "error";
-//     if (Moment(this.state.intFirstAppliedDate).isBefore(Moment(this.state.openingDate),"day"))
-//       return "error";
-//     if (Moment(this.state.intFirstAppliedDate).isAfter(Moment(this.state.closingDate),"day"))
-//       return "error";
-//     return "success";
-//   }
-
-//   getClosingDateValidationState() {
-//     if (this.state.closingDate === null) return "warning";
-//     if (this.state.openingDate === null) return "warning";
-//     if (Moment(this.state.closingDate).isBefore(Moment(this.state.openingDate),"day"))
-//       return "error";
-//     if (Moment(this.state.closingDate).isAfter(today.clone().add(30, "y"),"day"))
-//       return "error";
-//     return "success";
-//   }
-
-//   getAmountValidationState() {
-//     if (this.state.amount100.length === 0) return "error";
-//     const regex = /^(-|\+)?[0-9]+(\.[0-9]{1,2})?$/;
-//     if (!regex.test(this.state.amount100)) return "error";
-//     let amount = Math.round(parseFloat(this.state.amount100).toFixed(2) * 100);
-//     if (isNaN(amount)) return "error";
-//     if (amount > 99999999 || amount < -99999999) return "error";
-//     return "success";
-//   }
-
-//   getCrRateValidationState() {
-//     if (!this.state.interest) return "warning";
-//     const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
-//     if (!regex.test(this.state.crRate)) return "error";
-//     let amount = parseFloat(this.state.crRate).toFixed(2);
-//     if (isNaN(amount)) return "error";
-//     if (amount > 99.99) return "error";
-//     return "success";
-//   }
-
-//   getDbRateValidationState() {
-//     if (!this.state.interest) return "warning";
-//     const regex = /^[0-9]+(\.[0-9]{1,2})?$/;
-//     if (!regex.test(this.state.dbRate)) return "error";
-//     let amount = parseFloat(this.state.dbRate).toFixed(2);
-//     if (isNaN(amount)) return "error";
-//     if (amount > 99.99) return "error";
-//     return "success";
-//   }
-
-//   handleChange = event => {
-//     this.setState({
-//       [event.target.id]: event.target.value
-//     });
-//   };
-
-//   handleInterestChange = event => {
-//     this.setState({
-//       interest: event.target.checked
-//     });
-//   };
-
-//   handleOpeningDateChange = value => {
-//     this.setState({
-//       openingDate: value
-//     });
-//   };
-
-//   handleClosingDateChange = value => {
-//     this.setState({
-//       closingDate: value
-//     });
-//   };
-
-//   handleFirstAppliedDateChange = value => {
-//     this.setState({
-//       intFirstAppliedDate: value
-//     });
-//   };
-
-//   handleSubmit = async event => {
-//     event.preventDefault();
-
-//     this.setState({ isSaving: true });
-
-//     try {
-//       let acc = {
-//         accName: this.state.accName,
-//         description: this.state.description,
-//         openingDate: Moment(this.state.openingDate).startOf('date').format(),
-//         closingDate: Moment(this.state.closingDate).startOf('date').format(),
-//         amount: Math.round(parseFloat(this.state.amount100).toFixed(2) * 100),
-//         crRate: this.state.interest ? parseFloat(this.state.crRate).toFixed(2) : 0,
-//         dbRate: this.state.interest ? parseFloat(this.state.dbRate).toFixed(2) : 0,
-//         interest: this.state.interest,
-//         periodType: this.state.interest ? this.state.periodType : "M",
-//         periodCnt: this.state.interest ? parseInt(this.state.periodCnt, 10) : 1,
-//         intFirstAppliedDate: Moment(this.state.intFirstAppliedDate).startOf('date').format(),
-//         sortOrder: this.state.sortOrder,
-//         hide: this.state.hide
-//       }
-//       await this.saveAccount(acc);
-//       await this.props.refreshAccounts();
-//       this.props.setRecalcRequired(true)
-//       this.props.history.push("/");
-//     } catch (e) {
-//       alert(e);
-//       this.setState({ isSaving: false });
-//     }
-//   }
-
-//   handleDelete = async event => {
-//     event.preventDefault();
-
-//     const confirmed = window.confirm(
-//       "Are you sure you want to delete this account?"
-//     );
-
-//     if (!confirmed) {
-//       return;
-//     }
-
-//     this.setState({ isDeleting: true });
-
-//     try {
-//       await this.deleteAccount();
-//       await this.props.refreshAccounts();
-//       this.props.setRecalcRequired(true)
-//       this.props.history.push("/");
-//     } catch (e) {
-//       alert(e);
-//       this.setState({ isDeleting: false });
-//     }
-//   }
-
-//   handleFocus = event => {
-//     event.target.select();
-//   }
-
-//   render() {
-//     return (
-//       <div className="Accounts">
-//         {this.state.account &&
-//           <form onSubmit={this.handleSubmit}>
-//             <Form.Group
-//               controlId="accName"
-//               validationState={this.getNameValidationState()}
-//             >
-//               <Form.Label>Name</Form.Label>
-//               <Form.Control
-//                 value={this.state.accName}
-//                 placeholder="Enter an account Name"
-//                 onChange={this.handleChange}
-//               />
-//               <Form.Control.Feedback />
-//             </Form.Group>
-//             <Form.Group
-//               controlId="description"
-//               validationState={this.getDescriptionValidationState()}
-//             >
-//               <Form.Label>Description</Form.Label>
-//               <Form.Control
-//                 onChange={this.handleChange}
-//                 value={this.state.description}
-//                 componentClass="textarea"
-//                 placeholder="Enter a description"
-//               />
-//               <Form.Control.Feedback />
-//             </Form.Group>
-//             <Form.Group
-//               controlId="openingDate"
-//               validationState={this.getOpeningDateValidationState()}
-//             >
-//               <Form.Label>Opening Date</Form.Label>
-//               <DatePicker
-//                 id="openingDate"
-//                 value={this.state.openingDate}
-//                 placeholder="Opening date"
-//                 onChange={this.handleOpeningDateChange}
-//                 autoComplete="off"
-//               />
-//             </Form.Group>
-//             <Form.Group
-//               controlId="closingDate"
-//               validationState={this.getClosingDateValidationState()}
-//             >
-//               <Form.Label>Closing Date</Form.Label>
-//               <DatePicker
-//                 id="closingDate"
-//                 value={this.state.closingDate}
-//                 placeholder="Closing date"
-//                 onChange={this.handleClosingDateChange}
-//                 autoComplete="off"
-//               />
-//             </Form.Group>
-//             <Form.Group
-//               controlId="amount100"
-//               validationState={this.getAmountValidationState()}
-//             >
-//               <Form.Label>Opening Balance</Form.Label>
-//               <InputGroup>
-//                 <InputGroup.Addon>$</InputGroup.Addon>
-//                 <Form.Control
-//                   type="text"
-//                   value={this.state.amount100}
-//                   placeholder="Enter an opening balance"
-//                   onChange={this.handleChange}
-//                   onFocus={this.handleFocus}
-//                 />
-//               </InputGroup>
-//               <Form.Control.Feedback />
-//             </Form.Group>
-//             <Form.Group controlId="interest" validationState="success">
-//               <Form.Label>Interest</Form.Label>
-//               {/* <Checkbox
-//                 checked={this.state.interest}
-//                 onChange={this.handleInterestChange}
-//               >
-//                 Calculate Interest For This Account
-//             </Checkbox> */}
-//             </Form.Group>
-//             <Col sm={6}>
-
-//               <Form.Group
-//                 controlId="crRate"
-//                 validationState={this.getCrRateValidationState()}
-//               >
-//                 <Form.Label>Opening Credit Rate</Form.Label>
-//                 <InputGroup>
-//                   <InputGroup.Addon>%</InputGroup.Addon>
-//                   <Form.Control
-//                     type="text"
-//                     value={this.state.crRate}
-//                     placeholder="Credit interest rate"
-//                     onChange={this.handleChange}
-//                     disabled={!this.state.interest}
-//                     onFocus={this.handleFocus}
-//                   />
-//                 </InputGroup>
-//                 <Form.Control.Feedback />
-//               </Form.Group>
-//               <Form.Group
-//                 controlId="dbRate"
-//                 validationState={this.getDbRateValidationState()}
-//               >
-//                 <Form.Label>Opening Debit Rate</Form.Label>
-//                 <InputGroup>
-//                   <InputGroup.Addon>%</InputGroup.Addon>
-//                   <Form.Control
-//                     type="text"
-//                     value={this.state.dbRate}
-//                     placeholder="Debit interest rate"
-//                     onChange={this.handleChange}
-//                     disabled={!this.state.interest}
-//                     onFocus={this.handleFocus}
-//                   />
-//                 </InputGroup>
-//                 <Form.Control.Feedback />
-//               </Form.Group>
-//               <Form.Group
-//                 controlId="intFirstAppliedDate"
-//                 validationState={this.getFirstAppliedDateValidationState()}
-//               >
-//                 <Form.Label>First Applied Date</Form.Label>
-//                 <DatePicker
-//                   id="intFirstAppliedDate"
-//                   value={this.state.intFirstAppliedDate}
-//                   placeholder="First Applied Date"
-//                   onChange={this.handleFirstAppliedDateChange}
-//                   autoComplete="off"
-//                   disabled={!this.state.interest}
-//                 />
-//               </Form.Group>
-//             </Col>
-//             <Col sm={6}>
-
-//               <Form.Group controlId="periodType" validationState={this.getPeriodTypeValidationState()}>
-//                 <Form.Label>Period Type</Form.Label>
-//                 <Form.Control
-//                   componentClass="select"
-//                   type="text"
-//                   value={this.state.periodType}
-//                   placeholder="Select period type"
-//                   onChange={this.handleChange}
-//                   disabled={!this.state.interest}
-//                 >
-//                   <option value="M">Month</option>
-//                   <option value="w">Week</option>
-//                   <option value="y">Year</option>
-//                   <option value="Q">Quarter</option>
-//                   <option value="d">Day</option>
-//                 </Form.Control>
-//               </Form.Group>
-
-//               <Form.Group controlId="periodCnt" validationState={this.getFreqValidationState()}>
-//                 <Form.Label>Frequency</Form.Label>
-//                 <Form.Control
-//                   type="text"
-//                   value={this.state.periodCnt}
-//                   placeholder="Number of periods"
-//                   onChange={this.handleChange}
-//                   disabled={!this.state.interest}
-//                   onFocus={this.handleFocus}
-//                 />
-//               </Form.Group>
-
-//             </Col>
-
-//             <LoaderButton
-//               block
-//               bsStyle="primary"
-//               bsSize="large"
-//               disabled={!this.validateForm()}
-//               type="submit"
-//               isSaving={this.state.isSaving}
-//               text="Save"
-//               loadingText="Saving…"
-//             />
-//             <LoaderButton
-//               block
-//               bsStyle="danger"
-//               bsSize="large"
-//               isSaving={this.state.isDeleting}
-//               onClick={this.handleDelete}
-//               text="Delete"
-//               loadingText="Deleting…"
-//             />
-//           </form>}
-//       </div>
-//     );
-//   }
-// }

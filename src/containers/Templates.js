@@ -14,10 +14,10 @@ const Templates = () => {
 
   const history = useHistory()
   const { isAuthenticated, templates, accounts, templateColumnState, templateFilterModel, setTemplateColumnState, setTemplateFilterModel } = useAppContext()
-  const [isLoading, setIsLoading] = useState(true)
   const [localTemplates, setTemplates] = useState(null)
   const [gridApi, setGridApi] = useState(null);
   const [gridColumnApi, setGridColumnApi] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const onLoad = async () => {
@@ -40,12 +40,11 @@ const Templates = () => {
       } catch (e) {
         onError(e)
       }
-  
       setIsLoading(false)
     }
   
     onLoad()
-  }, [isAuthenticated])
+  }, [isAuthenticated, accounts, templates])
 
   const onGridReady = params => {
     setGridApi(params.api)
@@ -129,47 +128,49 @@ const Templates = () => {
   let h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 400
   let divStyle = { boxSizing: "border-box", height: `${h}px` }
   return (
-    <div className="templates">
-      <h1>Transaction Templates</h1>
+    !isLoading && (
+      <div className="templates">
+        <h1>Transaction Templates</h1>
 
-      <div id="tempGrid" style={divStyle} className="ag-theme-alpine">
-        <AgGridReact
-          defaultColDef={{
-            resizable : true,
-            filter: true,
-            sortable: true
-          }}
-          rowData={localTemplates}
-          rowDeselection={true}
-          rowSelection="single"
-          onGridReady={onGridReady}
-          onFirstDataRendered={onFirstDataRendered}
-          onSortChanged={saveColumnState}
-          onColumnMoved={saveColumnState}
-          onColumnResized={saveColumnState}
-          onFilterChanged={saveColumnFilter}
-        >
-          <AgGridColumn headerName="Account" field="accountFrom" width={120}></AgGridColumn>
-          <AgGridColumn headerName="Description" field="description" width={290}></AgGridColumn>
-          <AgGridColumn headerName="Amount" field="amount" width={120} type="numericColumn" cellStyle={{'text-align':'right'}} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={amountFormatter}></AgGridColumn>
-          <AgGridColumn headerName="Start Date" field="startDate" width={125} filter="agDateColumnFilter" filterParams={dateFilterOptions} valueFormatter={dateFormatter}></AgGridColumn>
-          <AgGridColumn headerName="End Date" field="endDate" width={125} filter="agDateColumnFilter" filterParams={dateFilterOptions} valueFormatter={dateFormatter}></AgGridColumn>
-          <AgGridColumn headerName="Type" field="templateType" width={100}></AgGridColumn>
-          <AgGridColumn headerName="Period" field="periodType" width={100} valueFormatter={periodFormatter}></AgGridColumn>
-          <AgGridColumn headerName="Partner" field="accountTo" width={110}></AgGridColumn>
-        </AgGridReact>
+        <div id="tempGrid" style={divStyle} className="ag-theme-alpine">
+          <AgGridReact
+            defaultColDef={{
+              resizable : true,
+              filter: true,
+              sortable: true
+            }}
+            rowData={localTemplates}
+            rowDeselection={true}
+            rowSelection="single"
+            onGridReady={onGridReady}
+            onFirstDataRendered={onFirstDataRendered}
+            onSortChanged={saveColumnState}
+            onColumnMoved={saveColumnState}
+            onColumnResized={saveColumnState}
+            onFilterChanged={saveColumnFilter}
+          >
+            <AgGridColumn headerName="Account" field="accountFrom" width={130}></AgGridColumn>
+            <AgGridColumn headerName="Description" field="description" width={265}></AgGridColumn>
+            <AgGridColumn headerName="Amount" field="amount" width={130} type="numericColumn" cellStyle={{'text-align':'right'}} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={amountFormatter}></AgGridColumn>
+            <AgGridColumn headerName="Start" field="startDate" width={115} filter="agDateColumnFilter" cellStyle={{'textAlign':'right'}} filterParams={dateFilterOptions} valueFormatter={dateFormatter}></AgGridColumn>
+            <AgGridColumn headerName="End" field="endDate" width={115} filter="agDateColumnFilter" cellStyle={{'textAlign':'right'}} filterParams={dateFilterOptions} valueFormatter={dateFormatter}></AgGridColumn>
+            <AgGridColumn headerName="Type" field="templateType" width={100}></AgGridColumn>
+            <AgGridColumn headerName="Period" field="periodType" width={115} valueFormatter={periodFormatter}></AgGridColumn>
+            <AgGridColumn headerName="Partner" field="accountTo" width={120}></AgGridColumn>
+          </AgGridReact>
+        </div>
+        <Row>
+          <Col>
+            <ButtonGroup id="buttons" className="mb-2 float-right">
+              <Button variant="secondary" onClick={handleModify}>Modify</Button>
+              <Button variant="primary" onClick={handleNewTemplateClick}>
+                New
+              </Button>
+            </ButtonGroup>
+          </Col>
+        </Row>
       </div>
-      <Row>
-        <Col>
-          <ButtonGroup id="buttons" className="mb-2 float-right">
-            <Button variant="secondary" onClick={handleModify}>Modify</Button>
-            <Button variant="primary" onClick={handleNewTemplateClick}>
-              New
-            </Button>
-          </ButtonGroup>
-        </Col>
-      </Row>
-    </div>
+    )
   )
 }
 
