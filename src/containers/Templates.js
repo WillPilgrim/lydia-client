@@ -15,7 +15,7 @@ const Templates = () => {
   const history = useHistory()
   const { isAuthenticated, templates, accounts, templateColumnState, templateFilterModel, setTemplateColumnState, setTemplateFilterModel } = useAppContext()
   const [localTemplates, setTemplates] = useState(null)
-  const [gridApi, setGridApi] = useState(null);
+  const [gridApi, setGridApi] = useState(null)
   const [gridColumnApi, setGridColumnApi] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -50,7 +50,6 @@ const Templates = () => {
     setGridApi(params.api)
     setGridColumnApi(params.columnApi)
   }
-
 
   const dateFilterOptions = { 
       comparator: function(filterLocalDateAtMidnight, cellValue) {

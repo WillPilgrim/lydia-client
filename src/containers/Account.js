@@ -93,7 +93,7 @@ const Account = () => {
     if (!interest) return true
     const regex = /^[0-9]+(\.[0-9]{1,2})?$/
     if (!regex.test(rate)) return false
-    let amount = parseFloat(rate).toFixed(2)
+    const amount = parseFloat(rate).toFixed(2)
     if (isNaN(amount)) return false
     if (amount > 99.99) return false
     return true
@@ -171,7 +171,7 @@ const Account = () => {
       // not sure about this one - this.props.setTransactions(null)
       await refreshAccounts()
       setRecalcRequired(true)
-      history.push("/")
+      history.push("/accounts")
     } catch (e) {
       onError(e)
       setIsSaving(false)
@@ -193,7 +193,7 @@ const Account = () => {
       await deleteAccount()
       await refreshAccounts()
       setRecalcRequired(true)
-      history.push("/")
+      history.push("/accounts")
     } catch (e) {
       onError(e)
       setIsDeleting(false)

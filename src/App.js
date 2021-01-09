@@ -15,14 +15,18 @@ const App = () => {
   const history = useHistory()
   const [isAuthenticating, setIsAuthenticating] = useState(true)
   const [isAuthenticated, userHasAuthenticated] = useState(false)
-  const [recalcRequired, setRecalcRequired] = useState(false)
   const [stateToBeRefreshed, setStateToBeRefreshed] = useState(false)
   const [email, setEmail] = useState("Settings")
   const [templates, setTemplates] = useState(null)
   const [accounts, setAccounts] = useState(null)
+  const [transAcc, setTransAcc] = useState(null)
   const [currentAccId, setCurrentAccId] = useState(0)
   const [templateFilterModel, setTemplateFilterModel] = useState(null)
   const [templateColumnState, setTemplateColumnState] = useState(null)
+  const [saveArchiveRequired, setSaveArchiveRequired] = useState(false)
+  const [saveRequired, setSaveRequired] = useState(false)
+  const [recalcRequired, setRecalcRequired] = useState(false)
+  const [archive, setArchive] = useState(false)
 
   useEffect(() => {
     console.log('App: useEffect')
@@ -148,9 +152,11 @@ const App = () => {
           </Navbar.Collapse>
         </Navbar>
         <AppContext.Provider value={{ 
-          isAuthenticated, userHasAuthenticated, templates, refreshTemplates, accounts, refreshAccounts, currentAccId, setCurrentAccId, 
+          isAuthenticated, userHasAuthenticated, accounts, templates, transAcc, refreshTemplates, refreshAccounts, currentAccId, setCurrentAccId, 
           templateColumnState, templateFilterModel, setTemplateColumnState, setTemplateFilterModel, setRecalcRequired,
-          setStateToBeRefreshed, changeAccountsOrder, saveAccountSet
+          setStateToBeRefreshed, changeAccountsOrder, saveAccountSet,
+          archive, setSaveArchiveRequired, setTransAcc, setSaveRequired,
+          setArchive
         }}>
           <Routes />
         </AppContext.Provider>

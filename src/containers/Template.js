@@ -386,11 +386,11 @@ const Template = () => {
           <Form.Group controlId="inflation">
             <Form.Label>Inflation</Form.Label>
             <Form.Check
-            type='checkbox'
-            label="Apply annual inflation rate"
-            checked={fields.inflation}
-            onChange={event => setFieldValues({inflation:event.target.checked})}
-          />
+              type='checkbox'
+              label="Apply annual inflation rate"
+              checked={fields.inflation}
+              onChange={event => setFieldValues({inflation:event.target.checked})}
+            />
           </Form.Group>
         </Col>
         </Form.Row>

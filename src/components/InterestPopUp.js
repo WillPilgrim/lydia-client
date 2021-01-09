@@ -1,129 +1,99 @@
-import React, { Component } from "react"
-import {
-    Modal,
-    Button,
-    InputGroup
-  } from "react-bootstrap"
-  // import { Checkbox } from "react-bootstrap"; to be fixed
-import Form from "react-bootstrap/Form";
+import React, { useState } from "react"
+import { Modal, Button, InputGroup } from "react-bootstrap"
+import Form from "react-bootstrap/Form"
 import DatePicker from "react-datepicker"
 import Moment from "moment"
+import { useAppContext } from "../libs/contextLib"
 import { today } from "../libs/utilities"
 
-class InterestPopUp extends Component {
-  constructor(props) {
-    super(props)
+const InterestPopUp = (props) => {
+  const { transAcc, currentAccId } = useAppContext()
+  const [newRateValue, setNewRateValue] = useState(0)
+  const [newRateCredit, setNewRateCredit] = useState(false)
+  const [intFirstAppliedDate, setIntFirstAppliedDate] = useState(today.toDate())
 
-    this.state = {
-      newRateValue: 0, 
-      newRateCredit: false,
-      intFirstAppliedDate: today.format()
-    }
-  }
-
-  validateForm() {
-    return (
-      this.getNewRateValidationState() !== "error" &&
-      this.getFirstAppliedDateValidationState() !== "error"
-    )
-  }
-
-  getNewRateValidationState() {
-    const regex = /^[0-9]+(\.[0-9]{1,2})?$/
-    if (!regex.test(this.state.newRateValue)) return "error"
-    let amount = parseFloat(this.state.newRateValue).toFixed(2)
-    if (isNaN(amount)) return "error"
-    if (amount > 99.99) return "error"
-    return "success"
-  }
-
-  getFirstAppliedDateValidationState() {
-    if (this.state.intFirstAppliedDate === null) return "error"
-    if (Moment(this.state.intFirstAppliedDate).isAfter(today.clone().add(30, "y"),"day")) return "error"
-    const transAcc = this.props.transAcc
+  const isValidFirstAppliedDate = () => {
+    if (intFirstAppliedDate === null) return false
+    if (Moment(intFirstAppliedDate).isAfter(today.clone().add(30, "y"),"day")) return false
     if (transAcc) {
-      const acc = transAcc.find(x => x.accountId === this.props.currentAccId)
+      const acc = transAcc.find(x => x.accountId === currentAccId)
       if (acc) {
-        if (Moment(this.state.intFirstAppliedDate).isBefore(Moment(acc.openingDate),"day")) return "error"
-        if (Moment(this.state.intFirstAppliedDate).isAfter(Moment(acc.closingDate),"day")) return "error"
+        if (Moment(intFirstAppliedDate).isBefore(Moment(acc.openingDate),"day")) return false
+        if (Moment(intFirstAppliedDate).isAfter(Moment(acc.closingDate),"day")) return false
       }
     }
-    return "success"
+    return true
   }
 
-  handleFirstAppliedDateChange = value => {
-    this.setState({intFirstAppliedDate: value})
+  const isValidNewRate = () => {
+    const regex = /^[0-9]+(\.[0-9]{1,2})?$/
+    if (!regex.test(newRateValue)) return false
+    const amount = parseFloat(newRateValue).toFixed(2)
+    if (isNaN(amount)) return false
+    if (amount > 99.99) return false
+    return true
   }
 
-  handleInterestTypeChange = event => {
-    this.setState({newRateCredit: event.target.checked})
-  }
+  const validateForm = () => (
+    isValidFirstAppliedDate() &&
+    isValidNewRate()
+  )
+
+  const handleAdd = () => props.onSubmit(newRateValue, newRateCredit, intFirstAppliedDate)
   
-  handleFocus = event => {
-    event.target.select()
-  }
+  return (
+      <Modal {...props} animation={false}>
 
-  handleChange = event => {
-    this.setState({[event.target.id]: event.target.value})
-  }
-  
-  handleAdd = () => {
-    this.props.onSubmit(this.state.newRateValue, this.state.newRateCredit, this.state.intFirstAppliedDate)
-  }
+          <Modal.Header closeButton>
+              <Modal.Title>Interest Rate Change</Modal.Title>
+          </Modal.Header>
 
-  render() {
-    return (
-        <Modal show={this.props.showInterest} onHide={this.props.onClose}>
-            <Modal.Header closeButton>
-                <Modal.Title>Interest Rate Change</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-            <Form.Group
-                controlId="intFirstAppliedDate"
-                validationState={this.getFirstAppliedDateValidationState()}
-            >
+          <Modal.Body>
+            <Form.Group controlId="intFirstAppliedDate">
                 <Form.Label>Start Date</Form.Label>
-                <DatePicker
-                id="intFirstAppliedDate"
-                value={this.state.intFirstAppliedDate}
-                placeholder="Date"
-                onChange={this.handleFirstAppliedDateChange}
-                autoComplete="off"
-                />
+                <div>
+                  <DatePicker 
+                    dateFormat="dd/MM/yyyy" 
+                    selected={intFirstAppliedDate} 
+                    onChange={value => setIntFirstAppliedDate(value)} 
+                  />
+                </div>
             </Form.Group>
-            <Form.Group
-                controlId="newRateValue"
-                validationState={this.getNewRateValidationState()}
-            >
+            <Form.Group controlId="newRateValue">
                 <Form.Label>Interest Rate</Form.Label>
-                <InputGroup>
-                <InputGroup.Addon>%</InputGroup.Addon>
-                <Form.Control
-                    type="text"
-                    value={this.state.newRateValue}
-                    placeholder="Rate"
-                    onChange={this.handleChange}
-                    onFocus={this.handleFocus}
-                />
+                <InputGroup className="mb-3">
+                  <InputGroup.Prepend>
+                    <InputGroup.Text>%</InputGroup.Text>
+                  </InputGroup.Prepend>
+                  <Form.Control
+                      type="text"
+                      value={newRateValue}
+                      placeholder="Rate"
+                      onChange={event => setNewRateValue(event.target.value)}
+                      onFocus={event => event.target.select()}
+                      isValid={isValidNewRate(newRateValue)}
+                      isInvalid={!isValidNewRate(newRateValue)}
+                  />
+                <Form.Control.Feedback type="invalid">Please enter a valid, non-negative interest rate. Zero is valid.</Form.Control.Feedback>
                 </InputGroup>
-                <Form.Control.Feedback />
             </Form.Group>
-            <Form.Group controlId="newRateCredit" validationState="success">
-                {/* <Checkbox
-                checked={this.state.newRateCredit}
-                onChange={this.handleInterestTypeChange}
-                >
-                Credit Interest
-                </Checkbox> */}
+            <Form.Group controlId="newRateCredit">
+              <Form.Check
+                type='checkbox'
+                label="Credit Interest"
+                checked={newRateCredit}
+                onChange={event => setNewRateCredit(event.target.checked)}
+              />
             </Form.Group>
-            </Modal.Body>
-            <Modal.Footer>
-            <Button onClick={this.props.onClose}>Close</Button>
-            <Button disabled={!this.validateForm()} bsStyle="primary" onClick={this.handleAdd}>Add</Button>
-            </Modal.Footer>
-        </Modal>
-    )
-  }
+          </Modal.Body>
+
+          <Modal.Footer>
+            <Button variant="outline-secondary" onClick={props.onHide}>Close</Button>
+            <Button variant="outline-primary" disabled={!validateForm()} onClick={handleAdd}>Add</Button>
+          </Modal.Footer>
+
+      </Modal>
+  )
 }
 
 export default InterestPopUp
