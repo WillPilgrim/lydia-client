@@ -1,12 +1,39 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { AgGridReact, AgGridColumn } from "ag-grid-react"
 import { useAppContext } from "../libs/contextLib"
 
 import "./Summary.css"
 
 const Summary = () => {
-  const { transAcc } = useAppContext()
+
+  const { isAuthenticated, transAcc } = useAppContext()
+  const [accounts, setAccounts] = useState(null)
   const [gridApi, setGridApi] = useState(null)
+
+  useEffect(() => {
+
+    console.log('Summary: useEffect')
+
+    const onLoad = async () => {
+
+      if (!isAuthenticated) return
+
+      let total = 0
+
+      const accounts = transAcc ? transAcc.filter(account => !account.hide).map(account => {
+        const newAccount = { ...account, total: false }
+        total += account.currentBal
+        return newAccount
+      }) : []
+      accounts.push({total: false })
+      accounts.push({description:"Total", currentBal: total, totalLine: true })
+
+      setAccounts(accounts)
+
+    }
+  
+    onLoad()
+  }, [isAuthenticated, transAcc])
 
   const percentFormatter = params => {
     const val = parseFloat(params.value, 10) 
@@ -26,17 +53,8 @@ const Summary = () => {
     return cellStyle
   }
 
-
   const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 280
   const divStyle = { boxSizing: "border-box", height: `${h}px` }
-  let total = 0
-  const accounts = transAcc ? transAcc.filter(account => !account.hide).map(account => {
-    const newAccount = { ...account, total: false }
-    total += account.currentBal
-    return newAccount
-  }) : []
-  accounts.push({total: false })
-  accounts.push({description:"Total", currentBal: total, totalLine: true })
   
   return (
     <div id="accSummary" style={divStyle} className="ag-theme-alpine">

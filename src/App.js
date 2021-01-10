@@ -152,11 +152,10 @@ const App = () => {
           </Navbar.Collapse>
         </Navbar>
         <AppContext.Provider value={{ 
-          isAuthenticated, userHasAuthenticated, accounts, templates, transAcc, refreshTemplates, refreshAccounts, currentAccId, setCurrentAccId, 
-          templateColumnState, templateFilterModel, setTemplateColumnState, setTemplateFilterModel, setRecalcRequired,
+          isAuthenticated, userHasAuthenticated, accounts, templates, refreshTemplates, refreshAccounts, currentAccId, setCurrentAccId, 
+          templateColumnState, setTemplateColumnState, templateFilterModel, setTemplateFilterModel, recalcRequired, setRecalcRequired,
           setStateToBeRefreshed, changeAccountsOrder, saveAccountSet,
-          archive, setSaveArchiveRequired, setTransAcc, setSaveRequired,
-          setArchive
+          archive, setArchive, saveArchiveRequired, setSaveArchiveRequired, transAcc, setTransAcc, saveRequired, setSaveRequired
         }}>
           <Routes />
         </AppContext.Provider>

@@ -27,6 +27,9 @@ const Transactions = () => {
 
   useEffect(() => {
     const onLoad = async () => {
+
+      console.log('Transactions: useEffect')
+
       if (!isAuthenticated) {
         return
       }
@@ -481,6 +484,8 @@ const Transactions = () => {
   const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 280
   const divStyle = { boxSizing: "border-box", height: `${h}px` }
   const descriptionWidth = Math.min(Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234),630)
+  const isSummary = currentAccId === "0"
+
   const debug = true
 
   return (
@@ -506,7 +511,7 @@ const Transactions = () => {
         onSubmit={handleTrimCommit}
       />        
       <Tabs
-        defaultActiveKey={1}
+        defaultActiveKey={0}
         transition={false}
         id="trans-tab"
         activeKey={currentAccId}
@@ -515,11 +520,10 @@ const Transactions = () => {
         <Tab key={0} eventKey={0} title="Summary">
           <Summary />
         </Tab>
-        {/* {transAcc ? transAcc.filter(account => !account.hide).sort((a,b) => (a.sortOrder - b.sortOrder)).map((ta, index) => ( */}
         {transAcc
           .filter(account => !account.hide)
           .sort((a,b) => (a.sortOrder - b.sortOrder))
-          .map((ta, index) => (
+          .map((ta) => (
             <Tab key={ta.accountId} eventKey={ta.accountId} title={ta.accName}>
               <div
                 id="transGrid"
@@ -562,7 +566,6 @@ const Transactions = () => {
               </div>
             </Tab>
           ))
-          // )) : <div id="transGrid" style={divStyle} className="ag-theme-bootstrap"></div> 
         }
       </Tabs>
       <Row>
@@ -577,13 +580,13 @@ const Transactions = () => {
               <Button variant={saveArchiveRequired ? "outline-warning" : "outline-secondary"} 
                       size="sm" 
                       onClick={archive ? handleArchiveSave : () => setShowArchive(true)}
-                      disabled={recalcRequired || saveRequired}>
+                      disabled={recalcRequired || saveRequired || isSummary }>
                 {archive ? "Save" : "Archive"}
               </Button>
               <Button variant="outline-secondary" 
                       size="sm" 
                       onClick={() => setShowTrim(true)}
-                      disabled={recalcRequired || saveRequired || archive}>
+                      disabled={recalcRequired || saveRequired || archive || isSummary}>
                 Trim
               </Button>
               <Button variant="outline-secondary" 
@@ -595,25 +598,25 @@ const Transactions = () => {
               <Button variant="outline-secondary" 
                       size="sm"
                       onClick={handleAdd}
-                      disabled={archive}>                
+                      disabled={archive || isSummary}>                
                 Add
               </Button>
               <Button variant="outline-secondary" 
                       size="sm" 
                       onClick={handleDuplicate}
-                      disabled={archive}>
+                      disabled={archive || isSummary}>
                 Duplicate
               </Button>
               <Button variant="outline-secondary" 
                       size="sm"
                       onClick={handleDelete} 
-                      disabled={archive}>
+                      disabled={archive || isSummary}>
                 Delete
               </Button>
               <Button variant="outline-secondary" 
                       size="sm"
                       onClick={handleManual} 
-                      disabled={archive}>
+                      disabled={archive || isSummary}>
                 Manual
               </Button>
               <Button variant="outline-secondary" 
