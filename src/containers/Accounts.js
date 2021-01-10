@@ -1,5 +1,5 @@
-import React, { useState } from "react"
-import { Row, Col, Button, ButtonGroup} from "react-bootstrap"
+import React, { useState, useEffect } from "react"
+import { Row, Col, Button } from "react-bootstrap"
 import { useHistory } from "react-router-dom"
 import { AgGridColumn, AgGridReact } from "ag-grid-react"
 import "ag-grid-community/dist/styles/ag-grid.css"
@@ -15,34 +15,26 @@ const Accounts = () => {
   const { isAuthenticated, accounts, refreshAccounts, setRecalcRequired, changeAccountsOrder, saveAccountSet } = useAppContext()
   const [gridApi, setGridApi] = useState(null)
   const [startSortIndex, setStartSortIndex] = useState(-1)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // useEffect(() => {
-  //   console.log('Accounts: useEffect')
-  //   const onLoad = async () => {
-  //     if (!isAuthenticated) return
-
-  //     try {
-  //       setAccounts(accounts)
-  //     } catch (e) {
-  //       onError(e)
-  //     }
-  //     setIsLoading(false)
-  //   }
+  useEffect(() => {
+    console.log('Accounts: useEffect')
+    const onLoad = async () => {
+      if (!isAuthenticated) return
+      setIsLoading(false)
+    }
   
-  //   onLoad()
-  // }, [isAuthenticated, accounts])
+    onLoad()
+  }, [isAuthenticated])
 
-  const onGridReady = params => setGridApi(params.api)
-  
-  const saveAccount = account => {
-    return API.put("accounts", `/accounts/${account.accountId}`, {
+  const saveAccount = account => 
+    API.put("accounts", `/accounts/${account.accountId}`, {
       body: account
-    });
-  }
-
+    })
+  
   const AccountHideCellRenderer = props => {
     const btnClickedHandler = async () => {
-      let account =  props.data
+      const account =  props.data
       account.hide = !account.hide
       await saveAccount(account)
       await refreshAccounts()
@@ -50,8 +42,7 @@ const Accounts = () => {
       props.api.refreshCells({force:true})
     }
 
-    let buttonName = "Hide"
-    if (props.data.hide) buttonName = "Unhide"
+    const buttonName = props.data.hide ? "Unhide" : "Hide"
     return <span><button style={{ height: 20, lineHeight: 0.5, width:70}} className="btn btn-primary" onClick={btnClickedHandler}>{buttonName}</button></span>
   }
 
@@ -64,7 +55,7 @@ const Accounts = () => {
     </span>
 
   const cellStyleFormatter = params => {
-    let cellStyle = {"color":"", "text-decoration": ""}
+    const cellStyle = {"color":"", "text-decoration": ""}
     if (params.colDef.cellStyleRightJustified) cellStyle["textAlign"] = "right"
     if (params.value < 0) cellStyle["color"] = "red"
     if (params.data.hide) {
@@ -159,62 +150,66 @@ const Accounts = () => {
     if (startLoop !== endLoop) await saveAccountSet(startLoop, endLoop)
   }
 
+  const onGridReady = params => setGridApi(params.api)
+  
   const getRowNodeId = data => data.accountId
   
-  const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 400
+  const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 240
   const divStyle = { boxSizing: "border-box", height: `${h}px` }
   
   return (
-    <div className="accounts">
-      <h1>Accounts</h1>
+    !isLoading && (
+      <div className="accounts">
+        <h1>Accounts</h1>
 
-      <div id="accGrid" style={divStyle} className="ag-theme-alpine">
-        <AgGridReact
-          defaultColDef={{
-            resizable : true,
-            filter: false,
-            sortable: false
-          }}
-          frameworkComponents={{
-            accountHideCellRenderer: AccountHideCellRenderer,
-            accountEditCellRenderer: AccountEditCellRenderer
-          }}
-          rowData={accounts}
-          rowDeselection={true}
-          rowSelection="single"
-          onGridReady={onGridReady}
-          immutableData={true}
-          animateRows={true}
-          getRowNodeId={getRowNodeId}
-          onRowDragMove={onRowDragMove}
-          onRowDragEnter={onRowDragEnter}
-          onRowDragEnd={onRowDragComplete}
-          onRowDragLeave={onRowDragComplete}
-        >
-          <AgGridColumn headerName="Name" field="accName" cellStyle={cellStyleFormatter} width={130} rowDrag={true}></AgGridColumn>
-          <AgGridColumn headerName="Description" field="description" cellStyle={cellStyleFormatter} width={325}></AgGridColumn>
-          <AgGridColumn headerName="Opening">
-            <AgGridColumn headerName="Date" field="openingDate" width={120} cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agDateColumnFilter" filterParams={dateFilterOptions} valueFormatter={dateFormatter}></AgGridColumn>
-            <AgGridColumn headerName="Balance" field="amount" width={125} type="numericColumn" cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={balanceFormatter}></AgGridColumn>
-          </AgGridColumn>
-          <AgGridColumn headerName="Interest Rate">
-            <AgGridColumn headerName="Debit" field="dbRate" width={110} cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={percentFormatter}></AgGridColumn>
-            <AgGridColumn headerName="Credit" field="crRate" width={110} cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={percentFormatter}></AgGridColumn>
-          </AgGridColumn>
-          <AgGridColumn headerName="" field="hide" width={89} cellRenderer='accountHideCellRenderer' cellRendererParams={{saveAcc:saveAccount,refreshAcc:refreshAccounts,recalcReq:setRecalcRequired}}></AgGridColumn>
-          <AgGridColumn headerName="" field="accountId" width={80} cellRenderer='accountEditCellRenderer' cellRendererParams={{saveAcc:saveAccount,refreshAcc:refreshAccounts,recalcReq:setRecalcRequired}}></AgGridColumn>
-        </AgGridReact>
-      </div>
-      <Row>
+        <div id="accGrid" style={divStyle} className="ag-theme-alpine">
+          <AgGridReact
+            defaultColDef={{
+              resizable : true,
+              filter: false,
+              sortable: false
+            }}
+            frameworkComponents={{
+              accountHideCellRenderer: AccountHideCellRenderer,
+              accountEditCellRenderer: AccountEditCellRenderer
+            }}
+            rowData={accounts}
+            onGridReady={onGridReady}
+            immutableData={true}
+            animateRows={true}
+            getRowNodeId={getRowNodeId}
+            onRowDragMove={onRowDragMove}
+            onRowDragEnter={onRowDragEnter}
+            onRowDragEnd={onRowDragComplete}
+            onRowDragLeave={onRowDragComplete}
+          >
+            <AgGridColumn headerName="Name" field="accName" cellStyle={cellStyleFormatter} width={130} rowDrag={true}></AgGridColumn>
+            <AgGridColumn headerName="Description" field="description" cellStyle={cellStyleFormatter} width={325}></AgGridColumn>
+            <AgGridColumn headerName="Opening">
+              <AgGridColumn headerName="Date" field="openingDate" width={120} cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agDateColumnFilter" filterParams={dateFilterOptions} valueFormatter={dateFormatter}></AgGridColumn>
+              <AgGridColumn headerName="Balance" field="amount" width={125} type="numericColumn" cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={balanceFormatter}></AgGridColumn>
+            </AgGridColumn>
+            <AgGridColumn headerName="Interest Rate">
+              <AgGridColumn headerName="Debit" field="dbRate" width={110} cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={percentFormatter}></AgGridColumn>
+              <AgGridColumn headerName="Credit" field="crRate" width={110} cellStyle={cellStyleFormatter} cellStyleRightJustified={true} filter="agNumberColumnFilter" filterParams={amountFilterOptions} valueFormatter={percentFormatter}></AgGridColumn>
+            </AgGridColumn>
+            <AgGridColumn headerName="" field="hide" width={89} cellRenderer='accountHideCellRenderer'></AgGridColumn>
+            <AgGridColumn headerName="" field="accountId" width={80} cellRenderer='accountEditCellRenderer'></AgGridColumn>
+          </AgGridReact>
+        </div>
+        <Row>
           <Col>
-            <ButtonGroup id="buttons" className="mb-2 float-right">
-              <Button variant="primary" onClick={handleNewAccountClick}>
-                New
-              </Button>
-            </ButtonGroup>
+            <Button variant="outline-primary" 
+                    block
+                    className="mt-2"
+                    size="md"
+                    onClick={handleNewAccountClick}>
+              Create New Account
+            </Button>
           </Col>
         </Row>
-    </div>
+      </div>
+    )
   )
 }
 

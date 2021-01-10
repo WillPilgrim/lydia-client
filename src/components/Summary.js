@@ -8,7 +8,6 @@ const Summary = () => {
 
   const { isAuthenticated, transAcc } = useAppContext()
   const [accounts, setAccounts] = useState(null)
-  const [gridApi, setGridApi] = useState(null)
 
   useEffect(() => {
 
@@ -61,10 +60,7 @@ const Summary = () => {
       <AgGridReact
           defaultColDef={{ resizable : true }}
           rowData={accounts}
-          rowDeselection={true}
-          rowSelection="single"
-          rowClassRules={{"total-line": "data.totalLine"}}
-          onGridReady={params => setGridApi(params.api)}>
+          rowClassRules={{"total-line": "data.totalLine"}}>
           <AgGridColumn headerName="Name" field="accName" width={170}></AgGridColumn>
           <AgGridColumn headerName="Description" field="description" width={500}></AgGridColumn>
           <AgGridColumn headerName="Debit Rate" field="currentDbRate" width={140} cellStyle={cellStyleAmountFormatter} valueFormatter={percentFormatter}></AgGridColumn>
