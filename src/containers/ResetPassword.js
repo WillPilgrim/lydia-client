@@ -68,6 +68,7 @@ const ResetPassword = () => {
           <Form.Control
             autoFocus
             type="email"
+            placeholder="Enter email"
             value={fields.email}
             onChange={handleFieldChange}
           />

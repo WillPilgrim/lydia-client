@@ -60,7 +60,7 @@ const Account = () => {
     if (id !== "new") {
       onLoad()
     }
-  }, [id]);
+  }, [id])
 
   const isValidName = () => fields.accName.length > 0
 
@@ -138,10 +138,8 @@ const Account = () => {
 
   const deleteAccount = () => API.del("accounts", `/accounts/${id}`)
   
-  const handleFocus = event => {
-    event.target.select()
-  }
-
+  const handleFocus = event => event.target.select()
+  
   const handleSubmit = async event => {
     event.preventDefault()
 
@@ -363,7 +361,7 @@ const Account = () => {
             block
             type="submit"
             size="lg"
-            variant="primary"
+            variant="outline-primary"
             isLoading={isSaving}
             disabled={!validateForm()}
           >
@@ -374,7 +372,7 @@ const Account = () => {
               block
               type="submit"
               size="lg"
-              variant="primary"
+              variant="outline-primary"
               isLoading={isSaving}
               disabled={!validateForm()}
             >
@@ -384,7 +382,7 @@ const Account = () => {
               block
               onClick={handleDelete}
               size="lg"
-              variant="danger"
+              variant="outline-danger"
               isLoading={isDeleting}
             >
               Delete

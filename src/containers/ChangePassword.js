@@ -1,95 +1,87 @@
-import React, { Component } from "react";
-import { Auth } from "aws-amplify";
-import Form from "react-bootstrap/Form";
-import LoaderButton from "../components/LoaderButton";
-import "./ChangePassword.css";
+import React, { useState } from "react"
+import { Auth } from "aws-amplify"
+import { useHistory } from "react-router-dom"
+import { Form } from "react-bootstrap"
+import LoaderButton from "../components/LoaderButton"
+import { useFormFields } from "../libs/hooksLib"
+import { onError } from "../libs/errorLib"
+import "./ChangePassword.css"
 
-export default class ChangePassword extends Component {
-  constructor(props) {
-    super(props);
+const ChangePassword = () => {
+  const history = useHistory()
+  const [fields, handleFieldChange] = useFormFields({
+    password: "",
+    oldPassword: "",
+    confirmPassword: "",
+  })
+  const [isChanging, setIsChanging] = useState(false)
 
-    this.state = {
-      password: "",
-      oldPassword: "",
-      isChanging: false,
-      confirmPassword: ""
-    };
-  }
+  const validateForm = () => (
+      fields.oldPassword.length > 0 &&
+      fields.password.length > 0 &&
+      fields.password === fields.confirmPassword
+    )
+  
+  const handleChangeClick = async event => {
+    event.preventDefault()
 
-  validateForm() {
-    return (
-      this.state.oldPassword.length > 0 &&
-      this.state.password.length > 0 &&
-      this.state.password === this.state.confirmPassword
-    );
-  }
-
-  handleChange = event => {
-    this.setState({
-      [event.target.id]: event.target.value
-    });
-  };
-
-  handleChangeClick = async event => {
-    event.preventDefault();
-
-    this.setState({ isChanging: true });
+    setIsChanging(true)
 
     try {
-      const currentUser = await Auth.currentAuthenticatedUser();
+      const currentUser = await Auth.currentAuthenticatedUser()
       await Auth.changePassword(
         currentUser,
-        this.state.oldPassword,
-        this.state.password
-      );
+        fields.oldPassword,
+        fields.password
+      )
 
-      this.props.history.push("/settings");
-    } catch (e) {
-      alert(e.message);
-      this.setState({ isChanging: false });
+      history.push("/settings")
+    } catch (error) {
+      onError(error)
+      setIsChanging(false)
     }
-  };
-
-  render() {
-    return (
-      <div className="ChangePassword">
-        <form onSubmit={this.handleChangeClick}>
-          <Form.Group bsSize="large" controlId="oldPassword">
-            <Form.Label>Old Password</Form.Label>
-            <Form.Control
-              type="password"
-              onChange={this.handleChange}
-              value={this.state.oldPassword}
-            />
-          </Form.Group>
-          <hr />
-          <Form.Group bsSize="large" controlId="password">
-            <Form.Label>New Password</Form.Label>
-            <Form.Control
-              type="password"
-              value={this.state.password}
-              onChange={this.handleChange}
-            />
-          </Form.Group>
-          <Form.Group bsSize="large" controlId="confirmPassword">
-            <Form.Label>Confirm Password</Form.Label>
-            <Form.Control
-              type="password"
-              onChange={this.handleChange}
-              value={this.state.confirmPassword}
-            />
-          </Form.Group>
-          <LoaderButton
-            block
-            type="submit"
-            bsSize="large"
-            text="Change Password"
-            loadingText="Changing…"
-            disabled={!this.validateForm()}
-            isLoading={this.state.isChanging}
-          />
-        </form>
-      </div>
-    );
   }
+
+  return (
+    <div className="ChangePassword">
+      <Form onSubmit={handleChangeClick}>
+        <Form.Group size="lg" controlId="oldPassword">
+          <Form.Label>Old Password</Form.Label>
+          <Form.Control
+            type="password"
+            onChange={handleFieldChange}
+            value={fields.oldPassword}
+          />
+        </Form.Group>
+        <hr />
+        <Form.Group size="lg" controlId="password">
+          <Form.Label>New Password</Form.Label>
+          <Form.Control
+            type="password"
+            onChange={handleFieldChange}
+            value={fields.password}
+          />
+        </Form.Group>
+        <Form.Group size="lg" controlId="confirmPassword">
+          <Form.Label>Confirm Password</Form.Label>
+          <Form.Control
+            type="password"
+            onChange={handleFieldChange}
+            value={fields.confirmPassword}
+          />
+        </Form.Group>
+        <LoaderButton
+          block
+          type="submit"
+          size="lg"
+          disabled={!validateForm()}
+          isLoading={isChanging}
+        >
+          Change Password
+        </LoaderButton>
+      </Form>
+    </div>
+  )
 }
+
+export default ChangePassword

@@ -152,10 +152,8 @@ const Template = () => {
   
   const deleteTemplate = () => API.del("accounts", `/templates/${id}`)
 
-  const handleFocus = event => {
-    event.target.select()
-  }
-
+  const handleFocus = event => event.target.select()
+  
   const handleSubmit = async event => {
     event.preventDefault()
 
@@ -399,7 +397,7 @@ const Template = () => {
           block
           type="submit"
           size="lg"
-          variant="primary"
+          variant="outline-primary"
           isLoading={isSaving || isLoading}
           disabled={!validateForm()}
         >
@@ -410,7 +408,7 @@ const Template = () => {
             block
             type="submit"
             size="lg"
-            variant="primary"
+            variant="outline-primary"
             isLoading={isSaving || isLoading}
             disabled={!validateForm()}
           >
@@ -420,7 +418,7 @@ const Template = () => {
             block
             onClick={handleDelete}
             size="lg"
-            variant="danger"
+            variant="outline-danger"
             isLoading={isDeleting || isLoading}
           >
             Delete

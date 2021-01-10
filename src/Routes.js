@@ -13,9 +13,8 @@ import Accounts from "./containers/Accounts"
 import Templates from "./containers/Templates"
 import Template from "./containers/Template"
 import Transactions from "./containers/Transactions"
-
-// import ChangePassword from "./containers/ChangePassword";
-// import ChangeEmail from "./containers/ChangeEmail";
+import ChangePassword from "./containers/ChangePassword"
+import ChangeEmail from "./containers/ChangeEmail"
 
 const Routes = () =>
   <Switch>
@@ -34,6 +33,12 @@ const Routes = () =>
     <AuthenticatedRoute exact path="/settings">
       <Settings />
     </AuthenticatedRoute>
+    <AuthenticatedRoute exact path="/settings/password">
+      <ChangePassword />
+    </AuthenticatedRoute>
+    <AuthenticatedRoute exact path="/settings/email">
+      <ChangeEmail />
+    </AuthenticatedRoute>
     <AuthenticatedRoute exact path="/accounts">
       <Accounts />
     </AuthenticatedRoute>
@@ -49,10 +54,7 @@ const Routes = () =>
     <AuthenticatedRoute exact path="/transactions">
       <Transactions />
     </AuthenticatedRoute>
-    {/* 
-    <AuthenticatedRoute path="/settings/password" exact component={ChangePassword} props={childProps} />
-    <AuthenticatedRoute path="/settings/email" exact component={ChangeEmail} props={childProps} />
-    { /* Finally, catch all unmatched routes */ }
+    {/* Finally, catch all unmatched routes */}
     <Route>
       <NotFound />
     </Route>

@@ -27,9 +27,9 @@ const Login = () => {
     try {
       await Auth.signIn(fields.email, fields.password)
       setStateToBeRefreshed(true)
-      // await refreshAccounts()
-      // await refreshTemplates()
-      // userHasAuthenticated(true)
+      await refreshAccounts()
+      await refreshTemplates()
+      userHasAuthenticated(true)
     } catch (e) {
       onError(e)
       setIsLoading(false)

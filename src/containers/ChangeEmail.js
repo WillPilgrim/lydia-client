@@ -1,125 +1,114 @@
-import React, { Component } from "react"
+import React, { useState } from "react"
 import { Auth } from "aws-amplify"
-import Form from "react-bootstrap/Form"
+import { useHistory } from "react-router-dom"
+import { Form } from "react-bootstrap"
 import LoaderButton from "../components/LoaderButton"
+import { useFormFields } from "../libs/hooksLib"
+import { onError } from "../libs/errorLib"
 import "./ChangeEmail.css"
 
-export default class ChangeEmail extends Component {
-  constructor(props) {
-    super(props);
+const ChangeEmail = () => {
+  const history = useHistory()
+  const [codeSent, setCodeSent] = useState(false)
+  const [fields, handleFieldChange] = useFormFields({
+    code: "",
+    email: "",
+  })
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isSendingCode, setIsSendingCode] = useState(false)
 
-    this.state = {
-      code: "",
-      email: "",
-      codeSent: false,
-      isConfirming: false,
-      isSendingCode: false
-    };
-  }
+  const validateEmailForm = () => fields.email.length > 0
+  
+  const validateConfirmForm = () => fields.code.length > 0
+  
+  const handleUpdateClick = async event => {
+    event.preventDefault()
 
-  validatEmailForm() {
-    return this.state.email.length > 0;
-  }
-
-  validateConfirmForm() {
-    return this.state.code.length > 0;
-  }
-
-  handleChange = event => {
-    this.setState({
-      [event.target.id]: event.target.value
-    });
-  };
-
-  handleUpdateClick = async event => {
-    event.preventDefault();
-
-    this.setState({ isSendingCode: true });
+    setIsSendingCode(true)
 
     try {
-      const user = await Auth.currentAuthenticatedUser();
-      await Auth.updateUserAttributes(user, { email: this.state.email });
-
-      this.setState({ codeSent: true });
-    } catch (e) {
-      alert(e.message);
-      this.setState({ isSendingCode: false });
+      const user = await Auth.currentAuthenticatedUser()
+      await Auth.updateUserAttributes(user, { email: fields.email })
+      setCodeSent(true)
+    } catch (error) {
+      onError(error)
+      setIsSendingCode(false)
     }
-  };
+  }
 
-  handleConfirmClick = async event => {
-    event.preventDefault();
+  const handleConfirmClick = async event => {
+    event.preventDefault()
 
-    this.setState({ isConfirming: true });
+    setIsConfirming(true)
 
     try {
-      await Auth.verifyCurrentUserAttributeSubmit("email", this.state.code);
-      this.props.userHasAuthenticated(true, this.state.email);
-      this.props.history.push("/settings");
-    } catch (e) {
-      alert(e.message);
-      this.setState({ isConfirming: false });
-    }
-  };
+      await Auth.verifyCurrentUserAttributeSubmit("email", fields.code)
 
-  renderUpdateForm() {
+      history.push("/settings")
+    } catch (error) {
+      onError(error)
+      setIsConfirming(false)
+    }
+  }
+
+  const renderUpdateForm = () => {
     return (
-      <form onSubmit={this.handleUpdateClick}>
-        <Form.Group bsSize="large" controlId="email">
+      <Form onSubmit={handleUpdateClick}>
+        <Form.Group size="lg" controlId="email">
           <Form.Label>Email</Form.Label>
           <Form.Control
             autoFocus
             type="email"
-            value={this.state.email}
-            onChange={this.handleChange}
+            value={fields.email}
+            onChange={handleFieldChange}
           />
         </Form.Group>
         <LoaderButton
           block
           type="submit"
-          bsSize="large"
-          text="Update Email"
-          loadingText="Updating…"
-          disabled={!this.validatEmailForm()}
-          isLoading={this.state.isSendingCode}
-        />
-      </form>
-    );
+          size="lg"
+          isLoading={isSendingCode}
+          disabled={!validateEmailForm()}
+        >
+          Update Email
+        </LoaderButton>
+      </Form>
+    )
   }
 
-  renderConfirmationForm() {
+  const renderConfirmationForm = () => {
     return (
-      <form onSubmit={this.handleConfirmClick}>
-        <Form.Group bsSize="large" controlId="code">
+      <Form onSubmit={handleConfirmClick}>
+        <Form.Group size="lg" controlId="code">
           <Form.Label>Confirmation Code</Form.Label>
           <Form.Control
             autoFocus
             type="tel"
-            value={this.state.code}
-            onChange={this.handleChange}
+            value={fields.code}
+            onChange={handleFieldChange}
           />
-          <Form.Text muted>Please check your email ({this.state.email}) for the confirmation code.</Form.Text>
+          <Form.Text>
+            Please check your email ({fields.email}) for the confirmation code.
+          </Form.Text>
         </Form.Group>
         <LoaderButton
           block
           type="submit"
-          bsSize="large"
-          text="Confirm"
-          loadingText="Confirm…"
-          isLoading={this.state.isConfirming}
-          disabled={!this.validateConfirmForm()}
-        />
-      </form>
-    );
+          size="lg"
+          isLoading={isConfirming}
+          disabled={!validateConfirmForm()}
+        >
+          Confirm
+        </LoaderButton>
+      </Form>
+    )
   }
 
-  render() {
-    return (
-      <div className="ChangeEmail">
-        {!this.state.codeSent
-          ? this.renderUpdateForm()
-          : this.renderConfirmationForm()}
-      </div>
-    );
-  }
+  return (
+    <div className="ChangeEmail">
+      {!codeSent ? renderUpdateForm() : renderConfirmationForm()}
+    </div>
+  )
 }
+
+export default ChangeEmail
