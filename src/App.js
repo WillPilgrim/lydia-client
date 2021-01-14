@@ -52,7 +52,6 @@ const App = () => {
       }
     
       setIsAuthenticating(false)
-      setStateToBeRefreshed(false)
     }
     onLoad()
   }, [stateToBeRefreshed])

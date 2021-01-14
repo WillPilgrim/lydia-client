@@ -3,6 +3,7 @@ import { Auth } from "aws-amplify"
 import { useHistory } from "react-router-dom"
 import { Form } from "react-bootstrap"
 import LoaderButton from "../components/LoaderButton"
+import ConfirmationCode from "../components/ConfirmationCode"
 import { useFormFields } from "../libs/hooksLib"
 import { onError } from "../libs/errorLib"
 import "./ChangeEmail.css"
@@ -11,15 +12,12 @@ const ChangeEmail = () => {
   const history = useHistory()
   const [codeSent, setCodeSent] = useState(false)
   const [fields, handleFieldChange] = useFormFields({
-    code: "",
-    email: "",
+    email: ""
   })
   const [isConfirming, setIsConfirming] = useState(false)
   const [isSendingCode, setIsSendingCode] = useState(false)
 
   const validateEmailForm = () => fields.email.length > 0
-  
-  const validateConfirmForm = () => fields.code.length > 0
   
   const handleUpdateClick = async event => {
     event.preventDefault()
@@ -36,13 +34,12 @@ const ChangeEmail = () => {
     }
   }
 
-  const handleConfirmClick = async event => {
-    event.preventDefault()
+  const handleConfirmClick = async confirmationCode => {
 
     setIsConfirming(true)
 
     try {
-      await Auth.verifyCurrentUserAttributeSubmit("email", fields.code)
+      await Auth.verifyCurrentUserAttributeSubmit("email", confirmationCode)
 
       history.push("/settings")
     } catch (error) {
@@ -76,37 +73,12 @@ const ChangeEmail = () => {
     )
   }
 
-  const renderConfirmationForm = () => {
-    return (
-      <Form onSubmit={handleConfirmClick}>
-        <Form.Group size="lg" controlId="code">
-          <Form.Label>Confirmation Code</Form.Label>
-          <Form.Control
-            autoFocus
-            type="tel"
-            value={fields.code}
-            onChange={handleFieldChange}
-          />
-          <Form.Text>
-            Please check your email ({fields.email}) for the confirmation code.
-          </Form.Text>
-        </Form.Group>
-        <LoaderButton
-          block
-          type="submit"
-          size="lg"
-          isLoading={isConfirming}
-          disabled={!validateConfirmForm()}
-        >
-          Confirm
-        </LoaderButton>
-      </Form>
-    )
-  }
-
   return (
     <div className="ChangeEmail">
-      {!codeSent ? renderUpdateForm() : renderConfirmationForm()}
+      {!codeSent ? 
+        renderUpdateForm() : 
+        <ConfirmationCode onSubmit={handleConfirmClick} isLoading={isConfirming} /> 
+      }
     </div>
   )
 }
