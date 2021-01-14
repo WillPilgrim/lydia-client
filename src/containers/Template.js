@@ -4,7 +4,6 @@ import Form from "react-bootstrap/Form"
 import { InputGroup, Col } from "react-bootstrap"
 import { useParams, useHistory } from "react-router-dom"
 import LoaderButton from "../components/LoaderButton"
-import { useFormFields } from "../libs/hooksLib"
 import { useAppContext } from "../libs/contextLib"
 import { onError } from "../libs/errorLib"
 import Moment from "moment"
@@ -19,7 +18,8 @@ const Template = () => {
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [fields, handleFieldChange, setFieldValues] = useFormFields({
+  
+  const [fields, setFields] = useState({
     description: "",
     templateType: "Debit",
     startDate: today.toDate(),
@@ -33,6 +33,9 @@ const Template = () => {
     inflation: true
   })
 
+  const handleFieldChange = event => setFields( fields => ({...fields, [event.target.id]: event.target.value}))
+  const setSomeFields = values => setFields(fields => ({...fields, ...values}) )
+
   useEffect(() => {
     console.log('Template: useEffect')
     const loadTemplate = () => API.get("accounts", `/templates/${id}`)
@@ -41,7 +44,7 @@ const Template = () => {
           try {
           const template = await loadTemplate()
           const { accountFromId, accountToId, description, amount, startDate, endDate, templateType, periodType, periodCnt, periodLastDay, templateId, inflation } = template
-          setFieldValues({ templateId, description, templateType,
+          setFields({ templateId, description, templateType,
             startDate: new Date(startDate), 
             endDate: new Date(endDate),
             amount100: (amount / 100).toFixed(2), accountFromId, accountToId,
@@ -63,23 +66,19 @@ const Template = () => {
   const handleTemplateTypeChange = event => {
     const templateType = event.target.value
     // Always reset partner account and last period day when changing type
-    let newSet = {[event.target.id]: templateType, accountToId:"0", periodLastDay:0}  
+    const newSet = {[event.target.id]: templateType, accountToId:"0", periodLastDay:0}  
     if (templateType === "CC") {
       Object.assign(newSet, {amount100:"0.00"})
     }
     if (templateType === "Zero") {
       Object.assign(newSet, {periodFrequency:1, endDate:fields.startDate, amount100:"0.00"})
     }
-    setFieldValues(newSet)
+    setSomeFields(newSet)
   }
 
   const handleStartDateChange = value => {
-    let newSet = {startDate:value}
-    if (fields.templateType === "Zero")
-    {
-      Object.assign(newSet, {endDate:value})
-    }
-    setFieldValues(newSet)
+    const newSet = fields.templateType === "Zero" ? { startDate:value, endDate:value } : { startDate:value }
+    setSomeFields(newSet)
   }
 
   const isValidDescription = () => fields.description.length > 0
@@ -89,7 +88,7 @@ const Template = () => {
     if (fields.amount100.length === 0) return false
     const regex = /^[0-9]+(\.[0-9]{1,2})?$/
     if (!regex.test(fields.amount100)) return false
-    let amount = Math.round(parseFloat(fields.amount100).toFixed(2) * 100)
+    const amount = Math.round(parseFloat(fields.amount100).toFixed(2) * 100)
     if (isNaN(amount)) return false
     if (amount > 99999999) return false
     if (amount === 0 &&(fields.templateType === "Debit" || 
@@ -100,7 +99,7 @@ const Template = () => {
   const isValidPeriodFrequency = () => {
     if (fields.templateType === "Zero") return true
     if (fields.periodFrequency.length <= 0) return false
-    let val = parseInt(fields.periodFrequency, 10)
+    const val = parseInt(fields.periodFrequency, 10)
     if (isNaN(val)) return false
     if (val > 364 || val < 1) return false
     return true
@@ -109,7 +108,7 @@ const Template = () => {
   const isValidPeriodLastDay = () => {
     if (fields.templateType !== "CC") return true
     if (fields.periodLastDay.length <= 0) return false
-    let val = parseInt(fields.periodLastDay, 10)
+    const val = parseInt(fields.periodLastDay, 10)
     if (isNaN(val)) return false
     if (val < 1 || val > 28) return false
     return true
@@ -128,9 +127,9 @@ const Template = () => {
   }
 
   const isValidToAccount = () => {
-    let partnerRequired = fields.templateType === "Transfer" || fields.templateType === "CC"
+    const partnerRequired = fields.templateType === "Transfer" || fields.templateType === "CC"
     if (partnerRequired && fields.accountToId === "0") return false // can't have transfer type without account
-    let partnerNotAllowed = fields.templateType === "Debit" || fields.templateType === "Credit"
+    const partnerNotAllowed = fields.templateType === "Debit" || fields.templateType === "Credit"
     if (partnerNotAllowed && fields.accountToId !== "0") return false
     if (fields.accountFromId === fields.accountToId) return false // from account equals to account
     return true
@@ -225,8 +224,8 @@ const Template = () => {
     }
   }
 
-  let amountRequired = !(fields.templateType === "CC" || fields.templateType === "Zero")
-  let partnerAccountRequired = !(fields.templateType === "Debit" || fields.templateType === "Credit")
+  const amountRequired = !(fields.templateType === "CC" || fields.templateType === "Zero")
+  const partnerAccountRequired = !(fields.templateType === "Debit" || fields.templateType === "Credit")
   return (
     isLoading ?
     <div>
@@ -274,7 +273,7 @@ const Template = () => {
           <Form.Group controlId="endDate">
             <Form.Label>End Date</Form.Label>
             <div>
-              <DatePicker dateFormat="dd/MM/yyyy" selected={fields.endDate} onChange={date => setFieldValues({endDate:date})} disabled={fields.templateType === "Zero"}/>
+              <DatePicker dateFormat="dd/MM/yyyy" selected={fields.endDate} onChange={date => setSomeFields({endDate:date})} disabled={fields.templateType === "Zero"}/>
             </div>
           </Form.Group>
           <Form.Group controlId="accountFromId">
@@ -387,7 +386,7 @@ const Template = () => {
               type='checkbox'
               label="Apply annual inflation rate"
               checked={fields.inflation}
-              onChange={event => setFieldValues({inflation:event.target.checked})}
+              onChange={event => setSomeFields({inflation:event.target.checked})}
             />
           </Form.Group>
         </Col>

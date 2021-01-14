@@ -6,7 +6,7 @@ import Moment from "moment"
 import { useAppContext } from "../libs/contextLib"
 import { today } from "../libs/utilities"
 
-const InterestPopUp = (props) => {
+const InterestPopUp = props => {
   const { transAcc, currentAccId } = useAppContext()
   const [newRateValue, setNewRateValue] = useState(0)
   const [newRateCredit, setNewRateCredit] = useState(false)

@@ -43,7 +43,8 @@ const Accounts = () => {
     }
 
     const buttonName = props.data.hide ? "Unhide" : "Hide"
-    return <span><button style={{ height: 20, lineHeight: 0.5, width:70}} className="btn btn-primary" onClick={btnClickedHandler}>{buttonName}</button></span>
+    return <div><Button  variant="primary" style={{ height: 20, lineHeight: 0.5, width:70, marginLeft: 0}} onClick={btnClickedHandler}>{buttonName}</Button></div>
+ //   return <div><Button style={{ height: 20, lineHeight: 0.5, width:70}} className="btn btn-primary" onClick={btnClickedHandler}>{buttonName}</Button></div>
   }
 
   const AccountEditCellRenderer = props => 
@@ -66,7 +67,7 @@ const Accounts = () => {
   }
 
   const dateFilterOptions = { 
-      comparator: function(filterLocalDateAtMidnight, cellValue) {
+      comparator: (filterLocalDateAtMidnight, cellValue) => {
         const dateParts = cellValue.substring(0,10).split("-")
         const day = Number(dateParts[2])
         const month = Number(dateParts[1]) - 1
@@ -83,34 +84,24 @@ const Accounts = () => {
       {
         displayKey: 'equals',
         displayName: 'Equals',
-        test: function(filterValue, cellValue) {
-            const temp = parseInt(cellValue, 10) / 100
-            return temp === filterValue
-        }
+        test: (filterValue, cellValue) => parseInt(cellValue, 10) / 100 === filterValue
       },
       {
         displayKey: 'lessthan',
         displayName: 'Less than',
-        test: function(filterValue, cellValue) {
-            const temp = parseInt(cellValue, 10) / 100
-            return temp < filterValue
-        }
+        test: (filterValue, cellValue) => parseInt(cellValue, 10) / 100 < filterValue
       },
       {
         displayKey: 'greaterthan',
         displayName: 'Greater than',
-        test: function(filterValue, cellValue) {
-            const temp = parseInt(cellValue, 10) / 100
-            return temp > filterValue
-        }
+        test: (filterValue, cellValue) => parseInt(cellValue, 10) / 100 > filterValue
       }
     ]
   }
 
   const percentFormatter = params => {
     const val = parseFloat(params.value, 10) 
-    if (val) return val.toFixed(2)
-    return ""
+    return val ? val.toFixed(2) : ""
   }
 
   const balanceFormatter = params => (parseInt(params.value, 10) / 100).toFixed(2)

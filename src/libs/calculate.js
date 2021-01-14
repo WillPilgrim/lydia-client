@@ -320,7 +320,7 @@ const processSpecials = (transactions, templates, today) => {
       }) 
     })
 
-  // Define a function to process a special
+  // Process a special transaction types - minimise and zero
   const createSpecial = special => {
     const accId = special.accountId
 

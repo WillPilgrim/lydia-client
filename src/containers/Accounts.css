@@ -16,6 +16,10 @@
     font-size:20px;
  } 
 
+ .ag-header-cell {
+  margin: 0; 
+} 
+
  .ag-header-group-cell-label {
   justify-content: center; 
   font-weight: 600;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react"
 import { Row, Col, Button, ButtonToolbar, ButtonGroup, Tabs, Tab} from "react-bootstrap"
 import Moment from "moment"
 import { calculate, deleteFutureAllTransactions, trim, archiveRebalance } from "../libs/calculate"
-import { Storage } from "aws-amplify";
+import { Storage } from "aws-amplify"
 import { AgGridColumn, AgGridReact } from "ag-grid-react"
 import "ag-grid-community/dist/styles/ag-grid.css"
 import "ag-grid-community/dist/styles/ag-theme-bootstrap.css"
@@ -57,26 +57,17 @@ const Transactions = () => {
       {
         displayKey: 'equals',
         displayName: 'Equals',
-        test: function(filterValue, cellValue) {
-          let temp = parseInt(cellValue, 10) / 100;
-            return temp === filterValue;
-        }
+        test: (filterValue, cellValue) => parseInt(cellValue, 10) / 100 === filterValue
       },
       {
         displayKey: 'lessthan',
         displayName: 'Less than',
-        test: function(filterValue, cellValue) {
-          let temp = parseInt(cellValue, 10) / 100;
-            return temp < filterValue;
-        }
+        test: (filterValue, cellValue) => parseInt(cellValue, 10) / 100 < filterValue
       },
       {
         displayKey: 'greaterthan',
         displayName: 'Greater than',
-        test: function(filterValue, cellValue) {
-          let temp = parseInt(cellValue, 10) / 100;
-            return temp > filterValue;
-        }
+        test: (filterValue, cellValue) => parseInt(cellValue, 10) / 100 > filterValue
       }
     ]
   }
@@ -95,24 +86,21 @@ const Transactions = () => {
     return ""
   }
 
-  const reconciledFormatter = params => {
-    let unicode = "0020"
-    if (params.value === 1) unicode = "2713" 
-    if (params.value === 2) unicode = "2705" 
-    return String.fromCharCode(parseInt(unicode,16))
-  }
+  const reconciledFormatter = params => String.fromCharCode(parseInt( params.value === 1 ? "2713" : params.value === 2 ? "2705" : "0020" ,16))
+
+  const reconciledCellStyle = params => ({paddingLeft:`${params.value === 1 ? 0.3 : 0}rem`, 'font-style':'normal', 'text-overflow':'clip'})
 
   const balanceFormatter = params => (parseInt(params.value, 10) / 100).toFixed(2)
 
   const dateFormatter = params => Moment(params.value).format("Do MMM YY")
 
   const dateFilterOptions = { 
-    comparator: function(filterLocalDateAtMidnight, cellValue) {
-      let dateParts = cellValue.substring(0,10).split("-")
-      let day = Number(dateParts[2])
-      let month = Number(dateParts[1]) - 1
-      let year = Number(dateParts[0])
-      let cellDate = new Date(year, month, day);
+    comparator: (filterLocalDateAtMidnight, cellValue) => {
+      const dateParts = cellValue.substring(0,10).split("-")
+      const day = Number(dateParts[2])
+      const month = Number(dateParts[1]) - 1
+      const year = Number(dateParts[0])
+      const cellDate = new Date(year, month, day)
       if (cellDate < filterLocalDateAtMidnight) return -1
       else if (cellDate > filterLocalDateAtMidnight) return 1
       else return 0
@@ -120,8 +108,9 @@ const Transactions = () => {
   }
 
   const getRowStyle = params => {
-    let rowStyle = {}
-    if (Moment(params.node.data.date).startOf("date").isSameOrBefore(today, "day")) rowStyle = { "background-color" : "#D3D3D3"}
+    const rowStyle = {}
+    if (Moment(params.node.data.date).startOf("date").isSameOrBefore(today, "day"))
+      rowStyle["background-color"] = params.node.rowIndex % 2 === 0 ? "#C3C3C3" : "#D3D3D3"
     if (params.node.rowIndex === 0) rowStyle["font-weight"] = "bold"
     if (!params.node.data.autogen) rowStyle["font-style"] = "italic"
     if (params.node.data.newRate) rowStyle["color"] = "#0000FF"
@@ -130,14 +119,14 @@ const Transactions = () => {
 
   const rowEditable = node => node.data.transactionId !== 0 && ((Moment(node.data.date).isSameOrBefore(today, "day")) || (!node.data.autogen)) &&  (!node.data.newRate)
  
-  const onCellClicked = (node) => {
+  const onCellClicked = node => {
     if (node.column.colId === "reconciled" && node.rowIndex > 0)
       if (Moment(node.data.date).isSameOrBefore(today, "day")){
         let localTransAcc = transAcc
         const acc = localTransAcc.find(ta => ta.accountId === currentAccId)
-        const trans = acc.trans.find(t => t.transactionId === node.data.transactionId);
+        const trans = acc.trans.find(t => t.transactionId === node.data.transactionId)
         if (isNaN(trans.reconciled) || trans.reconciled === null ) trans.reconciled = 0
-        trans.reconciled++;
+        trans.reconciled++
         if (trans.reconciled === 3) trans.reconciled = 0
         node.data.reconciled = trans.reconciled
         setTransAcc(localTransAcc)
@@ -177,13 +166,13 @@ const Transactions = () => {
   }
 
   const handleLoad = async () => {
-    const key = "data2.txt";
+    const key = "data2.txt"
 //   let key = "Archive-2019-05-20.arc"
-    let localTransAcc = [];
+    let localTransAcc = []
     // Storage.get(key, { level: "private", download: true })
     //   .then(result => {
     //     console.log(result.Body)
-    //     let res = new TextDecoder("utf-8").decode(result.Body);
+    //     let res = new TextDecoder("utf-8").decode(result.Body)
     const data = await Storage.get(key, { level: "private", download: true })
     data.Body.text().then( result => {
         let dataToRestore = JSON.parse(result)
@@ -208,7 +197,7 @@ const Transactions = () => {
           localTransAcc.forEach(account => insertDataIntoGrid(account,gridApi[account.accountId]))
           setSaveRequired(false)
           setSaveArchiveRequired(false)          
-          setRecalcRequired(false);
+          setRecalcRequired(false)
           setArchive(false)
         } else console.log(err)
       })
@@ -428,7 +417,7 @@ const Transactions = () => {
         setSaveArchiveRequired(false)
         alert("Archive saved successfully")
     })
-      .catch(err => alert(err));
+      .catch(err => alert(err))
     setShowArchive(false)
   }
 
@@ -546,13 +535,13 @@ const Transactions = () => {
                   isRowSelectable={node => node.data.transactionId !== 0}
                   onGridReady={params => {
                     setGridApi({...gridApi,[ta.accountId]:params.api})
-                    let currAcc;
+                    let currAcc
                     if (transAcc)
                       currAcc = transAcc.find(y => y.accountId === ta.accountId)
                     insertDataIntoGrid( currAcc, params.api)
                   }}
                 >
-                  <AgGridColumn headerName="" field="reconciled" width={22} cellStyle={{textAlign: "right"}} valueFormatter={reconciledFormatter}></AgGridColumn>
+                  <AgGridColumn headerName="" field="reconciled" width={22} cellStyle={reconciledCellStyle} valueFormatter={reconciledFormatter} ></AgGridColumn>
                   <AgGridColumn headerName="Date" field="date" width={110} filter="agDateColumnFilter" filterParams={dateFilterOptions} cellStyle={{'textAlign':'right'}} valueFormatter={dateFormatter}></AgGridColumn>
                   <AgGridColumn headerName="Description" field="description" width={descriptionWidth} editable={rowEditable} filter="agTextColumnFilter" cellEditor="agTextCellEditor"></AgGridColumn>
                   <AgGridColumn headerName="Debit" field="dbAmount" width={110} editable={rowEditable} type="numericColumn" valueParser={amountParser} valueFormatter={amountFormatter} filter="agNumberColumnFilter" filterParams={amountFilterOptions} cellEditor="agTextCellEditor" cellEditorParams={{ useFormatter: true }}></AgGridColumn>

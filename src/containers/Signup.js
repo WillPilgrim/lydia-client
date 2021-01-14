@@ -40,13 +40,40 @@ const Signup = () => {
 
     try {
       const newUser = await Auth.signUp({
-        username: fields.email,
+        username: fields.email.toLowerCase(),
         password: fields.password
       })
       setIsLoading(false)
       setNewUser(newUser)
-    } catch (e) {
-      onError(e)
+    } 
+    catch (e) {
+      console.log(e)
+      if (e.name === "UsernameExistsException") {
+        try {
+          await Auth.confirmSignUp(fields.email.toLowerCase(),"fake")
+          alert(`Something went wrong. User ${fields.email.toLowerCase()} confirmed with fake code!`)
+        } 
+        catch (confirmErr) {
+          console.log(confirmErr)
+          if (confirmErr.code === "NotAuthorizedException") {
+            alert(`Sorry, user ${fields.email.toLowerCase()} already exists. Choose another email address.`)
+          } else if (confirmErr.code === "CodeMismatchException") {
+            try {
+              const newUser = await Auth.resendSignUp(fields.email.toLowerCase())
+              alert(`Unconfirmed user ${fields.email.toLowerCase()} already exists. Check email for new confirmation code.`)
+              setNewUser(newUser)
+            }
+            catch (resendErr) {
+              console.log(resendErr)
+              onError(resendErr)
+            }
+          } 
+          else onError(confirmErr)
+        }
+      }
+      else onError(e)
+    }
+    finally {
       setIsLoading(false)
     }
   }
@@ -57,8 +84,8 @@ const Signup = () => {
     setIsLoading(true)
 
     try {
-      await Auth.confirmSignUp(fields.email, fields.confirmationCode)
-      await Auth.signIn(fields.email, fields.password)
+      await Auth.confirmSignUp(fields.email.toLowerCase(), fields.confirmationCode)
+      await Auth.signIn(fields.email.toLowerCase(), fields.password)
 
       userHasAuthenticated(true)
       history.push("/")

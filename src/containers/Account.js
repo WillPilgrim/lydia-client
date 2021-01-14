@@ -4,7 +4,6 @@ import Form from "react-bootstrap/Form"
 import { InputGroup, Col  } from "react-bootstrap"
 import { useParams, useHistory } from "react-router-dom"
 import LoaderButton from "../components/LoaderButton"
-import { useFormFields } from "../libs/hooksLib"
 import { useAppContext } from "../libs/contextLib"
 import { onError } from "../libs/errorLib"
 import Moment from "moment"
@@ -17,17 +16,17 @@ const Account = () => {
   const { refreshAccounts, setRecalcRequired, accounts } = useAppContext()
   const { id } = useParams()
   const history = useHistory()
-  const [openingDate, setOpeningDate] = useState(today.toDate())
-  const [closingDate, setClosingDate] = useState(today.clone().add(10, "y").toDate()) // default closing date to 10 years from now
-  const [intFirstAppliedDate, setIntFirstAppliedDate] = useState(today.toDate())
-  const [interest, setInterest] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [fields, handleFieldChange, setValues] = useFormFields({
+  const [fields, setFields] = useState({
+    openingDate: today.toDate(),
+    closingDate: today.clone().add(10, "y").toDate(), // default closing date to 10 years from now
+    intFirstAppliedDate: today.toDate(),
     accName: "",
     description: "",
     amount100: "0.00",
+    interest: false,
     crRate: 0,
     dbRate: 0,
     periodFrequency: 1,
@@ -36,20 +35,31 @@ const Account = () => {
     sortOrder: 0
   })
 
+  const handleFieldChange = event => setFields( fields => ({...fields, [event.target.id]: event.target.value}))
+  const setSomeFields = values => setFields(fields => ({...fields, ...values}) )
+
   useEffect(() => {
     console.log('Account: useEffect')
     const loadAccount = () => API.get("accounts", `/accounts/${id}`)
     const onLoad = async () => {
       try {
         setIsLoading(true)
-        const account = await loadAccount()
-        const { accName, description, amount, crRate, dbRate, periodCnt, periodType, hide, sortOrder, openingDate, closingDate, intFirstAppliedDate, interest } = account
-
-        setOpeningDate(new Date(openingDate))
-        setClosingDate(new Date(closingDate))
-        setIntFirstAppliedDate(new Date(intFirstAppliedDate))
-        setInterest(interest)
-        setValues({ accName, description, amount100: (amount / 100).toFixed(2), crRate, dbRate, periodFrequency: periodCnt, periodType, hide, sortOrder })
+        const acc = await loadAccount()
+        setFields({ 
+          openingDate: new Date(acc.openingDate), 
+          closingDate: new Date(acc.closingDate), 
+          intFirstAppliedDate: new Date(acc.intFirstAppliedDate),
+          accName: acc.accName, 
+          description: acc.description, 
+          amount100: (acc.amount / 100).toFixed(2), 
+          interest: acc.interest,
+          crRate: acc.crRate, 
+          dbRate: acc.dbRate, 
+          periodFrequency: acc.periodCnt, 
+          periodType: acc.periodType, 
+          hide: acc.hide, 
+          sortOrder: acc.sortOrder 
+        })
         setIsLoading(false)
       } catch (e) {
         setIsLoading(false)
@@ -67,30 +77,30 @@ const Account = () => {
   const isValidDescription = () => fields.description.length > 0
 
   const isValidOpeningDate = () => {
-    if (openingDate === null) return false
+    if (fields.openingDate === null) return false
     // Bizarre check to make sure opening date not more than 30 years in the future!
-    return Moment(openingDate).isBefore(today.clone().add(30, "y"))
+    return Moment(fields.openingDate).isBefore(today.clone().add(30, "y"))
   }
 
   const isValidClosingDate = () => {
-    if (closingDate === null || openingDate === null) return false
-    if (Moment(closingDate).isBefore(Moment(openingDate), "day")) return false
+    if (fields.closingDate === null || fields.openingDate === null) return false
+    if (Moment(fields.closingDate).isBefore(Moment(fields.openingDate), "day")) return false
     // Bizarre check to make sure closing date not more than 30 years in the future!
-    return Moment(closingDate).isBefore(today.clone().add(30, "y"))
+    return Moment(fields.closingDate).isBefore(today.clone().add(30, "y"))
   }
 
   const isValidOpeningBalance = () => {
     if (fields.amount100.length === 0) return false
     const regex = /^(-|\+)?[0-9]+(\.[0-9]{1,2})?$/
     if (!regex.test(fields.amount100)) return false
-    let amount = Math.round(parseFloat(fields.amount100).toFixed(2) * 100)
+    const amount = Math.round(parseFloat(fields.amount100).toFixed(2) * 100)
     if (isNaN(amount)) return false
     if (amount > 99999999 || amount < -99999999) return false
     return true
   }
 
   const isValidRate = (rate) => {
-    if (!interest) return true
+    if (!fields.interest) return true
     const regex = /^[0-9]+(\.[0-9]{1,2})?$/
     if (!regex.test(rate)) return false
     const amount = parseFloat(rate).toFixed(2)
@@ -100,18 +110,18 @@ const Account = () => {
   }
 
   const isValidIntFirstAppliedDate = () => {
-    if (!interest) return true
-    if (intFirstAppliedDate === null) return false
-    if (Moment(intFirstAppliedDate).isAfter(today.clone().add(30, "y"), "day")) return false
-    if (Moment(intFirstAppliedDate).isBefore(Moment(openingDate), "day")) return false
-    if (Moment(intFirstAppliedDate).isAfter(Moment(closingDate), "day")) return false
+    if (!fields.interest) return true
+    if (fields.intFirstAppliedDate === null) return false
+    if (Moment(fields.intFirstAppliedDate).isAfter(today.clone().add(30, "y"), "day")) return false
+    if (Moment(fields.intFirstAppliedDate).isBefore(Moment(fields.openingDate), "day")) return false
+    if (Moment(fields.intFirstAppliedDate).isAfter(Moment(fields.closingDate), "day")) return false
     return true
   }
 
   const isValidPeriodFrequency = () => {
-    if (!interest) return true
+    if (!fields.interest) return true
     if (fields.periodFrequency.length <= 0) return false
-    let val = parseInt(fields.periodFrequency, 10)
+    const val = parseInt(fields.periodFrequency, 10)
     if (isNaN(val)) return false
     if (val > 364 || val < 1) return false
     return true
@@ -149,15 +159,15 @@ const Account = () => {
       const account = {
         accName: fields.accName,
         description: fields.description,
-        openingDate: Moment(openingDate).startOf('date').format(),
-        closingDate: Moment(closingDate).startOf('date').format(),
+        openingDate: Moment(fields.openingDate).startOf('date').format(),
+        closingDate: Moment(fields.closingDate).startOf('date').format(),
         amount: Math.round(parseFloat(fields.amount100) * 100),
-        crRate: interest ? parseFloat(fields.crRate).toFixed(2) : 0,
-        dbRate: interest ? parseFloat(fields.dbRate).toFixed(2) : 0,
-        interest: interest,
-        periodType: interest ? fields.periodType : "M",
-        periodCnt: interest ? parseInt(fields.periodFrequency, 10) : 1,
-        intFirstAppliedDate: Moment(intFirstAppliedDate).startOf('date').format(),
+        crRate: fields.interest ? parseFloat(fields.crRate).toFixed(2) : 0,
+        dbRate: fields.interest ? parseFloat(fields.dbRate).toFixed(2) : 0,
+        interest: fields.interest,
+        periodType: fields.interest ? fields.periodType : "M",
+        periodCnt: fields.interest ? parseInt(fields.periodFrequency, 10) : 1,
+        intFirstAppliedDate: Moment(fields.intFirstAppliedDate).startOf('date').format(),
 
         // sortOrder should be specified in the lambda
         sortOrder: id === "new" ? accounts.length + 1 : fields.sortOrder,
@@ -235,7 +245,7 @@ const Account = () => {
             <Form.Group controlId="openingDate">
               <Form.Label>Opening Date</Form.Label>
               <div>
-                <DatePicker dateFormat="dd/MM/yyyy" selected={openingDate} onChange={date => setOpeningDate(date)} />
+                <DatePicker dateFormat="dd/MM/yyyy" selected={fields.openingDate} onChange={date => setSomeFields({openingDate: date})} />
               </div>
             </Form.Group>
           </Col>
@@ -243,7 +253,7 @@ const Account = () => {
             <Form.Group controlId="closingDate">
               <Form.Label>Closing Date</Form.Label>
               <div>
-                <DatePicker dateFormat="dd/MM/yyyy" selected={closingDate} onChange={date => setClosingDate(date)} />
+                <DatePicker dateFormat="dd/MM/yyyy" selected={fields.closingDate} onChange={date => setSomeFields({closingDate: date})} />
               </div>
             </Form.Group>
           </Col>
@@ -271,8 +281,8 @@ const Account = () => {
           <Form.Check
             type='checkbox'
             label="Calculate Interest For This Account"
-            checked={interest}
-            onChange={event => setInterest(event.target.checked)}
+            checked={fields.interest}
+            onChange={event => setSomeFields({interest:event.target.checked})}
           />
         </Form.Group>
         <Form.Row>
@@ -288,10 +298,10 @@ const Account = () => {
                   value={fields.crRate}
                   placeholder="Credit interest rate"
                   onChange={handleFieldChange}
-                  disabled={!interest}
+                  disabled={!fields.interest}
                   onFocus={handleFocus}
-                  isValid={isValidRate(fields.crRate) && interest}
-                  isInvalid={!isValidRate(fields.crRate) && interest}
+                  isValid={isValidRate(fields.crRate) && fields.interest}
+                  isInvalid={!isValidRate(fields.crRate) && fields.interest}
                 />
                 <Form.Control.Feedback type="invalid">Please enter a valid, non-negative interest rate. Zero is valid.</Form.Control.Feedback>
               </InputGroup>
@@ -307,10 +317,10 @@ const Account = () => {
                   value={fields.dbRate}
                   placeholder="Debit interest rate"
                   onChange={handleFieldChange}
-                  disabled={!interest}
+                  disabled={!fields.interest}
                   onFocus={handleFocus}
-                  isValid={isValidRate(fields.dbRate) && interest}
-                  isInvalid={!isValidRate(fields.dbRate) && interest}
+                  isValid={isValidRate(fields.dbRate) && fields.interest}
+                  isInvalid={!isValidRate(fields.dbRate) && fields.interest}
                 />
                 <Form.Control.Feedback type="invalid">Please enter a valid, non-negative interest rate. Zero is valid.</Form.Control.Feedback>
               </InputGroup>
@@ -318,7 +328,7 @@ const Account = () => {
             <Form.Group controlId="intFirstAppliedDate">
               <Form.Label>First Applied Date</Form.Label>
               <div>
-                <DatePicker dateFormat="dd/MM/yyyy" selected={intFirstAppliedDate} onChange={date => setIntFirstAppliedDate(date)} disabled={!interest} />
+                <DatePicker dateFormat="dd/MM/yyyy" selected={fields.intFirstAppliedDate} onChange={date => setSomeFields({intFirstAppliedDate: date})} disabled={!fields.interest} />
               </div>
             </Form.Group>
           </Col>
@@ -330,8 +340,8 @@ const Account = () => {
                 type="text"
                 value={fields.periodType}
                 onChange={handleFieldChange}
-                disabled={!interest}
-                isValid={interest}
+                disabled={!fields.interest}
+                isValid={fields.interest}
               >
                 <option value="M">Month</option>
                 <option value="w">Week</option>
@@ -347,10 +357,10 @@ const Account = () => {
                 value={fields.periodFrequency}
                 placeholder="Number of periods"
                 onChange={handleFieldChange}
-                disabled={!interest}
+                disabled={!fields.interest}
                 onFocus={handleFocus}
-                isValid={isValidPeriodFrequency() && interest}
-                isInvalid={!isValidPeriodFrequency() && interest}
+                isValid={isValidPeriodFrequency() && fields.interest}
+                isInvalid={!isValidPeriodFrequency() && fields.interest}
               />
               <Form.Control.Feedback type="invalid">Please enter a period frequency from 1 to 364.</Form.Control.Feedback>
             </Form.Group>
