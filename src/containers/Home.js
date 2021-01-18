@@ -15,6 +15,8 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(true)
   
   useEffect(() => {
+    console.log('Home: useEffect')
+
     const onLoad = async () => {
       if (!isAuthenticated) {
         return
@@ -93,51 +95,3 @@ const Home = () => {
 }
 
 export default Home
-
-//   lineFormatter = (transAcc, account) => {
-//     let line = "Balance: "
-//     if (transAcc) {
-//       let lineAcc = transAcc.find(x => x.accountId === account.accountId)
-//       if (lineAcc) {
-//         line += (parseInt(lineAcc.currentBal, 10) / 100).toFixed(2)
-//         if (lineAcc.interest) {
-//           if (lineAcc.currentCrRate > 0)
-//             line += ', Credit Rate: ' + (lineAcc.currentCrRate).toFixed(2) + "%"
-//           if (lineAcc.currentDbRate > 0)
-//             line += ', Debit Rate: ' + (lineAcc.currentDbRate).toFixed(2) + "%"
-//         }
-//       }
-//     }
-//     return line
-//   }
-
-//   handleAccountClick = event => {
-//     event.preventDefault();
-//     this.props.history.push(event.currentTarget.getAttribute("href"));
-//   }
-
-//   renderAccountsList(accounts, transAcc) {
-//     let acclist = [{}]
-//     if (accounts) acclist = acclist.concat(accounts)
-//     return acclist.map(
-//       (account, i) =>
-//         i !== 0
-//           ? <div className="row" key={account.accountId}>
-//                 <ListGroupItem
-//                   key={account.accountId}
-//                   href={`/accounts/${account.accountId}`}
-//                   onClick={this.handleAccountClick}
-//                   header={account.description.trim().split("\n")[0]}
-//                 >
-//                   {this.lineFormatter(transAcc,account)}
-//                 </ListGroupItem>
-//               </div>
-//           : <div className="row" key="new">
-//                 <ListGroupItem key="new" href="/accounts/new" onClick={this.handleAccountClick}>
-//                   <h4>
-//                     <b>{"\uFF0B"}</b> Create a new account
-//                   </h4>
-//                 </ListGroupItem>
-//             </div>
-//     );
-//   }

@@ -16,11 +16,11 @@ const App = () => {
   const [isAuthenticating, setIsAuthenticating] = useState(true)
   const [isAuthenticated, userHasAuthenticated] = useState(false)
   const [stateToBeRefreshed, setStateToBeRefreshed] = useState(false)
-  const [email, setEmail] = useState("Settings")
+  const [email, setEmail] = useState("")
   const [templates, setTemplates] = useState(null)
   const [accounts, setAccounts] = useState(null)
   const [transAcc, setTransAcc] = useState(null)
-  const [currentAccId, setCurrentAccId] = useState(0)
+  const [currentAccId, setCurrentAccId] = useState("0")
   const [templateFilterModel, setTemplateFilterModel] = useState(null)
   const [templateColumnState, setTemplateColumnState] = useState(null)
   const [saveArchiveRequired, setSaveArchiveRequired] = useState(false)
@@ -31,6 +31,7 @@ const App = () => {
   useEffect(() => {
     console.log('App: useEffect')
     const onLoad = async () => {
+      setIsAuthenticating(true)
       try {
         let session = await Auth.currentSession()
         userHasAuthenticated(true)
@@ -73,14 +74,14 @@ const App = () => {
     sortAndSetAccounts(mappedAccounts)
   }
 
-   const sortAndSetAccounts = accs => {
+  const sortAndSetAccounts = accs => {
     accs.sort((a, b) => a.sortOrder - b.sortOrder)
     setAccounts(accs)
     const selectedAccount = accs.find(acc => !acc.hide)
-    if (selectedAccount) {
-     setCurrentAccId(selectedAccount.accountId)
-    }
-    else setCurrentAccId(0)
+    if (selectedAccount) 
+      setCurrentAccId(selectedAccount.accountId)
+    else 
+      setCurrentAccId("0")
   }
 
   const changeAccountsOrder = (fromIndex, toIndex, fromSortOrder, toSortOrder) => {
@@ -93,9 +94,17 @@ const App = () => {
   }
 
   const handleLogout = async () => {
+    userHasAuthenticated(false)
     await Auth.signOut()
 
-    userHasAuthenticated(false)
+    setTransAcc(null)
+    setEmail("")
+    setTemplateFilterModel(null)
+    setTemplateColumnState(null)
+    setSaveArchiveRequired(false)
+    setSaveRequired(false)
+    setRecalcRequired(false)
+    setArchive(false)
 
     history.push("/login")
   }
@@ -154,7 +163,8 @@ const App = () => {
           isAuthenticated, userHasAuthenticated, accounts, templates, refreshTemplates, refreshAccounts, currentAccId, setCurrentAccId, 
           templateColumnState, setTemplateColumnState, templateFilterModel, setTemplateFilterModel, recalcRequired, setRecalcRequired,
           setStateToBeRefreshed, changeAccountsOrder, saveAccountSet,
-          archive, setArchive, saveArchiveRequired, setSaveArchiveRequired, transAcc, setTransAcc, saveRequired, setSaveRequired
+          archive, setArchive, saveArchiveRequired, setSaveArchiveRequired, transAcc, setTransAcc, saveRequired, setSaveRequired, 
+          email, setEmail
         }}>
           <Routes />
         </AppContext.Provider>

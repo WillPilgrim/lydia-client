@@ -21,6 +21,7 @@ const Templates = () => {
 
   useEffect(() => {
     console.log('Templates: useEffect')
+    
     const onLoad = async () => {
       if (!isAuthenticated) return
 

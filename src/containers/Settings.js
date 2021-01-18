@@ -16,6 +16,8 @@ const Settings = () => {
   const [stripe, setStripe] = useState(null);
 
   useEffect(() => {
+    console.log('Settings: useEffect')
+
     setStripe(window.Stripe(config.STRIPE_KEY))
   }, [])
 

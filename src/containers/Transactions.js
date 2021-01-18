@@ -26,17 +26,16 @@ const Transactions = () => {
   const [archiveFile, setArchiveFile] = useState(null)
 
   useEffect(() => {
+    console.log('Transactions: useEffect')
+
     const onLoad = async () => {
-
-      console.log('Transactions: useEffect')
-
       if (!isAuthenticated) {
         return
       }
 
       try {
         if (!transAcc)
-          await handleLoad()
+          await restoreData()
         else
         {
           if (currentAccId)
@@ -122,7 +121,7 @@ const Transactions = () => {
   const onCellClicked = node => {
     if (node.column.colId === "reconciled" && node.rowIndex > 0)
       if (Moment(node.data.date).isSameOrBefore(today, "day")){
-        let localTransAcc = transAcc
+        const localTransAcc = transAcc
         const acc = localTransAcc.find(ta => ta.accountId === currentAccId)
         const trans = acc.trans.find(t => t.transactionId === node.data.transactionId)
         if (isNaN(trans.reconciled) || trans.reconciled === null ) trans.reconciled = 0
@@ -144,71 +143,78 @@ const Transactions = () => {
     }
     else {
       localTransAcc = calculate( accounts, templates, transAcc, today )
-       setSaveRequired(true)
+      setSaveRequired(true)
     }
     setTransAcc(localTransAcc)
     localTransAcc.forEach(account => insertDataIntoGrid(account,gridApi[account.accountId]))
     setRecalcRequired(false)
   }
 
-  const handleSave = () => {
-    let localTransAcc = deleteFutureAllTransactions(accounts, transAcc, today, false)
-    const key = "data2.txt"
-    let dataToSave = [accounts, templates, localTransAcc, today.format()]
-    let strToSave = JSON.stringify(dataToSave)
-    Storage.put(key, strToSave, {
-      level: "private",
-      contentType: "application/json"
-    })
-      .then(result => {setSaveRequired(false)
-      alert("Transactions saved successfully")})
-      .catch(err => alert(err))
+  const handleSave = async () => {
+    const key = "data2.txt"   // need to change this!
+    const localTransAcc = deleteFutureAllTransactions(accounts, transAcc, today, false)
+    const strToSave = JSON.stringify([accounts, templates, localTransAcc, today.format()])
+    console.log(strToSave)
+    try {
+      await Storage.put(key, strToSave, { level: "private", contentType: "application/json" })
+      setSaveRequired(false)
+      alert("Transactions saved successfully")
+    } 
+    catch(e) {
+      onError(e)
+    }
   }
 
-  const handleLoad = async () => {
-    const key = "data2.txt"
-//   let key = "Archive-2019-05-20.arc"
-    let localTransAcc = []
-    // Storage.get(key, { level: "private", download: true })
-    //   .then(result => {
-    //     console.log(result.Body)
-    //     let res = new TextDecoder("utf-8").decode(result.Body)
-    const data = await Storage.get(key, { level: "private", download: true })
-    data.Body.text().then( result => {
-        let dataToRestore = JSON.parse(result)
+  const restoreData = async () => {
+    const key = "data2.txt"  // need to change this!
+    try {
+      const data = await Storage.get(key, { level: "private", download: true, cacheControl: 'no-cache' })
+      if (!data)
+        alert('No transaction data found - without explicit error')
+      else if (!data.Body)
+        alert('No data body found - without explicit error')
+      else {
+        const result = await data.Body.text()
+        const dataToRestore = JSON.parse(result)
         // Reconstruct data as of when it was saved including using the templates that existed then as well
         // as the date at that time
-        localTransAcc = calculate(...dataToRestore)
+        let localTransAcc = calculate(...dataToRestore)
         // Now recalculate the data based on today's date and templates
         localTransAcc = calculate( accounts, templates, localTransAcc, today )
         selectAccount(currentAccId)
         setTransAcc(localTransAcc)
-        localTransAcc.forEach(account => insertDataIntoGrid(account,gridApi[account.accountId]))
+        localTransAcc.forEach(account => insertDataIntoGrid(account, gridApi[account.accountId]))
         setSaveRequired(false)
         setSaveArchiveRequired(false)
         setRecalcRequired(false)
         setArchive(false)
-      })
-      .catch(err => {
-        if (err.statusCode === 403) {
-          localTransAcc = calculate( accounts, templates, localTransAcc, today )
-          selectAccount(currentAccId)
-          setTransAcc(localTransAcc)
-          localTransAcc.forEach(account => insertDataIntoGrid(account,gridApi[account.accountId]))
-          setSaveRequired(false)
-          setSaveArchiveRequired(false)          
-          setRecalcRequired(false)
-          setArchive(false)
-        } else console.log(err)
-      })
+      }
+    }
+    catch (e) {
+      if (e.response.status === 403) {
+        const localTransAcc = calculate( accounts, templates, [], today )
+        setTransAcc(localTransAcc)
+        localTransAcc.forEach(account => insertDataIntoGrid(account, gridApi[account.accountId]))
+        setSaveRequired(false)
+        setSaveArchiveRequired(false)          
+        setRecalcRequired(false)
+        setArchive(false)
+        selectAccount("0")
+      } else
+        onError(e)
+    }
+  }
+
+  const handleLoad = async () => {
+    if (window.confirm("Are you sure you want to restore the data to the last save point?"))
+      await restoreData()
   }
 
   const insertDataIntoGrid = (account,api) => {
     let data =[]
     if (account) {
-      let desc = "Opening Balance"
-      if (account.interest)
-        desc = `Int=${(account.starting.interest / 100).toFixed(2)} db=${account.starting.dbRate} cr=${account.starting.crRate}`
+      const desc = !account.interest ? "Opening Balance" :
+                   `Int=${(account.starting.interest / 100).toFixed(2)} db=${account.starting.dbRate} cr=${account.starting.crRate}`
       data = [
         {
           transactionId: 0,
@@ -235,8 +241,7 @@ const Transactions = () => {
     if (nodes.length) {
       const data = nodes[0].data
       const newDate = Moment(data.date)
-
-      let newNode = {
+      const newNode = {
         date: newDate.format("YYYY-MM-DD"),
         sortKey: newDate.diff(beginning,'days'),
         autogen: null,
@@ -265,10 +270,8 @@ const Transactions = () => {
     const nodes = gridApi[currentAccId].getSelectedNodes()
     if (nodes.length) {
       let localTransAcc = transAcc
-      let acc = localTransAcc.find(ta => ta.accountId === currentAccId)
-      let data = nodes[0].data
-      acc.trans = acc.trans.filter(t => t.transactionId !== data.transactionId)
-      nodes[0].setData(data)
+      const acc = localTransAcc.find(ta => ta.accountId === currentAccId)
+      acc.trans = acc.trans.filter(t => t.transactionId !== nodes[0].transactionId)
 
       localTransAcc = calculate( accounts, templates, localTransAcc, today )
       setTransAcc(localTransAcc)
@@ -281,10 +284,10 @@ const Transactions = () => {
   const handleManual = () => {
     const nodes = gridApi[currentAccId].getSelectedNodes()
     if (nodes.length) {
-      let localTransAcc = transAcc
-      let acc = localTransAcc.find(ta => ta.accountId === currentAccId)
-      let data = nodes[0].data
-      let transToUpdate = acc.trans.find(t => t.transactionId === data.transactionId )
+      const localTransAcc = transAcc
+      const acc = localTransAcc.find(ta => ta.accountId === currentAccId)
+      const data = nodes[0].data
+      const transToUpdate = acc.trans.find(t => t.transactionId === data.transactionId )
       data.autogen = null
       transToUpdate.autogen = null
       transToUpdate.type = "manual"
@@ -292,8 +295,7 @@ const Transactions = () => {
       setTransAcc(localTransAcc)
       setRecalcRequired(true)
       setSaveRequired(true)
-      let params = { rowNodes: nodes }
-      gridApi[currentAccId].refreshCells(params)
+      gridApi[currentAccId].refreshCells( { rowNodes: nodes } )
     }
   }
 
@@ -320,9 +322,7 @@ const Transactions = () => {
 
   const handleInterestCommit = (newRateValue, newRateCredit, intFirstAppliedDate) => {
     const newRate = parseFloat(newRateValue).toFixed(2)
-    let desc
-    if (newRateCredit) desc = " New credit rate: " + newRate + "%"
-    else desc = " New debit rate: " + newRate + "%"
+    const desc = ` New ${newRateCredit ? "credit" : "debit"} rate: ${newRate}%`
     const newDate = Moment(intFirstAppliedDate)
     const newNode = {
       date: newDate.format("YYYY-MM-DD"),
@@ -358,85 +358,73 @@ const Transactions = () => {
     setShowTrim(false)
   }
 
-  const handleArchiveLoad = () => {
-    const key = "archive.json"
-    let localTransAcc = []
-
-    Storage.get(key, { level: "private", download: true })
-      .then(result => {
-        const res = new TextDecoder("utf-8").decode(result.Body)
-        const dataToRestore = JSON.parse(res)
-//        localTransAcc = deleteFutureAllTransactions(dataToRestore[0],dataToRestore[2],dataToRestore[3])
-        // console.log(dataToRestore)
+  const handleArchiveLoad = async () => {
+    const key = "archive.json"   // need to change this!
+    try {
+      const data = await Storage.get(key, { level: "private", download: true, cacheControl: 'no-cache' })
+      if (!data)
+        alert('No archive found - without explicit error')
+      else if (!data.Body)
+        alert('No data body found - without explicit error')
+      else {
+        const result = await data.Body.text()
+        const dataToRestore = JSON.parse(result)
+        let localTransAcc = []
         if (!Array.isArray(dataToRestore[0])) {
           // console.log('Ultra New archive format')
           localTransAcc = dataToRestore
         } else if ((dataToRestore).length === 4) {
           // console.log('Old archive format')
           localTransAcc = dataToRestore[2]
-//          setArchiveDate(dataToRestore[3])
         } else if ((dataToRestore).length === 2) {
           // console.log('New archive format')
           localTransAcc = dataToRestore[0]
-//          setArchiveDate(dataToRestore[1])
-        } else console.log('Invalid archive format!')
+        } else alert('Invalid archive format!')
 
         setArchiveFile(key)
-        // let currentAccId = 0
-        // if (localTransAcc.length > 0) currentAccId = localTransAcc[0].accountId
         setTransAcc(localTransAcc)
         localTransAcc.forEach(account => insertDataIntoGrid( account, gridApi[account.accountId] ))
-        selectAccount(currentAccId)
+        selectAccount("0")
         setSaveRequired(false)
         setSaveArchiveRequired(false)
         setRecalcRequired(false)
         setArchive(true)
-      })
-      .catch(err => {
-        if (err.statusCode === 403) alert("No archive found")
-        else console.log(err)
-      })
+      }
+    }
+    catch (e) {
+      if (e.response.status === 403) 
+        alert("No archive found")
+      else
+        onError(e)
+    }
   }
 
-  const handleArchiveCommit = (archiveEndDate) => {
+  const saveArchive = async (key, strToSave) => {
+    try {
+      await Storage.put(key, strToSave, { level: "private", contentType: "application/json" })
+      setSaveRequired(false)
+      setSaveArchiveRequired(false)
+      alert("Archive saved successfully")
+    } 
+    catch(e) {
+      onError(e)
+    }
+  }
+
+  const handleArchiveCommit = async archiveEndDate => {
     const endDate = Moment(archiveEndDate)
-    const archive = deleteFutureAllTransactions( accounts, transAcc, endDate, true )
-    //let key = `Archive-${endDate.format("YYYY-MM-DD")}.arc`
-    const key = 'archive.json'
-    // setArchiveDate( endDate.format("YYYY-MM-DD")
-    //const dataToSave = [accounts,[],archive,endDate.format()]
-    // const dataToSave = [archive,endDate.format("YYYY-MM-DD")]
-    // const strToSave = JSON.stringify(dataToSave)
-    const strToSave = JSON.stringify(archive)
-    Storage.put(key, strToSave, {
-      level: "private",
-      contentType: "application/json"
-    })
-      .then(result => {
-        setSaveRequired(false)
-        setSaveArchiveRequired(false)
-        alert("Archive saved successfully")
-    })
-      .catch(err => alert(err))
+    const archiveData = deleteFutureAllTransactions( accounts, transAcc, endDate, true )
+    const key = `Archive-${endDate.format("YYYY-MM-DD")}.arc`  // needs changing!
+    // const key = 'archive.json'
+    const strToSave = JSON.stringify(archiveData)
+    await saveArchive( key, strToSave)
     setShowArchive(false)
   }
 
-  const handleArchiveSave = () => {
-    //const endDate = Moment(archiveDate)
+  const handleArchiveSave = async () => {
     const key = archiveFile
-    //const dataToSave = [transAcc,endDate.format("YYYY-MM-DD")]
-    //const strToSave = JSON.stringify(dataToSave)
     const strToSave = JSON.stringify(transAcc)
-    Storage.put(key, strToSave, {
-      level: "private",
-      contentType: "application/json"
-    })
-      .then(result => {
-        setSaveRequired(false)
-        setSaveArchiveRequired(false)
-        alert("Archive saved successfully")
-    })
-      .catch(err => alert(err))
+    await saveArchive( key, strToSave)
   }
 
   const updateRow = node => {
@@ -535,9 +523,7 @@ const Transactions = () => {
                   isRowSelectable={node => node.data.transactionId !== 0}
                   onGridReady={params => {
                     setGridApi({...gridApi,[ta.accountId]:params.api})
-                    let currAcc
-                    if (transAcc)
-                      currAcc = transAcc.find(y => y.accountId === ta.accountId)
+                    const currAcc = transAcc ? transAcc.find(y => y.accountId === ta.accountId) : null
                     insertDataIntoGrid( currAcc, params.api)
                   }}
                 >

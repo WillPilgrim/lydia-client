@@ -13,7 +13,7 @@ const Login = () => {
 
   const { setStateToBeRefreshed } = useAppContext()
   const [isLoading, setIsLoading] = useState(false)
-  const [displayConfirmationForm, setDisplayConfirmationForm] = useState(false)
+  const [displayConfirmationForm, setDisplayConfirmationForm] = useState("none")
   const [fields, handleFieldChange, setSomeFields] = useFormFields({
     email: "",
     password: "",
@@ -27,14 +27,20 @@ const Login = () => {
     setIsLoading(true)
 
     try {
-      await Auth.signIn(fields.email, fields.password)
-      setStateToBeRefreshed( value => !value)
+      const user = await Auth.signIn(fields.email.toLowerCase(), fields.password)
+      if (user.attributes.email_verified)
+        setStateToBeRefreshed( value => !value)
+      else {
+        await Auth.verifyCurrentUserAttribute("email")
+        alert(`Email account ${fields.email.toLowerCase()} has not been verified. Check email for new verification code.`)
+        setDisplayConfirmationForm("Verification")
+      }
     } catch (e) {
       if (e.name === "UserNotConfirmedException") {
         try {
           await Auth.resendSignUp(fields.email.toLowerCase())
           alert(`User ${fields.email.toLowerCase()} has not been confirmed. Check email for new confirmation code.`)
-          setDisplayConfirmationForm(true)
+          setDisplayConfirmationForm("Confirmation")
         }
         catch (resendErr)
         {
@@ -53,22 +59,36 @@ const Login = () => {
 
     setIsLoading(true)
 
-    try {
-      await Auth.confirmSignUp(fields.email.toLowerCase(), confirmationCode)
-      await Auth.signIn(fields.email.toLowerCase(), fields.password)
-      setStateToBeRefreshed(value => !value)
-    } catch (e) {
-      if (e.code === "NotAuthorizedException") {
-        setSomeFields({ password:"" })
-        alert(`User ${fields.email.toLowerCase()} confirmed but incorrect password provided. Try again.`)
-        setDisplayConfirmationForm(false)
-      } 
-      else 
-        onError(e)
+    if (displayConfirmationForm === "Verification")
+    {
+      try {
+        await Auth.verifyCurrentUserAttributeSubmit("email", confirmationCode)
+        setDisplayConfirmationForm("none")
+      } catch (e) {
+          onError(e)
+      }
+      finally {
+        setIsLoading(false)
+        setStateToBeRefreshed( value => !value)
+      }
     }
-    finally {
-      setIsLoading(false)
-    }
+    else
+      try {
+        await Auth.confirmSignUp(fields.email.toLowerCase(), confirmationCode)
+        await Auth.signIn(fields.email.toLowerCase(), fields.password)
+        setStateToBeRefreshed(value => !value)
+      } catch (e) {
+        if (e.code === "NotAuthorizedException") {
+          setSomeFields({ password:"" })
+          alert(`User ${fields.email.toLowerCase()} confirmed but incorrect password provided. Try again.`)
+          setDisplayConfirmationForm("none")
+        } 
+        else 
+          onError(e)
+      }
+      finally {
+        setIsLoading(false)
+      }
   }
 
   const renderForm = () =>  {
@@ -107,9 +127,14 @@ const Login = () => {
 
   return (
     <div className="Login">
-      {displayConfirmationForm ? 
-        <ConfirmationCode onSubmit={handleConfirmationSubmit} isLoading={isLoading} /> 
-        : renderForm() }
+      {displayConfirmationForm === "none" ? 
+        renderForm()
+        : <ConfirmationCode 
+             onSubmit={handleConfirmationSubmit} 
+             isLoading={isLoading} 
+             title={displayConfirmationForm}
+          />
+      }
     </div>
   )
 }

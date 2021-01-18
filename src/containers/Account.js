@@ -40,6 +40,7 @@ const Account = () => {
 
   useEffect(() => {
     console.log('Account: useEffect')
+    
     const loadAccount = () => API.get("accounts", `/accounts/${id}`)
     const onLoad = async () => {
       try {

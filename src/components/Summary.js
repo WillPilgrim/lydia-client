@@ -10,7 +10,6 @@ const Summary = () => {
   const [accounts, setAccounts] = useState(null)
 
   useEffect(() => {
-
     console.log('Summary: useEffect')
 
     const onLoad = async () => {

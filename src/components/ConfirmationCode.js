@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import Form from "react-bootstrap/Form"
 import LoaderButton from "../components/LoaderButton"
 
-const ConfirmationCode = ({ isLoading, onSubmit }) =>  {
+const ConfirmationCode = ({ isLoading, onSubmit, title="Confirmation" }) =>  {
 
     const [code, setCode] = useState("")
 
@@ -17,7 +17,7 @@ const ConfirmationCode = ({ isLoading, onSubmit }) =>  {
     return (
       <Form onSubmit={handleSubmitClick}>
         <Form.Group controlId="confirmationCode" size="lg">
-          <Form.Label>Confirmation Code</Form.Label>
+          <Form.Label>{title} Code</Form.Label>
           <Form.Control
             autoFocus
             type="tel"

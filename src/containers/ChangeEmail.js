@@ -4,12 +4,14 @@ import { useHistory } from "react-router-dom"
 import { Form } from "react-bootstrap"
 import LoaderButton from "../components/LoaderButton"
 import ConfirmationCode from "../components/ConfirmationCode"
+import { useAppContext } from "../libs/contextLib"
 import { useFormFields } from "../libs/hooksLib"
 import { onError } from "../libs/errorLib"
 import "./ChangeEmail.css"
 
 const ChangeEmail = () => {
   const history = useHistory()
+  const { email, setEmail } = useAppContext()
   const [codeSent, setCodeSent] = useState(false)
   const [fields, handleFieldChange] = useFormFields({
     email: ""
@@ -17,7 +19,9 @@ const ChangeEmail = () => {
   const [isConfirming, setIsConfirming] = useState(false)
   const [isSendingCode, setIsSendingCode] = useState(false)
 
-  const validateEmailForm = () => fields.email.length > 0
+  const validateEmailForm = () => 
+    fields.email.length > 0 &&
+    fields.email.toLowerCase() !== email
   
   const handleUpdateClick = async event => {
     event.preventDefault()
@@ -26,7 +30,8 @@ const ChangeEmail = () => {
 
     try {
       const user = await Auth.currentAuthenticatedUser()
-      await Auth.updateUserAttributes(user, { email: fields.email })
+      await Auth.updateUserAttributes(user, { email: fields.email.toLowerCase() })
+      setEmail(fields.email.toLowerCase())
       setCodeSent(true)
     } catch (error) {
       onError(error)

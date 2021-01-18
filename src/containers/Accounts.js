@@ -19,6 +19,7 @@ const Accounts = () => {
 
   useEffect(() => {
     console.log('Accounts: useEffect')
+    
     const onLoad = async () => {
       if (!isAuthenticated) return
       setIsLoading(false)

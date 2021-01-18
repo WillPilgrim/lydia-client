@@ -38,6 +38,7 @@ const Template = () => {
 
   useEffect(() => {
     console.log('Template: useEffect')
+    
     const loadTemplate = () => API.get("accounts", `/templates/${id}`)
     const onLoad = async () => {
       if (id !== "new") {
