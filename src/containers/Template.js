@@ -25,7 +25,7 @@ const Template = () => {
     startDate: today.toDate(),
     endDate: today.clone().add(10, "y").toDate(),
     amount100: "0.00",
-    accountFromId: accounts ? accounts[0].accountId:"0",
+    accountFromId: Array.isArray(accounts) && accounts.length ? accounts[0].accountId:"0",
     accountToId: "0",
     periodType: "M",
     periodFrequency: 1,
@@ -38,7 +38,7 @@ const Template = () => {
 
   useEffect(() => {
     console.log('Template: useEffect')
-    
+
     const loadTemplate = () => API.get("accounts", `/templates/${id}`)
     const onLoad = async () => {
       if (id !== "new") {
@@ -67,12 +67,15 @@ const Template = () => {
   const handleTemplateTypeChange = event => {
     const templateType = event.target.value
     // Always reset partner account and last period day when changing type
-    const newSet = {[event.target.id]: templateType, accountToId:"0", periodLastDay:0}  
+    const newSet = {[event.target.id]: templateType, accountToId:"0", periodLastDay:0, inflation:true}  
     if (templateType === "CC") {
-      Object.assign(newSet, {amount100:"0.00"})
+      Object.assign(newSet, {amount100:"0.00", inflation:false})
     }
     if (templateType === "Zero") {
-      Object.assign(newSet, {periodFrequency:1, endDate:fields.startDate, amount100:"0.00"})
+      Object.assign(newSet, {periodFrequency:1, endDate:fields.startDate, amount100:"0.00", inflation:false})
+    }
+    if (templateType === "Minimise") {
+      Object.assign(newSet, {inflation:false})
     }
     setSomeFields(newSet)
   }
@@ -160,14 +163,14 @@ const Template = () => {
     setIsSaving(true)
 
     if (fields.templateType === "CC") {
-      if (templates) {
+      if (Array.isArray(templates)) {
         if (
-          templates.find(x => x.accountFromId === fields.accountFromId && x.templateType === "CC" &&
-          fields.templateId !== x.templateId)
+          templates.find(acc => acc.accountFromId === fields.accountFromId && acc.templateType === "CC" &&
+          fields.templateId !== acc.templateId)
         ) {
           alert(
             `Credit card template already exists for account '${
-              accounts ? accounts.find(x => x.accountId === fields.accountFromId).accName : ""
+              Array.isArray(accounts) ? accounts.find(acc => acc.accountId === fields.accountFromId).accName : ""
             }'`
           )
           return
@@ -387,6 +390,7 @@ const Template = () => {
               type='checkbox'
               label="Apply annual inflation rate"
               checked={fields.inflation}
+              disabled={fields.templateType === "CC" || fields.templateType === "Minimise" || fields.templateType === "Zero"}
               onChange={event => setSomeFields({inflation:event.target.checked})}
             />
           </Form.Group>

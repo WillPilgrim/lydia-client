@@ -7,7 +7,7 @@ import "./Summary.css"
 const Summary = () => {
 
   const { isAuthenticated, transAcc } = useAppContext()
-  const [accounts, setAccounts] = useState(null)
+  const [accountRows, setAccountRows] = useState(null)
 
   useEffect(() => {
     console.log('Summary: useEffect')
@@ -18,15 +18,15 @@ const Summary = () => {
 
       let total = 0
 
-      const accounts = transAcc ? transAcc.filter(account => !account.hide).map(account => {
-        const newAccount = { ...account, total: false }
+      const accountRows = transAcc ? transAcc.filter(account => !account.hide).map(account => {
+        const newAccount = { ...account, totalLine: false }
         total += account.currentBal
         return newAccount
       }) : []
-      accounts.push({total: false })
-      accounts.push({description:"Total", currentBal: total, totalLine: true })
+      accountRows.push({totalLine: false })
+      accountRows.push({description:"Total", currentBal: total, totalLine: true })
 
-      setAccounts(accounts)
+      setAccountRows(accountRows)
 
     }
   
@@ -58,7 +58,7 @@ const Summary = () => {
     <div id="accSummary" style={divStyle} className="ag-theme-alpine">
       <AgGridReact
           defaultColDef={{ resizable : true }}
-          rowData={accounts}
+          rowData={accountRows}
           rowClassRules={{"total-line": "data.totalLine"}}>
           <AgGridColumn headerName="Name" field="accName" width={170}></AgGridColumn>
           <AgGridColumn headerName="Description" field="description" width={500}></AgGridColumn>

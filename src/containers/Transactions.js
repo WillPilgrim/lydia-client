@@ -154,7 +154,6 @@ const Transactions = () => {
     const key = "data2.txt"   // need to change this!
     const localTransAcc = deleteFutureAllTransactions(accounts, transAcc, today, false)
     const strToSave = JSON.stringify([accounts, templates, localTransAcc, today.format()])
-    console.log(strToSave)
     try {
       await Storage.put(key, strToSave, { level: "private", contentType: "application/json" })
       setSaveRequired(false)
@@ -460,10 +459,10 @@ const Transactions = () => {
 
   const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 280
   const divStyle = { boxSizing: "border-box", height: `${h}px` }
-  const descriptionWidth = Math.min(Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234),630)
+  const descriptionWidth = Math.min(Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266,234),624)
   const isSummary = currentAccId === "0"
 
-  const debug = true
+  const debug = false
 
   return (
     <div className="transactions">

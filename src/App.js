@@ -17,8 +17,8 @@ const App = () => {
   const [isAuthenticated, userHasAuthenticated] = useState(false)
   const [stateToBeRefreshed, setStateToBeRefreshed] = useState(false)
   const [email, setEmail] = useState("")
-  const [templates, setTemplates] = useState(null)
-  const [accounts, setAccounts] = useState(null)
+  const [templates, setTemplates] = useState([])
+  const [accounts, setAccounts] = useState([])
   const [transAcc, setTransAcc] = useState(null)
   const [currentAccId, setCurrentAccId] = useState("0")
   const [templateFilterModel, setTemplateFilterModel] = useState(null)
@@ -70,7 +70,7 @@ const App = () => {
 
   const refreshAccounts = async () => {
     const accountsFromGet = await getAccounts()
-    const mappedAccounts = accountsFromGet.map(acc => {return {hide:false, ...acc}})
+    const mappedAccounts = accountsFromGet.map(acc => ({hide:false, ...acc}))
     sortAndSetAccounts(mappedAccounts)
   }
 
