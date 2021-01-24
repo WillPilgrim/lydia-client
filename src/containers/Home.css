@@ -1,5 +1,4 @@
 .Home .lander {
-  padding: 80px 0;
   text-align: center;
 }
 
@@ -8,25 +7,12 @@
   font-weight: 600;
 }
 
-/* .Home .lander p {
-  color: #999;
+.Home .navMenu {
+  position: fixed;
 }
 
-.Home .lander div {
-  padding-top: 20px;
+.Home .menuContent {
+  max-height:100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
-.Home .lander div a:first-child {
-  margin-right: 20px;
-}
-
-.Home .accounts h4 {
-  font-family: "Open Sans", sans-serif;
-  font-weight: 600;
-  overflow: hidden;
-  line-height: 1.5;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.Home .accounts p {
-  color: #666;
-} */

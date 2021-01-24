@@ -141,6 +141,9 @@ const App = () => {
                   <LinkContainer to="/templates">
                     <Nav.Link>Templates</Nav.Link>
                   </LinkContainer>
+                  <LinkContainer to="/help">
+                    <Nav.Link>Help</Nav.Link>
+                  </LinkContainer>
                   <LinkContainer to="/settings">
                     <Nav.Link>{email}</Nav.Link>
                   </LinkContainer>
@@ -148,6 +151,9 @@ const App = () => {
                 </>
               ) : (
                 <>
+                  <LinkContainer to="/help">
+                    <Nav.Link>Help</Nav.Link>
+                  </LinkContainer>
                   <LinkContainer to="/signup">
                     <Nav.Link>Signup</Nav.Link>
                   </LinkContainer>

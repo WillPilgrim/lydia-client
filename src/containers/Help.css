@@ -1,0 +1,12 @@
+.Help .title h1 {
+    font-family: "Open Sans", sans-serif;
+    font-weight: 600;
+}
+
+.Help .ContentArea {
+    max-height:100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+  

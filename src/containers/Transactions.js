@@ -465,7 +465,7 @@ const Transactions = () => {
   const debug = false
 
   return (
-    <div className="transactions">
+    <div className="Transactions">
       <h1>Transactions {archive ? "- ARCHIVE" : ""}</h1>
       {transAcc && 
       <div>

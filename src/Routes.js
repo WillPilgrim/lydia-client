@@ -15,6 +15,7 @@ import Template from "./containers/Template"
 import Transactions from "./containers/Transactions"
 import ChangePassword from "./containers/ChangePassword"
 import ChangeEmail from "./containers/ChangeEmail"
+import Help from "./containers/Help"
 
 const Routes = () =>
   <Switch>
@@ -36,6 +37,9 @@ const Routes = () =>
     <AuthenticatedRoute exact path="/settings/password">
       <ChangePassword />
     </AuthenticatedRoute>
+    <Route exact path="/help">
+      <Help />
+    </Route>
     <AuthenticatedRoute exact path="/settings/email">
       <ChangeEmail />
     </AuthenticatedRoute>

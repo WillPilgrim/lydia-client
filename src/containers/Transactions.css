@@ -1,23 +1,14 @@
-.Transactions .transactions h4 {
+.Transactions h1 {
     font-family: "Open Sans", sans-serif;
     font-weight: 600;
-    overflow: hidden;
-    line-height: 1.5;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-.Transactions .transactions p {
-    color: #666;
-  }
+}
 
- .ag-header-cell-label {
-    /* justify-content: center; */
+.ag-header-cell-label {
     font-weight: 600;
     font-size:20px;
  } 
 
- .ag-header-group-cell-label {
-  /* justify-content: center; */
+.ag-header-group-cell-label {
   font-weight: 600;
   font-size:20px;
 } 

@@ -151,7 +151,7 @@ const Accounts = () => {
   
   return (
     !isLoading && (
-      <div className="accounts">
+      <div className="Accounts">
         <h1>Accounts</h1>
 
         <div id="accGrid" style={divStyle} className="ag-theme-alpine">

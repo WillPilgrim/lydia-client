@@ -131,7 +131,7 @@ const Templates = () => {
 
   return (
     !isLoading && (
-      <div className="templates">
+      <div className="Templates">
         <h1>Templates</h1>
 
         <div id="tempGrid" style={divStyle} className="ag-theme-alpine">
