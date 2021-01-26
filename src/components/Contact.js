@@ -3,14 +3,16 @@ import Form from "react-bootstrap/Form"
 import LoaderButton from "../components/LoaderButton"
 import { useFormFields } from "../libs/hooksLib"
 import { onError } from "../libs/errorLib"
+import Confirm from "../components/Confirm"
 import "./Contact.css"
 
 const FORMSPARK_ACTION_URL = "https://submit-form.com/cN7klpfC"
 
 const Contact = () => {
 
+    const [showConfirm, setShowConfirm] = useState(false)
     const [submitting, setSubmitting] = useState(false)
-    const [fields, handleFieldChange] = useFormFields({
+    const [fields, handleFieldChange, setSomeFields] = useFormFields({
         name: "",
         email: "",
         message: ""
@@ -40,7 +42,9 @@ const Contact = () => {
                    Message: fields.message
                 })
             })
-            alert("Feedback submitted. Thank you!")
+            setShowConfirm(true)
+            setSomeFields({ name: "", email:"", message:"" })
+            document.getElementById('home').scrollIntoView(true)
         } catch (e) {
             onError(e)
         } finally {
@@ -50,6 +54,7 @@ const Contact = () => {
 
     return (
         <div className="Contact">
+            <Confirm title="Contact" body="Feedback submitted. Thank you!" show={showConfirm} setShow={setShowConfirm} />
             <p>Do you have any suggestions or questions, or just want to leave some feedback? We'd love to hear from you!</p>
             <Form onSubmit={onSubmit}>
                 <Form.Group size="lg" controlId="name">

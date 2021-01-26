@@ -26,6 +26,10 @@ const Transactions = () => {
     const [showTrim, setShowTrim] = useState(false)
     const [archiveFile, setArchiveFile] = useState(null)
     const [showConfirm, setShowConfirm] = useState(false)
+    const [confirmTitle, setConfirmTitle] = useState("")
+    const [confirmBody, setConfirmBody] = useState("")
+    const [confirmSubmit, setConfirmSubmit] = useState(null)
+    const [showCancelButton, setShowCancelButton] = useState(false)
 
     useEffect(() => {
         console.log('Transactions: useEffect')
@@ -157,7 +161,7 @@ const Transactions = () => {
         try {
             await Storage.put(key, strToSave, { level: "private", contentType: "application/json" })
             setSaveRequired(false)
-            setShowConfirm(true)
+            showSavedAlert("Transactions")
         }
         catch (e) {
             onError(e)
@@ -204,9 +208,17 @@ const Transactions = () => {
         }
     }
 
+    const confirmLoad = async () => {
+        await restoreData()
+        setShowConfirm(false)
+    }
+
     const handleLoad = async () => {
-        if (window.confirm("Are you sure you want to restore the data to the last save point?"))
-            await restoreData()
+            setConfirmTitle("Load Transactions")
+            setConfirmBody("Are you sure you want to restore the data to the last save point?")
+            setConfirmSubmit(() => confirmLoad)
+            setShowCancelButton(true)
+            setShowConfirm(true)
     }
 
     const insertDataIntoGrid = (account, api) => {
@@ -362,9 +374,9 @@ const Transactions = () => {
         try {
             const data = await Storage.get(key, { level: "private", download: true, cacheControl: 'no-cache' })
             if (!data)
-                alert('No archive found - without explicit error')
+                showAlert("Archive", "No archive found - without explicit exception")
             else if (!data.Body)
-                alert('No data body found - without explicit error')
+                showAlert("Archive", "No data body found - without explicit exception")
             else {
                 const result = await data.Body.text()
                 const dataToRestore = JSON.parse(result)
@@ -378,7 +390,7 @@ const Transactions = () => {
                 } else if ((dataToRestore).length === 2) {
                     // console.log('New archive format')
                     localTransAcc = dataToRestore[0]
-                } else alert('Invalid archive format!')
+                } else showAlert("Archive", "Invalid archive format")
 
                 setArchiveFile(key)
                 setTransAcc(localTransAcc)
@@ -392,7 +404,7 @@ const Transactions = () => {
         }
         catch (e) {
             if (e.response.status === 403)
-                alert("No archive found")
+                showAlert("Archive", "No archive found")
             else
                 onError(e)
         }
@@ -403,7 +415,7 @@ const Transactions = () => {
             await Storage.put(key, strToSave, { level: "private", contentType: "application/json" })
             setSaveRequired(false)
             setSaveArchiveRequired(false)
-            alert("Archive saved successfully")
+            showSavedAlert("Archive")
         }
         catch (e) {
             onError(e)
@@ -457,6 +469,16 @@ const Transactions = () => {
         setInterestAcc(interestAcc)
     }
 
+    const showSavedAlert = title => showAlert(title, "Saved Successfully")
+
+    const showAlert = (title, body) => {
+        setConfirmSubmit(null)
+        setConfirmTitle(title)
+        setConfirmBody(body)
+        setShowCancelButton(false)
+        setShowConfirm(true)
+    }
+
     const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 280
     const divStyle = { boxSizing: "border-box", height: `${h}px` }
     const descriptionWidth = Math.min(Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 0) - 1266, 234), 624)
@@ -467,7 +489,12 @@ const Transactions = () => {
     return (
         <div className="Transactions" >
             <h1>Transactions {archive ? "- ARCHIVE" : ""}</h1>
-            <Confirm title="Transactions" show={showConfirm} setShow={setShowConfirm} />
+            <Confirm title={confirmTitle} 
+                     body={confirmBody} 
+                     show={showConfirm} 
+                     onSubmit={confirmSubmit}
+                     showCancelButton={showCancelButton}
+                     setShow={setShowConfirm} />
             {transAcc &&
                 <div>
                     <InterestPopUp
@@ -551,7 +578,7 @@ const Transactions = () => {
                                         size="sm"
                                         onClick={handleArchiveLoad}>
                                         Load Archive
-              </Button>
+                                    </Button>
                                     <Button variant={saveArchiveRequired ? "outline-warning" : "outline-secondary"}
                                         size="sm"
                                         onClick={archive ? handleArchiveSave : () => setShowArchive(true)}
@@ -563,55 +590,55 @@ const Transactions = () => {
                                         onClick={() => setShowTrim(true)}
                                         disabled={recalcRequired || saveRequired || archive || isSummary}>
                                         Trim
-              </Button>
+                                    </Button>
                                     <Button variant="outline-secondary"
                                         size="sm"
                                         onClick={() => setShowInterest(true)}
                                         disabled={!interestAcc || archive}>
                                         Interest
-              </Button>
+                                    </Button>
                                     <Button variant="outline-secondary"
                                         size="sm"
                                         onClick={handleAdd}
                                         disabled={archive || isSummary}>
                                         Add
-              </Button>
+                                    </Button>
                                     <Button variant="outline-secondary"
                                         size="sm"
                                         onClick={handleDuplicate}
                                         disabled={archive || isSummary}>
                                         Duplicate
-              </Button>
+                                    </Button>
                                     <Button variant="outline-secondary"
                                         size="sm"
                                         onClick={handleDelete}
                                         disabled={archive || isSummary}>
                                         Delete
-              </Button>
+                                    </Button>
                                     <Button variant="outline-secondary"
                                         size="sm"
                                         onClick={handleManual}
                                         disabled={archive || isSummary}>
                                         Manual
-              </Button>
+                                    </Button>
                                     <Button variant="outline-secondary"
                                         size="sm"
                                         onClick={handleLoad}>
                                         Load
-              </Button>
+                                    </Button>
                                     <Button variant={saveRequired ? "warning" : "outline-secondary"}
                                         size="sm"
                                         onClick={handleSave}
                                         disabled={archive}>
                                         Save
-              </Button>
+                                    </Button>
                                 </ButtonGroup>
                                 <ButtonGroup>
                                     <Button variant={recalcRequired ? "warning" : "success"}
                                         size="sm"
                                         onClick={handleRecalculate}>
                                         Recalculate
-              </Button>
+                                    </Button>
                                 </ButtonGroup>
                             </ButtonToolbar>
                         </Col>
