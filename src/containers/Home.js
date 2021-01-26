@@ -1,6 +1,7 @@
 import React from "react"
 import Nav from "react-bootstrap/Nav"
-import { Row, Col, Form, Jumbotron } from "react-bootstrap"
+import { Row, Col, Jumbotron } from "react-bootstrap"
+import Contact from "../components/Contact"
 import { Link } from "react-router-dom"
 import { useAppContext } from "../libs/contextLib"
 import "./Home.css"
@@ -39,9 +40,8 @@ const Home = () => {
             <Row>
                 <Col xs={2}>
                     <div className="navMenu">
-                        <Nav defaultActiveKey="#" className="flex-column">
-                            <Nav.Link href="#">Home</Nav.Link>
-                            <Nav.Link href="#showcase" eventKey="showcase">Showcase</Nav.Link>
+                        <Nav defaultActiveKey="#home" className="flex-column">
+                            <Nav.Link href="#home" eventKey="showcase">Home</Nav.Link>
                             <Nav.Link href="#philosophy" eventKey="philosophy">Philosophy</Nav.Link>
                             <Nav.Link href="#features" eventKey="features">Features</Nav.Link>
                             <Nav.Link href="#packages" eventKey="packages">Packages</Nav.Link>
@@ -52,23 +52,23 @@ const Home = () => {
                 <Col>
                     <div style={divStyle}>
                         <div className="menuContent">
-                            <div id="showcase">
-                                <h1><b>Showcase.</b></h1>
+                            <div id="home">
+                                <h1><b>Home</b></h1>
                                 <hr />
                                 <p>Some screen shots and the sell job...</p>
                             </div>
                             <div id="philosophy">
-                                <h1><b>Philosophy.</b></h1>
+                                <h1><b>Philosophy</b></h1>
                                 <hr />
                                 <p>What is Lydia all about? Look here!</p>
                             </div>
                             <div id="features">
-                                <h1><b>Features.</b></h1>
+                                <h1><b>Features</b></h1>
                                 <hr />
                                 <p>Key features go here...</p>
                             </div>
                             <div id="packages">
-                                <h1><b>Packages.</b></h1>
+                                <h1><b>Packages</b></h1>
                                 <hr />
                                 <p>Some text our prices. Lorem ipsum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure</p>
                                 <Row>
@@ -123,24 +123,9 @@ const Home = () => {
                                 </Row>
                             </div>
                             <div id="contact">
-                                <h1><b>Contact.</b></h1>
+                                <h1><b>Contact</b></h1>
                                 <hr />
-                                <p>Do you have any suggestions or questions, or just want to leave some feedback? We'd love to hear from you!</p>
-                                <Form>
-                                    <div>
-                                        <label>Name</label>
-                                        <input type="text" name="Name" required />
-                                    </div>
-                                    <div>
-                                        <label>Email</label>
-                                        <input type="text" name="Email" required />
-                                    </div>
-                                    <div>
-                                        <label>Message</label>
-                                        <input type="text" name="Message" required />
-                                    </div>
-                                    <button type="submit">Send Message</button>
-                                </Form>
+                                <Contact />
                             </div>
                         </div>
                     </div>
