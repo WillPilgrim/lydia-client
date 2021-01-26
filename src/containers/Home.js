@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import Nav from "react-bootstrap/Nav"
 import { Row, Col, Jumbotron } from "react-bootstrap"
 import Contact from "../components/Contact"
@@ -12,6 +12,10 @@ const Home = () => {
 
     const h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0) - 430
     const divStyle = { boxSizing: "border-box", height: `${h}px` }
+
+    useEffect(() => {
+        document.getElementById('home').scrollIntoView(true)
+      }, [])
 
     return (
         <div className="Home">
@@ -40,8 +44,8 @@ const Home = () => {
             <Row>
                 <Col xs={2}>
                     <div className="navMenu">
-                        <Nav defaultActiveKey="#home" className="flex-column">
-                            <Nav.Link href="#home" eventKey="showcase">Home</Nav.Link>
+                        <Nav activeKey="#home" className="flex-column">
+                            <Nav.Link href="#home" eventKey="home">Home</Nav.Link>
                             <Nav.Link href="#philosophy" eventKey="philosophy">Philosophy</Nav.Link>
                             <Nav.Link href="#features" eventKey="features">Features</Nav.Link>
                             <Nav.Link href="#packages" eventKey="packages">Packages</Nav.Link>
