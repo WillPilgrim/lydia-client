@@ -62,7 +62,7 @@ const Contact = () => {
                     <Form.Control
                         autoFocus
                         type="text"
-                        maxlength="50"
+                        maxLength="50"
                         value={fields.name}
                         onChange={handleFieldChange}
                     />
@@ -80,7 +80,7 @@ const Contact = () => {
                     <Form.Label>Message</Form.Label>
                     <Form.Control
                         as="textarea"
-                        maxlength="500"
+                        maxL ength="500"
                         value={fields.message}
                         onChange={handleFieldChange}
                     />
