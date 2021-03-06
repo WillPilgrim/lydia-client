@@ -282,7 +282,8 @@ const Transactions = () => {
         if (nodes.length) {
             let localTransAcc = transAcc
             const acc = localTransAcc.find(ta => ta.accountId === currentAccId)
-            acc.trans = acc.trans.filter(t => t.transactionId !== nodes[0].transactionId)
+            const data = nodes[0].data
+            acc.trans = acc.trans.filter(t => t.transactionId !== data.transactionId)
 
             localTransAcc = calculate(accounts, templates, localTransAcc, today)
             setTransAcc(localTransAcc)
